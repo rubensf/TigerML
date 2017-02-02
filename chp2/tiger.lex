@@ -3,9 +3,13 @@ type lexresult = Tokens.token
 
 val lineNum = ErrorMsg.lineNum
 val linePos = ErrorMsg.linePos
+val commentCount = ref 0
 fun err(p1,p2) = ErrorMsg.error p1
 
-fun eof() = let val pos = hd(!linePos) in Tokens.EOF(pos,pos) end
+fun eof() = let val pos = hd(!linePos) in 
+    if (!commentCount <> 0) then (ErrorMsg.error pos "Unclosed Comment"; commentCount := 0)
+    else (); Tokens.EOF(pos,pos) 
+end
 
 
 %%
@@ -62,9 +66,10 @@ string = [\"][^\"]*[\"];
 <INITIAL>"&"      => (Tokens.AND(yypos, yypos+1));
 <INITIAL>"|"      => (Tokens.OR(yypos, yypos+1));
 
-<INITIAL>"/*"     => (YYBEGIN COMMENT; continue());
+<INITIAL>"/*"     => (YYBEGIN COMMENT; commentCount := 1; continue());
+<COMMENT>"/*"     => (commentCount := !commentCount+1; continue());
 <COMMENT>.        => (continue());
-<COMMENT>"*/"     => (YYBEGIN INITIAL; continue());
+<COMMENT>"*/"     => (commentCount:= !commentCount -1; if !commentCount = 0 then YYBEGIN INITIAL else (); continue());
 
 <INITIAL>{string} => (Tokens.STRING(yytext, yypos, yypos+String.size(yytext)));
 <INITIAL>{identf} => (Tokens.ID(yytext, yypos, yypos+String.size(yytext)));
