@@ -8,17 +8,17 @@ fun err(p1,p2) = ErrorMsg.error p1
 fun eof() = let val pos = hd(!linePos) in Tokens.EOF(pos,pos) end
 
 
-%% 
+%%
+%s COMMENT;
 dgts   = [0-9];
 ws     = [\ \t];
 identf = [a-zA-Z][a-zA-Z0-9_]*;
-cmmnts = \/\*([^*]|[\r\n]|(\*+([^*\/]|[\r\n])))*\*+\/;
+string = [\"][^\"]*[\"];
 
 %%
-{cmmnts} => (continue());
-\n	     => (lineNum := !lineNum+1; linePos := yypos :: !linePos; continue());
-{ws}+    => (linePos := yypos :: !linePos; continue());
-{dgts}+  => (Tokens.INT(Option.valOf(Int.fromString(yytext)),yypos, if Option.valOf(Int.fromString(yytext)) = 0 then yypos+1 else yypos+1+floor(Math.log10(real(Option.valOf(Int.fromString(yytext)))))));
+<INITIAL,COMMENT>\n	      => (lineNum := !lineNum+1; linePos := yypos :: !linePos; continue());
+<INITIAL,COMMENT>{ws}+    => (linePos := yypos :: !linePos; continue());
+<INITIAL>{dgts}+  => (Tokens.INT(Option.valOf(Int.fromString(yytext)),yypos, if Option.valOf(Int.fromString(yytext)) = 0 then yypos+1 else yypos+1+floor(Math.log10(real(Option.valOf(Int.fromString(yytext)))))));
 
 <INITIAL>of       => (Tokens.OF(yypos,yypos+2));
 <INITIAL>var  	  => (Tokens.VAR(yypos,yypos+3));
@@ -63,9 +63,12 @@ cmmnts = \/\*([^*]|[\r\n]|(\*+([^*\/]|[\r\n])))*\*+\/;
 <INITIAL>"|"      => (Tokens.OR(yypos, yypos+1));
 
 <INITIAL>"/*"     => (YYBEGIN COMMENT; continue());
+<COMMENT>.        => (continue());
 <COMMENT>"*/"     => (YYBEGIN INITIAL; continue());
-{identf} => (Tokens.ID(yytext, yypos, yypos+String.size(yytext)));
-.        => (ErrorMsg.error yypos ("illegal character " ^ yytext); continue());
+
+<INITIAL>{string} => (Tokens.STRING(yytext, yypos, yypos+String.size(yytext)));
+<INITIAL>{identf} => (Tokens.ID(yytext, yypos, yypos+String.size(yytext)));
+.                 => (ErrorMsg.error yypos ("illegal character " ^ yytext); continue());
 
 
 
