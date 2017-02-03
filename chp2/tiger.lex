@@ -4,23 +4,26 @@ type lexresult = Tokens.token
 val lineNum = ErrorMsg.lineNum
 val linePos = ErrorMsg.linePos
 val commentCount = ref 0
+val inString = ref 0
+val stringAccum = ref ""
+val stringStartPos = ref 0
 fun err(p1,p2) = ErrorMsg.error p1
 
 fun eof() = let val pos = hd(!linePos) in 
     if (!commentCount <> 0) then (ErrorMsg.error pos "Unclosed Comment"; commentCount := 0)
+    else if !inString <> 0 then (ErrorMsg.error pos "Unclosed String"; inString := 0; stringAccum := "";stringStartPos := 0)
     else (); Tokens.EOF(pos,pos) 
 end
 
 
 %%
-%s COMMENT;
+%s COMMENT STRING;
 dgts   = [0-9];
 ws     = [\ \t];
 identf = [a-zA-Z][a-zA-Z0-9_]*;
-string = [\"][^\"]*[\"];
 
 %%
-<INITIAL,COMMENT>\n	      => (lineNum := !lineNum+1; linePos := yypos :: !linePos; continue());
+<INITIAL,COMMENT,STRING>\n	      => (lineNum := !lineNum+1; linePos := yypos :: !linePos; continue());
 <INITIAL,COMMENT>{ws}+    => (linePos := yypos :: !linePos; continue());
 <INITIAL>{dgts}+  => (Tokens.INT(Option.valOf(Int.fromString(yytext)),yypos, if Option.valOf(Int.fromString(yytext)) = 0 then yypos+1 else yypos+1+floor(Math.log10(real(Option.valOf(Int.fromString(yytext)))))));
 
@@ -71,9 +74,26 @@ string = [\"][^\"]*[\"];
 <COMMENT>.        => (continue());
 <COMMENT>"*/"     => (commentCount:= !commentCount -1; if !commentCount = 0 then YYBEGIN INITIAL else (); continue());
 
-<INITIAL>{string} => (Tokens.STRING(yytext, yypos, yypos+String.size(yytext)));
+<INITIAL>\"       => (YYBEGIN STRING;inString := 1; stringAccum := ""; stringStartPos := yypos; continue());
+<STRING>\"        => (YYBEGIN INITIAL;inString := 0; Tokens.STRING(!stringAccum, !stringStartPos, yypos));
+<STRING>\\\"      => (stringAccum := !stringAccum ^ "\""; continue());
+<STRING>\\n       => (stringAccum := !stringAccum ^ "\n"; continue());
+<STRING>\\t       => (stringAccum := !stringAccum ^ "\t"; continue());
+<STRING>\\\\      => (stringAccum := !stringAccum ^ "\\"; continue());
+
+<STRING>\\{dgts}{dgts}{dgts} => (stringAccum := !stringAccum ^ Char.toString(chr (valOf(Int.fromString (String.substring(yytext, 1, size(yytext) -1))))); continue());
+
+<STRING>\\[\ \t\n\f]+\\ => (continue());
+<STRING>\\\^(@|[A-Z]|\[|\\|\]|\^|_)     => (stringAccum := !stringAccum ^ valOf (String.fromString yytext); continue());
+<STRING>\\.       => (ErrorMsg.error yypos ("illegal escape sequence " ^ yytext); continue());
+<STRING>.         => (stringAccum := !stringAccum ^ yytext; continue());
+
+
 <INITIAL>{identf} => (Tokens.ID(yytext, yypos, yypos+String.size(yytext)));
-.                 => (ErrorMsg.error yypos ("illegal character " ^ yytext); continue());
+<INITIAL>.        => (ErrorMsg.error yypos ("illegal character " ^ yytext); continue());
+
+
+
 
 
 
