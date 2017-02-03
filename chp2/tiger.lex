@@ -24,7 +24,7 @@ identf = [a-zA-Z][a-zA-Z0-9_]*;
 
 %%
 <INITIAL,COMMENT,STRING>\n	      => (lineNum := !lineNum+1; linePos := yypos :: !linePos; continue());
-<INITIAL,COMMENT>{ws}+    => (linePos := yypos :: !linePos; continue());
+<INITIAL,COMMENT>{ws}+    => (continue());
 <INITIAL>{dgts}+  => (Tokens.INT(Option.valOf(Int.fromString(yytext)),yypos, if Option.valOf(Int.fromString(yytext)) = 0 then yypos+1 else yypos+1+floor(Math.log10(real(Option.valOf(Int.fromString(yytext)))))));
 
 <INITIAL>of       => (Tokens.OF(yypos,yypos+2));
