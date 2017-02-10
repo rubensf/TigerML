@@ -12,7 +12,7 @@
   | FUNCTION | VAR | TYPE 
 
 %nonterm  exp | program 
-        | math | comp | bool
+        | math | comp | bool | decs | dec | tydec | ty | tyfields | vardec | fundec | lvalue
 
 %pos int
 %verbose
@@ -62,3 +62,38 @@ comp
 bool
 : exp AND exp ()
 | exp OR exp ()
+
+decs 
+: LBRACE dec RBRACE ()
+
+dec
+: tydec ()
+| vardec ()
+| fundec ()
+
+tydec
+: TYPE ID EQ ty ()
+
+ty
+: ID ()
+| LBRACE tyfields RBRACE ()
+| ARRAY OF ID ()
+
+tyfields
+: ()
+| ID COLON ID tyfields ()
+
+vardec
+: VAR ID ASSIGN exp ()
+| VAR ID COLON ID ASSIGN exp ()
+
+fundec
+: FUNCTION ID LPAREN tyfields RPAREN EQ exp ()
+| FUNCTION ID LPAREN tyfields RPAREN COLON ID EQ exp ()
+
+lvalue
+: ID ()
+| lvalue DOT ID ()
+| lvalue LBRACK exp RBRACK ()
+
+
