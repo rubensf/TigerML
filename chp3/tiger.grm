@@ -165,8 +165,9 @@ idassigns_some
 
 lvalue
 : ID                       ()
-| lvalue DOT ID            ()
+| ID     LBRACK exp RBRACK ()
 | lvalue LBRACK exp RBRACK ()
+| lvalue DOT ID            ()
 
 arrcreation
 : ID LBRACK exp RBRACK OF exp ()
