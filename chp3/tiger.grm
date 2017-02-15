@@ -146,8 +146,8 @@ vardec
 | VAR ID COLON ID ASSIGN exp ()
 
 fundec
-: FUNCTION ID LPAREN tyfields RPAREN exp          ()
-| FUNCTION ID LPAREN tyfields RPAREN COLON ID exp ()
+: FUNCTION ID LPAREN tyfields RPAREN EQ exp          ()
+| FUNCTION ID LPAREN tyfields RPAREN COLON ID EQ exp ()
 
 reccreation
 : ID LBRACE idassigns RBRACE ()
@@ -161,12 +161,10 @@ idassigns_some
 | ID EQ exp COMMA idassigns_some ()
 
 lvalue
-: ID l_value               ()
-
-l_value
-:                           ()
-| DOT ID l_value            ()
-| LBRACK exp RBRACK l_value ()
+: ID                       ()
+| ID     LBRACK exp RBRACK ()
+| lvalue LBRACK exp RBRACK ()
+| lvalue DOT ID            ()
 
 arrcreation
 : ID LBRACK exp RBRACK OF exp ()
