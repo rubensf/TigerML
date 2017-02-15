@@ -11,10 +11,10 @@
   | BREAK | NIL
   | FUNCTION | VAR | TYPE 
 
-%nonterm  exp | expsequence | expseq | expseq_some | expcomma | expcomma_some 
+%nonterm  exp | expsequence | expseq | expseq_some | exps | expcomma_some 
         | idassigns | idassigns_some
         | program | math | comp | bool | decs | dec | tydec | ty
-        | tyfields_some | tyfields | vardec | fundec | funcall | lvalue 
+        | tyfields_some | tyfields | vardec | fundec | funcall | lvalue | l_value 
         | letdec | valueless | assignment | reccreation | arrcreation
 
 %pos int
@@ -55,6 +55,7 @@ program
 
 exp
 : lvalue ()
+| l_value ()
 | valueless ()
 | NIL ()
 | expsequence ()
@@ -83,19 +84,15 @@ expsequence
 
 expseq
 :                      ()
-| expseq_some          ()
+| exp SEMICOLON expseq ()
 
-expseq_some
-: exp                       () 
-| exp SEMICOLON expseq_some ()
-
-expcomma
+exps
 :                        ()
-| expcomma_some          ()
+| exp expcomma_some      ()
 
 expcomma_some
-: exp                     () 
-| exp COMMA expcomma_some ()
+:                        () 
+| COMMA expcomma_some    ()
 
 valueless
 : LPAREN RPAREN ()
@@ -149,8 +146,8 @@ vardec
 | VAR ID COLON ID ASSIGN exp ()
 
 fundec
-: FUNCTION ID LPAREN tyfields RPAREN EQ exp          ()
-| FUNCTION ID LPAREN tyfields RPAREN COLON ID EQ exp ()
+: FUNCTION ID LPAREN tyfields RPAREN exp          ()
+| FUNCTION ID LPAREN tyfields RPAREN COLON ID exp ()
 
 reccreation
 : ID LBRACE idassigns RBRACE ()
@@ -164,10 +161,12 @@ idassigns_some
 | ID EQ exp COMMA idassigns_some ()
 
 lvalue
-: ID                       ()
-| ID     LBRACK exp RBRACK ()
-| lvalue LBRACK exp RBRACK ()
-| lvalue DOT ID            ()
+: ID l_value               ()
+
+l_value
+:                           ()
+| DOT ID l_value            ()
+| LBRACK exp RBRACK l_value ()
 
 arrcreation
 : ID LBRACK exp RBRACK OF exp ()
@@ -176,8 +175,7 @@ letdec
 : LET decs IN expseq END ()
 
 funcall
-: ID LPAREN RPAREN ()
-| ID LPAREN expcomma RPAREN ()
+: ID LPAREN exps RPAREN ()
 
 assignment
 : lvalue ASSIGN exp ()
