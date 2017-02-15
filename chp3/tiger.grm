@@ -11,7 +11,7 @@
   | BREAK | NIL
   | FUNCTION | VAR | TYPE 
 
-%nonterm  exp | expseq | exps | expcomma_some 
+%nonterm  exp | expseq | seq1 | exps | expcomma_some 
         | idassigns | idassigns_some
         | program | math | comp | bool | decs | dec | tydec | ty
         | tyfields_some | tyfields | vardec | fundec | funcall | lvalue 
@@ -66,7 +66,6 @@ exp
 | arrcreation           ()
 | control               ()
 | lvalue ASSIGN exp     ()
-| LPAREN RPAREN         ()
 | LPAREN expseq RPAREN  ()
 
 control
@@ -78,8 +77,12 @@ control
 | LET decs IN expseq END          ()
 
 expseq
+:                      ()
+| seq1                 ()
+
+seq1
 : exp                  ()
-| expseq SEMICOLON exp ()
+| exp SEMICOLON seq1   ()
 
 exps
 :                        ()
