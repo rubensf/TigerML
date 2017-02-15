@@ -76,6 +76,7 @@ exp
 | FOR ID ASSIGN exp TO exp DO exp ()
 | BREAK ()  
 | letdec ()
+| lvalue DOT funcall ()
 | LPAREN exp RPAREN ()
 
 expsequence
@@ -90,8 +91,7 @@ expseq_some
 | exp SEMICOLON expseq_some ()
 
 expcomma
-:                        ()
-| expcomma_some          ()
+: expcomma_some          ()
 
 expcomma_some
 : exp                     () 
