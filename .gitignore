@@ -1,7 +1,6 @@
 .cm/
 .DS_Store
-chp2/tiger.lex.sml
-chp3/tiger.grm.desc
-chp3/tiger.grm.sig
-chp3/tiger.grm.sml
-chp3/tiger.lex.sml
+tiger.lex.sml
+tiger.grm.desc
+tiger.grm.sig
+tiger.grm.sml

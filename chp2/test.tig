@@ -1,6 +1,0 @@
-/* this is a comment /*this is a closed comment  */ tomselkss */ 
-var id = "String a \n b \" \\ \t unique
-hello \065 \                \ something \x\y\z this is something else \            \asdfasd\    
-            \ something \^@ \^[ \^\ \^] \^^ \^_";
-var _something = 17;
-/*99while
