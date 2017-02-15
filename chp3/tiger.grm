@@ -11,11 +11,11 @@
   | BREAK | NIL
   | FUNCTION | VAR | TYPE 
 
-%nonterm  exp | expsequence | expseq | expseq_some | expcomma | expcomma_some 
+%nonterm  exp | expseq | seq1 | exps | expcomma_some 
         | idassigns | idassigns_some
         | program | math | comp | bool | decs | dec | tydec | ty
         | tyfields_some | tyfields | vardec | fundec | funcall | lvalue 
-        | letdec | valueless | assignment | reccreation | arrcreation
+        | control | reccreation | arrcreation
 
 %pos int
 %verbose
@@ -54,52 +54,43 @@ program
 : exp	()
 
 exp
-: lvalue ()
-| valueless ()
-| NIL ()
-| expsequence ()
-| INT  ()
-| STRING ()
-| funcall ()
-| math ()
-| comp ()
-| bool ()
-| tydec ()
-| vardec ()
-| fundec ()
-| reccreation ()
-| arrcreation ()
-| assignment ()
-| IF exp THEN exp ELSE exp ()
-| IF exp THEN exp ()
-| WHILE exp DO exp ()
-| FOR ID ASSIGN exp TO exp DO exp ()
-| BREAK ()  
-| letdec ()
-| lvalue DOT funcall ()
-| LPAREN exp RPAREN ()
+: lvalue                ()
+| NIL                   ()
+| INT                   ()
+| STRING                ()
+| funcall               ()
+| math                  ()
+| comp                  ()
+| bool                  ()
+| reccreation           ()
+| arrcreation           ()
+| control               ()
+| lvalue ASSIGN exp     ()
+| LPAREN expseq RPAREN  ()
 
-expsequence
-: LPAREN exp SEMICOLON expseq_some RPAREN ()
+control
+: IF exp THEN exp ELSE exp        ()
+| IF exp THEN exp                 ()
+| WHILE exp DO exp                ()
+| FOR ID ASSIGN exp TO exp DO exp ()
+| BREAK                           ()
+| LET decs IN expseq END          ()
 
 expseq
 :                      ()
-| expseq_some          ()
+| seq1                 ()
 
-expseq_some
-: exp                       () 
-| exp SEMICOLON expseq_some ()
+seq1
+: exp                  ()
+| exp SEMICOLON seq1   ()
 
-expcomma
+exps
 :                        ()
-| expcomma_some          ()
+| exp expcomma_some      ()
 
 expcomma_some
-: exp                     () 
-| exp COMMA expcomma_some ()
-
-valueless
-: LPAREN RPAREN ()
+:                         () 
+| COMMA exp expcomma_some ()
 
 math
 : exp PLUS exp           ()
@@ -166,20 +157,12 @@ idassigns_some
 
 lvalue
 : ID                       ()
-| ID     LBRACK exp RBRACK ()
+| ID LBRACK exp RBRACK     ()
 | lvalue LBRACK exp RBRACK ()
 | lvalue DOT ID            ()
 
 arrcreation
 : ID LBRACK exp RBRACK OF exp ()
 
-letdec
-: LET decs IN expseq END ()
-
 funcall
-: ID LPAREN expcomma RPAREN ()
-
-assignment
-: lvalue ASSIGN exp ()
-
-
+: ID LPAREN exps RPAREN ()
