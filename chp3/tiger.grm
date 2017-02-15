@@ -11,10 +11,10 @@
   | BREAK | NIL
   | FUNCTION | VAR | TYPE 
 
-%nonterm  exp | expsequence | expseq | expseq_some | exps | expcomma_some 
+%nonterm  exp | seq1 | seq2 | expseq | expseq_some | exps | expcomma_some 
         | idassigns | idassigns_some
         | program | math | comp | bool | decs | dec | tydec | ty
-        | tyfields_some | tyfields | vardec | fundec | funcall | lvalue | l_value 
+        | tyfields_some | tyfields | vardec | fundec | funcall | lvalue 
         | letdec | valueless | assignment | reccreation | arrcreation
 
 %pos int
@@ -55,19 +55,14 @@ program
 
 exp
 : lvalue ()
-| l_value ()
-| valueless ()
 | NIL ()
-| expsequence ()
+| expseq ()
 | INT  ()
 | STRING ()
 | funcall ()
 | math ()
 | comp ()
 | bool ()
-| tydec ()
-| vardec ()
-| fundec ()
 | reccreation ()
 | arrcreation ()
 | assignment ()
@@ -77,14 +72,17 @@ exp
 | FOR ID ASSIGN exp TO exp DO exp ()
 | BREAK ()  
 | letdec ()
-| LPAREN exp RPAREN ()
-
-expsequence
-: LPAREN exp SEMICOLON expseq_some RPAREN ()
 
 expseq
+: LPAREN seq1 RPAREN   ()
+
+seq1
 :                      ()
-| exp SEMICOLON expseq ()
+| exp seq2             ()
+
+seq2
+:                      ()
+| SEMICOLON exp seq2   ()
 
 exps
 :                        ()
