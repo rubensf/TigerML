@@ -11,11 +11,11 @@
   | BREAK | NIL
   | FUNCTION | VAR | TYPE 
 
-%nonterm  exp | seq1 | seq2 | expseq | expseq_some | exps | expcomma_some 
+%nonterm  exp | expseq | exps | expcomma_some 
         | idassigns | idassigns_some
         | program | math | comp | bool | decs | dec | tydec | ty
         | tyfields_some | tyfields | vardec | fundec | funcall | lvalue 
-        | letdec | valueless | assignment | reccreation | arrcreation
+        | control | reccreation | arrcreation
 
 %pos int
 %verbose
@@ -54,35 +54,32 @@ program
 : exp	()
 
 exp
-: lvalue ()
-| NIL ()
-| expseq ()
-| INT  ()
-| STRING ()
-| funcall ()
-| math ()
-| comp ()
-| bool ()
-| reccreation ()
-| arrcreation ()
-| assignment ()
-| IF exp THEN exp ELSE exp ()
-| IF exp THEN exp ()
-| WHILE exp DO exp ()
+: lvalue                ()
+| NIL                   ()
+| INT                   ()
+| STRING                ()
+| funcall               ()
+| math                  ()
+| comp                  ()
+| bool                  ()
+| reccreation           ()
+| arrcreation           ()
+| control               ()
+| lvalue ASSIGN exp     ()
+| LPAREN RPAREN         ()
+| LPAREN expseq RPAREN  ()
+
+control
+: IF exp THEN exp ELSE exp        ()
+| IF exp THEN exp                 ()
+| WHILE exp DO exp                ()
 | FOR ID ASSIGN exp TO exp DO exp ()
-| BREAK ()  
-| letdec ()
+| BREAK                           ()
+| LET decs IN expseq END          ()
 
 expseq
-: LPAREN seq1 RPAREN   ()
-
-seq1
-:                      ()
-| exp seq2             ()
-
-seq2
-:                      ()
-| SEMICOLON exp seq2   ()
+: exp                  ()
+| expseq SEMICOLON exp ()
 
 exps
 :                        ()
@@ -157,20 +154,12 @@ idassigns_some
 
 lvalue
 : ID                       ()
-| ID     LBRACK exp RBRACK ()
+| ID LBRACK exp RBRACK     ()
 | lvalue LBRACK exp RBRACK ()
 | lvalue DOT ID            ()
 
 arrcreation
 : ID LBRACK exp RBRACK OF exp ()
 
-letdec
-: LET decs IN expseq END ()
-
 funcall
 : ID LPAREN exps RPAREN ()
-
-assignment
-: lvalue ASSIGN exp ()
-
-
