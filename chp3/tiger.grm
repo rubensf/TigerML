@@ -91,7 +91,8 @@ expseq_some
 | exp SEMICOLON expseq_some ()
 
 expcomma
-: expcomma_some          ()
+:                        ()
+| expcomma_some          ()
 
 expcomma_some
 : exp                     () 
@@ -176,8 +177,7 @@ letdec
 : LET decs IN expseq END ()
 
 funcall
-: ID LPAREN RPAREN ()
-| ID LPAREN expcomma RPAREN ()
+: ID LPAREN expcomma RPAREN ()
 
 assignment
 : lvalue ASSIGN exp ()
