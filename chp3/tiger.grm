@@ -89,11 +89,8 @@ exps
 | exp expcomma_some      ()
 
 expcomma_some
-:                        () 
-| COMMA expcomma_some    ()
-
-valueless
-: LPAREN RPAREN ()
+:                         () 
+| COMMA exp expcomma_some ()
 
 math
 : exp PLUS exp           ()
