@@ -59,11 +59,8 @@ OF NIL
 %value INT (1)
 %value STRING ("")
 
-%right    OF
-%nonassoc DO
-%nonassoc THEN
-%nonassoc ELSE
-%nonassoc ASSIGN
+%nonassoc OF VAR TYPE THEN DO FUNCTION ASSIGN
+%right    ELSE
 %left     OR
 %left     AND
 %nonassoc EQ NEQ LT LE GT GE
