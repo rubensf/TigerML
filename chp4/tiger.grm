@@ -59,6 +59,10 @@ OF NIL
 %value INT (1)
 %value STRING ("")
 
+%right    OF
+%nonassoc DO
+%nonassoc THEN
+%nonassoc ELSE
 %nonassoc ASSIGN
 %left     OR
 %left     AND
