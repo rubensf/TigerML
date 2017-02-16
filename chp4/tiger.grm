@@ -75,7 +75,7 @@ OF NIL
  *)
 
 program	
-: exp	()
+: exp	(exp)
 
 exp
 : lvalue                (A.VarExp(lvalue))
@@ -90,15 +90,15 @@ exp
 | arrcreation           (arrcreation)
 | control               (control)
 | lvalue ASSIGN exp     (A.AssignExp {var=lvalue, exp=exp, pos=ASSIGNleft})
-| LPAREN expseq RPAREN  (expseq)
+| LPAREN expseq RPAREN  (A.SeqExp expseq)
 
 control
 : IF exp THEN exp ELSE exp        (A.IfExp {test=exp1, then'=exp2, else'=SOME(exp3), pos=IFleft})
 | IF exp THEN exp                 (A.IfExp {test=exp1, then'=exp2, else'=NONE,       pos=IFleft})
 | WHILE exp DO exp                (A.WhileExp {test=exp1, body=exp2, pos=WHILEleft})
-| FOR ID ASSIGN exp TO exp DO exp ()
-| BREAK                           (A.BreakExp {pos=BREAKleft})
-| LET decs IN expseq END          ()
+| FOR ID ASSIGN exp TO exp DO exp (A.ForExp {var=symbol ID, escape=ref true, lo=exp1, hi=exp2, body=exp3, pos=FORleft})
+| BREAK                           (A.BreakExp BREAKleft)
+| LET decs IN expseq END          (A.LetExp {decs=decs, body=A.SeqExp expseq, pos=LETleft})
 
 expseq
 :             ([])
@@ -145,8 +145,8 @@ tyfields
 | tyfields_some (tyfields_some)
 
 tyfields_some
-: ID COLON ID                     (A.field {name=symbol ID1, escape=ref true, typ=symbol ID2, pos=COLONleft})
-| ID COLON ID COMMA tyfields_some (tyfields_some @ [(A.field {name=symbol ID1, escape=ref true, typ=symbol ID2, pos=COLONleft})])
+: ID COLON ID                     ([{name=symbol ID1, escape=ref true, typ=symbol ID2, pos=COLONleft}])
+| ID COLON ID COMMA tyfields_some (tyfields_some @ [{name=symbol ID1, escape=ref true, typ=symbol ID2, pos=COLONleft}])
 
 decs
 :          ([])
@@ -158,8 +158,8 @@ dec
 | fundeclist (A.FunctionDec fundeclist)
 
 tydeclist
-: TYPE ID EQ ty           ([A.TypeDec {name=symbol ID, ty=ty, pos=TYPEleft}])
-| TYPE ID EQ ty tydeclist (tydeclist @ [(A.TypeDec {name=symbol ID, ty=ty, pos=TYPEleft})])
+: TYPE ID EQ ty           ([{name=symbol ID, ty=ty, pos=TYPEleft}])
+| tydeclist TYPE ID EQ ty (tydeclist @ [({name=symbol ID, ty=ty, pos=TYPEleft})])
 
 vardec
 : VAR ID ASSIGN exp          (A.VarDec {name=symbol ID, escape=ref true, typ=NONE, init=exp, pos=VARleft})
@@ -171,21 +171,21 @@ vardec
 
 
 fundeclist
-: fundec            ([])
+: fundec            ([fundec])
 | fundeclist fundec (fundeclist @ [fundec])
 
 
 fundec
-: FUNCTION ID LPAREN tyfields RPAREN EQ exp          (A.fundec {name=symbol ID, 
-                                                                params=tyfields, 
-                                                                result=NONE, 
-                                                                body=exp, 
-                                                                pos=FUNCTIONleft})
-| FUNCTION ID LPAREN tyfields RPAREN COLON ID EQ exp (A.fundec {name=symbol ID1, 
-                                                                params=tyfields, 
-                                                                result=SOME(symbol ID2, ID2left), 
-                                                                body=exp, 
-                                                                pos=FUNCTIONleft})
+: FUNCTION ID LPAREN tyfields RPAREN EQ exp          ({name=symbol ID, 
+                                                      params=tyfields, 
+                                                      result=NONE, 
+                                                      body=exp, 
+                                                      pos=FUNCTIONleft})
+| FUNCTION ID LPAREN tyfields RPAREN COLON ID EQ exp ({name=symbol ID1, 
+                                                      params=tyfields, 
+                                                      result=SOME(symbol ID2, ID2left), 
+                                                      body=exp, 
+                                                      pos=FUNCTIONleft})
 
 reccreation
 : ID LBRACE idassigns RBRACE (A.RecordExp {fields=idassigns, typ=symbol ID, pos=IDleft})
