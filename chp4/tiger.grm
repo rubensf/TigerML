@@ -105,16 +105,16 @@ expseq
 | expseq_some (expseq_some)
 
 expseq_some
-: exp                       ([(exp, expleft)])
-| exp SEMICOLON expseq_some (expseq_some @ [(exp, expleft)])
+: exp                       ((exp, expleft) :: nil)
+| exp SEMICOLON expseq_some ((exp, expleft) :: expseq_some)
 
 expcomma
 :               ([])
 | expcomma_some (expcomma_some)
 
 expcomma_some
-: exp                     ([exp])
-| exp COMMA expcomma_some (expcomma_some @ [exp])
+: exp                     (exp :: nil)
+| exp COMMA expcomma_some (exp :: expcomma_some)
 
 math
 : exp PLUS exp           (A.OpExp {left=exp1,       oper=A.PlusOp,   right=exp2, pos=PLUSleft})
@@ -145,12 +145,12 @@ tyfields
 | tyfields_some (tyfields_some)
 
 tyfields_some
-: ID COLON ID                     ([{name=symbol ID1, escape=ref true, typ=symbol ID2, pos=COLONleft}])
-| ID COLON ID COMMA tyfields_some (tyfields_some @ [{name=symbol ID1, escape=ref true, typ=symbol ID2, pos=COLONleft}])
+: ID COLON ID                     ({name=symbol ID1, escape=ref true, typ=symbol ID2, pos=COLONleft} :: nil)
+| ID COLON ID COMMA tyfields_some ({name=symbol ID1, escape=ref true, typ=symbol ID2, pos=COLONleft} :: tyfields_some)
 
 decs
 :          ([])
-| dec decs (decs @ [dec])
+| dec decs (dec :: decs)
 
 dec
 : tydeclist  (A.TypeDec tydeclist)
@@ -158,8 +158,8 @@ dec
 | fundeclist (A.FunctionDec fundeclist)
 
 tydeclist
-: TYPE ID EQ ty           ([{name=symbol ID, ty=ty, pos=TYPEleft}])
-| tydeclist TYPE ID EQ ty (tydeclist @ [({name=symbol ID, ty=ty, pos=TYPEleft})])
+: TYPE ID EQ ty           ({name=symbol ID, ty=ty, pos=TYPEleft} :: nil)
+| TYPE ID EQ ty tydeclist (({name=symbol ID, ty=ty, pos=TYPEleft}) :: tydeclist)
 
 vardec
 : VAR ID ASSIGN exp          (A.VarDec {name=symbol ID, escape=ref true, typ=NONE, init=exp, pos=VARleft})
@@ -171,8 +171,8 @@ vardec
 
 
 fundeclist
-: fundec            ([fundec])
-| fundeclist fundec (fundeclist @ [fundec])
+: fundec            (fundec :: nil)
+| fundec fundeclist (fundec :: fundeclist)
 
 
 fundec
@@ -195,8 +195,8 @@ idassigns
 | idassigns_some (idassigns_some)
 
 idassigns_some
-: ID EQ exp                      ([(symbol ID, exp, IDleft)])
-| ID EQ exp COMMA idassigns_some (idassigns_some @ [(symbol ID, exp, IDleft)])
+: ID EQ exp                      ((symbol ID, exp, IDleft) :: nil)
+| ID EQ exp COMMA idassigns_some ((symbol ID, exp, IDleft) :: idassigns_some)
 
 lvalue
 : ID                       (A.SimpleVar(symbol ID, IDleft))
