@@ -1,5 +1,4 @@
 structure A = Absyn
-
 %%
 %term
     EOF 
@@ -7,13 +6,17 @@ structure A = Absyn
   | INT of int | STRING of string 
   | COMMA | COLON | SEMICOLON | LPAREN | RPAREN | LBRACK | RBRACK 
   | LBRACE | RBRACE | DOT 
-  | PLUS | MINUS | TIMES | DIVIDE | EQ | NEQ | LT | LE | GT | GE
+  | PLUS | MINUS | UMINUS | TIMES | DIVIDE | EQ | NEQ | LT | LE | GT | GE
   | AND | OR | ASSIGN
   | ARRAY | IF | THEN | ELSE | WHILE | FOR | TO | DO | LET | IN | END | OF 
   | BREAK | NIL
   | FUNCTION | VAR | TYPE 
 
-%nonterm  exp | program of A.exp
+%nonterm  exp | expseq | seq1 | exps | expcomma_some 
+        | idassigns | idassigns_some
+        | program | math | comp | bool | decs | dec | tydec | ty
+        | tyfields_some | tyfields | vardec | fundec | funcall | lvalue 
+        | control | reccreation | arrcreation
 
 %pos int
 %verbose
@@ -23,18 +26,144 @@ structure A = Absyn
 
 %name Tiger
 
-%keyword WHILE FOR TO BREAK LET IN END FUNCTION VAR TYPE ARRAY IF THEN ELSE 
-  DO OF NIL
+%keyword WHILE FOR TO BREAK LET IN END FUNCTION VAR TYPE ARRAY IF THEN ELSE DO
+OF NIL
 
+%nodefault
 %prefer THEN ELSE LPAREN
 
 %value ID ("bogus")
 %value INT (1)
 %value STRING ("")
 
+%nonassoc ASSIGN
+%left     OR
+%left     AND
+%nonassoc EQ NEQ LT LE GT GE
+%left     PLUS MINUS
+%left     TIMES DIVIDE
+%left     UMINUS
+
 %%
 
-program : exp       (exp)
+(* This is a skeleton grammar file, meant to illustrate what kind of
+ * declarations are necessary above the %% mark.  Students are expected
+ *  to replace the two dummy productions below with an actual grammar. 
+ *)
 
-  
-exp: NIL    (A.NilExp)
+program	
+: exp	()
+
+exp
+: lvalue                ()
+| NIL                   ()
+| INT                   ()
+| STRING                ()
+| funcall               ()
+| math                  ()
+| comp                  ()
+| bool                  ()
+| reccreation           ()
+| arrcreation           ()
+| control               ()
+| lvalue ASSIGN exp     ()
+| LPAREN expseq RPAREN  ()
+
+control
+: IF exp THEN exp ELSE exp        ()
+| IF exp THEN exp                 ()
+| WHILE exp DO exp                ()
+| FOR ID ASSIGN exp TO exp DO exp ()
+| BREAK                           ()
+| LET decs IN expseq END          ()
+
+expseq
+:                      ()
+| seq1                 ()
+
+seq1
+: exp                  ()
+| exp SEMICOLON seq1   ()
+
+exps
+:                        ()
+| exp expcomma_some      ()
+
+expcomma_some
+:                         () 
+| COMMA exp expcomma_some ()
+
+math
+: exp PLUS exp           ()
+| exp MINUS exp          ()
+| exp TIMES exp          ()
+| exp DIVIDE exp         ()
+| MINUS exp %prec UMINUS ()
+
+comp
+: exp LT  exp ()
+| exp LE  exp ()
+| exp GT  exp ()
+| exp GE  exp ()
+| exp EQ  exp ()
+| exp NEQ exp ()
+
+bool
+: exp AND exp ()
+| exp OR exp  ()
+
+ty
+: ID                     ()
+| LBRACE tyfields RBRACE ()
+| ARRAY OF ID            ()
+
+tyfields
+:                            ()
+| tyfields_some              ()
+
+tyfields_some
+: ID COLON ID                     ()
+| ID COLON ID COMMA tyfields_some ()
+
+decs
+:          ()
+| dec decs ()
+
+dec
+: tydec  ()
+| vardec ()
+| fundec ()
+
+tydec
+: TYPE ID EQ ty ()
+
+vardec
+: VAR ID ASSIGN exp          ()
+| VAR ID COLON ID ASSIGN exp ()
+
+fundec
+: FUNCTION ID LPAREN tyfields RPAREN EQ exp          ()
+| FUNCTION ID LPAREN tyfields RPAREN COLON ID EQ exp ()
+
+reccreation
+: ID LBRACE idassigns RBRACE ()
+
+idassigns
+:                ()
+| idassigns_some ()
+
+idassigns_some
+: ID EQ exp                      ()
+| ID EQ exp COMMA idassigns_some ()
+
+lvalue
+: ID                       ()
+| ID LBRACK exp RBRACK     ()
+| lvalue LBRACK exp RBRACK ()
+| lvalue DOT ID            ()
+
+arrcreation
+: ID LBRACK exp RBRACK OF exp ()
+
+funcall
+: ID LPAREN exps RPAREN ()
