@@ -59,7 +59,8 @@ OF NIL
 %value INT (1)
 %value STRING ("")
 
-%nonassoc OF VAR TYPE THEN DO FUNCTION ASSIGN
+%right    OF
+%nonassoc VAR TYPE IF THEN DO FUNCTION TO LET IN ASSIGN WHILE FOR
 %right    ELSE
 %left     OR
 %left     AND
