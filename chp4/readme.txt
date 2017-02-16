@@ -32,12 +32,13 @@ Explanation For Precedence Directives:
 
 This was inserted because Tiger can have expressions for things like 3D arrays. For example, in the case of "array of array of array", this should refer to the type array of (array of array). If %left was issued, it would reduce first, and instead be recognized as (array of array) of array, which doesn't make sense.
 
-%nonassoc DO
-%nonassoc THEN
-%nonassoc ELSE
-%nonassoc ASSIGN
+%nonassoc VAR TYPE IF THEN DO FUNCTION TO LET IN ASSIGN WHILE FOR
 
-These terminals should not have association because there should never be a case where the parser tries to parse multiple of them in a row. In other words, things like (exp THEN exp THEN exp) shouldn't appear as part of any state in our parser.
+The parser should never have to determine associativity for these expressions because they should not be able to appear consecutively.
+
+%right    ELSE
+
+Else is right associative because expressions like "if x then if y then z else a" should shift so that the else statement attaches to the most recent if. A shift would result in "if x then (if y then z else a)". A reduce would result in "(if x then (if y then z) else a", which is not what we want.
 
 %left     OR
 %left     AND
