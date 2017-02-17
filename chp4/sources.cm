@@ -5,7 +5,8 @@ errormsg.sml
 table.sig
 table.sml
 symbol.sml
-parse.sml
+prabsyn.sml
+parsetest.sml
 tiger.lex
 tiger.grm
 $/smlnj-lib.cm
