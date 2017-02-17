@@ -46,7 +46,7 @@ fun getAllTestCases () =
       fun addTests (0, tests) = tests
         | addTests (n, tests) = addTests (n - 1, ("test" ^ Int.toString n)::tests)
   in
-      addTests (49, tests)
+      addTests (50, tests)
   end
 
 fun parseAllTests () =
