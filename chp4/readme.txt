@@ -32,7 +32,7 @@ Explanation For Precedence Directives:
 
 This was inserted because Tiger can have expressions for things like 3D arrays. For example, in the case of "array of array of array", this should refer to the type array of (array of array). If %left was issued, it would reduce first, and instead be recognized as (array of array) of array, which doesn't make sense.
 
-%nonassoc VAR TYPE IF THEN DO FUNCTION TO LET IN ASSIGN WHILE FOR
+%nonassoc VAR IF THEN DO FUNCTION TO LET IN ASSIGN WHILE FOR
 
 The parser should never have to determine associativity for these expressions because they should not be able to appear consecutively.
 

@@ -60,7 +60,7 @@ OF NIL
 %value STRING ("")
 
 %right    OF
-%nonassoc VAR TYPE IF THEN DO FUNCTION TO LET IN ASSIGN WHILE FOR
+%nonassoc VAR IF THEN DO FUNCTION TO LET IN ASSIGN WHILE FOR
 %right    ELSE
 %left     OR
 %left     AND
