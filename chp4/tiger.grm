@@ -60,8 +60,10 @@ OF NIL
 %value STRING ("")
 
 %right    OF
-%nonassoc VAR IF THEN DO FUNCTION TO LET IN ASSIGN WHILE FOR
-%right    ELSE
+%nonassoc DO
+%nonassoc THEN
+%nonassoc ELSE
+%nonassoc ASSIGN
 %left     OR
 %left     AND
 %nonassoc EQ NEQ LT LE GT GE
