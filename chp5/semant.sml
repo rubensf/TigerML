@@ -7,7 +7,7 @@ end
 signature SEMANT =
 sig
 	type venv = Env.enventry Symbol.table
-	type tenv = ty Symbol.table
+	type tenv = Types.ty Symbol.table
 
 	type expty = {exp: Translate.exp, ty: Types.ty}
 

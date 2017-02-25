@@ -11,6 +11,7 @@ table.sig
 table.sml
 tiger.lex
 tiger.grm
+types.sml
 $/smlnj-lib.cm
 $/ml-yacc-lib.cm
 $/basis.cm
