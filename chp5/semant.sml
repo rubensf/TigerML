@@ -25,6 +25,12 @@ struct
 	structure P = PrintAbsyn
 	structure S = Symbol
 	structure T = Types
+
+	type exp = A.exp
+	type var = A.var
+	type dec = A.dec
+	type ty = A.ty
+
 	val error = ErrorMsg.error
 
 	fun checkInt({exp, ty}, pos) =
@@ -35,14 +41,16 @@ struct
 	    case ty of T.UNIT => ()
 	      			  | _ => error pos "Unit required"
 
-	fun transExp(venv, tenv) = 
+	fun transExp(venv, tenv, exp) = 
 		let 
 			fun trexp (A.VarExp) = 
 			  | trexp (A.NilExp var) =
 			  | trexp (A.IntExp i) =
 			  | trexp (A.StringExp (str,pos)) =
 			  | trexp (A.CallExp{func,args,pos}) =
-			  | trexp (A.OpExp{left,oper,right,pos})) =
+			  | trexp (A.OpExp{left,oper=A.PlusOp,right,pos})) =
+						(checkInt(trexp left, pos); checkInt(trexp right, pos);
+						 {exp=(),ty=Types.INT})
 			  | trexp (A.RecordExp{fields,typ,pos}) = 
 			  | trexp (A.SeqExp exps) = 
 			  | trexp (A.AssignExp{var,exp,pos}) =
