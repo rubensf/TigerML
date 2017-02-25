@@ -55,9 +55,15 @@ struct
         | trexp (A.BreakExp pos) =
         | trexp (A.LetExp {decs,body,pos}) =
         | trexp (A.ArrayExp{typ,size,init,pos}) =
-      and trvar (A.SimpleVar(id,pos)) = 
-              | trvar (A.FieldVar(var,id,pos)) =
-              | trvar (A.SubscriptVar(var, exp,pos)) =
+      and trvar (A.SimpleVar(id,pos)) = (case Symbol.look(venv,id) of
+            SOME(E.VarEntry(ty)) => {exp=(),ty=actual_ty ty}
+                          | NONE => (error pos ("undefined variable: " ^ Symbol.name id);
+                                     {exp=Translate.nilExp(), ty=T.INT}))
+        | trvar (A.FieldVar(var,id,pos)) = (case (trvar var) of
+            {exp, ty=record as T.RECORD (fields, _)} => {exp=Translate.nilExp(), ty=record}
+            | _ => (err pos "no such var"; {exp=Translate.nilExp(), ty=T.UNIT}))
+        | trvar (A.SubscriptVar(var, exp,pos)) = 
+
       in
           trexp
       end
