@@ -32,6 +32,10 @@ struct
       case ty of T.INT => ()
                | _     => error pos "Integer required"
 
+  fun checkString({exp, ty}, pos) =
+      case ty of T.INT => ()
+               | _     => error pos "Integer required"
+
   fun checkUnit({exp, ty}, pos) =
       case ty of T.UNIT => ()
                | _ => error pos "Unit required"
@@ -43,9 +47,14 @@ struct
         | trexp (A.IntExp i) =
         | trexp (A.StringExp (str,pos)) =
         | trexp (A.CallExp{func,args,pos}) =
-        | trexp (A.OpExp{left,oper=A.PlusOp,right,pos})) =
-            (checkInt(trexp left, pos); checkInt(trexp right, pos);
-             {exp=(),ty=Types.INT})
+        | trexp (A.OpExp{left,oper,right,pos})) =
+          case oper of
+            (A.PlusOp | A.MinusOp | A.TimesOp | A.DivideOp |
+             A.LtOp | A.LeOp | A.GtOp | A.GeOp) =>
+              (checkInt(trexp left, pos); checkInt(trexp right, pos);
+               {exp=Translate.exp,ty=Types.INT})
+          | (A.EqOp | A.NeqOp) => (* Put String check here *)
+
         | trexp (A.RecordExp{fields,typ,pos}) = 
         | trexp (A.SeqExp exps) = 
         | trexp (A.AssignExp{var,exp,pos}) =
