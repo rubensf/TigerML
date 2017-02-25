@@ -26,11 +26,6 @@ struct
 	structure S = Symbol
 	structure T = Types
 
-	type exp = A.exp
-	type var = A.var
-	type dec = A.dec
-	type ty = A.ty
-
 	val error = ErrorMsg.error
 
 	fun checkInt({exp, ty}, pos) =
