@@ -11,6 +11,7 @@ sig
 
 	type expty = {exp: Translate.exp, ty: Types.ty}
 
+	val transProg : Absyn.exp -> unit
 	val transVar : venv * tenv * Absyn.var -> expty
 	val transExp : venv * tenv * Absyn.exp -> expty
 	val transDec : venv * tenv * Absyn.dec -> {venv: venv, tenv: tenv}
@@ -19,5 +20,10 @@ end
 
 structure Semant = 
 struct
+	structure A = Absyn
+	structure E = Env
+	structure P = PrintAbsyn
+	structure S = Symbol
+	structure T = Types
 
 end
