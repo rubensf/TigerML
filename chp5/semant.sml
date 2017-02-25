@@ -34,7 +34,7 @@ struct
 
   fun checkString({exp, ty}, pos) =
       case ty of T.INT => ()
-               | _     => error pos "Integer required"
+               | _     => error pos "String required"
 
   fun checkUnit({exp, ty}, pos) =
       case ty of T.UNIT => ()
