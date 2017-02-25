@@ -17,8 +17,3 @@ structure Main =
 struct
 	(* Body *)
 end
-
-structure Semant = 
-struct
-	(* Body *)
-end
