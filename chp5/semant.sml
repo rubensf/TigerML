@@ -1,3 +1,9 @@
+(* Dummy Translate*)
+structure Translate =
+struct
+	type exp = unit
+end
+
 signature SEMANT =
 sig
 	type venv = Env.enventry Symbol.table

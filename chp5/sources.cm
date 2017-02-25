@@ -3,9 +3,10 @@ Group is
 absyn.sml
 errormsg.sml
 env.sml
-symbol.sml
 parsetest.sml
 prabsyn.sml
+semant.sml
+symbol.sml
 table.sig
 table.sml
 tiger.lex
