@@ -23,6 +23,7 @@ struct
   structure A = Absyn
   structure E = Env
   structure P = PrintAbsyn
+  structure R = Translate
   structure S = Symbol
   structure T = Types
 
@@ -30,15 +31,15 @@ struct
 
   fun checkInt({exp, ty}, pos) =
       case ty of T.INT => ()
-               | _     => error pos "Integer required"
+                   | _ => error pos "Integer required"
 
   fun checkString({exp, ty}, pos) =
-      case ty of T.INT => ()
-               | _     => error pos "Integer required"
+      case ty of T.String => ()
+                      | _ => error pos "String required"
 
   fun checkUnit({exp, ty}, pos) =
       case ty of T.UNIT => ()
-               | _ => error pos "Unit required"
+                    | _ => error pos "Unit required"
 
   fun transExp(venv, tenv, exp) = 
     let 
@@ -52,7 +53,7 @@ struct
             (A.PlusOp | A.MinusOp | A.TimesOp | A.DivideOp |
              A.LtOp | A.LeOp | A.GtOp | A.GeOp) =>
               (checkInt(trexp left, pos); checkInt(trexp right, pos);
-               {exp=Translate.exp,ty=Types.INT})
+               {exp=R.exp,ty=T.INT})
           | (A.EqOp | A.NeqOp) => (* Put String check here *)
 
         | trexp (A.RecordExp{fields,typ,pos}) = 
@@ -67,11 +68,13 @@ struct
       and trvar (A.SimpleVar(id,pos)) = (case Symbol.look(venv,id) of
             SOME(E.VarEntry(ty)) => {exp=(),ty=actual_ty ty}
                           | NONE => (error pos ("undefined variable: " ^ Symbol.name id);
-                                     {exp=Translate.nilExp(), ty=T.INT}))
+                                     {exp=R.nilExp(), ty=T.INT}))
         | trvar (A.FieldVar(var,id,pos)) = (case (trvar var) of
-            {exp, ty=record as T.RECORD (fields, _)} => {exp=Translate.nilExp(), ty=record}
-            | _ => (err pos "no such var"; {exp=Translate.nilExp(), ty=T.UNIT}))
-        | trvar (A.SubscriptVar(var, exp,pos)) = 
+            {exp, ty=record as T.RECORD (fields, _)} => {exp=R.nilExp(), ty=record}
+            | _ => (err pos "no such var"; {exp=R.nilExp(), ty=T.UNIT}))
+        | trvar (A.SubscriptVar(var, exp, pos)) = 
+            (checkInt(trexp exp, pos);
+             {exp=R.nilExp(), ty=T.UNIT})
 
       in
           trexp
