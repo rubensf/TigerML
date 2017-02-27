@@ -18,7 +18,7 @@ sig
   val transTy   :        tenv * Absyn.ty  -> Types.ty
 end
 
-structure Semant = 
+structure Semant =
 struct
   structure A = Absyn
   structure E = Env
@@ -41,9 +41,9 @@ struct
       case ty of T.UNIT => ()
                     | _ => error pos "Unit required"
 
-  fun transExp(venv, tenv, exp) = 
-    let 
-      fun trexp (A.VarExp) = 
+  fun transExp(venv, tenv, exp) =
+    let
+      fun trexp (A.VarExp) =
         | trexp (A.NilExp var) =
         | trexp (A.IntExp i) =
         | trexp (A.StringExp (str,pos)) =
@@ -56,8 +56,8 @@ struct
                {exp=R.exp,ty=T.INT})
           | (A.EqOp | A.NeqOp) => (* Put String check here *)
 
-        | trexp (A.RecordExp{fields,typ,pos}) = 
-        | trexp (A.SeqExp exps) = 
+        | trexp (A.RecordExp{fields,typ,pos}) =
+        | trexp (A.SeqExp exps) =
         | trexp (A.AssignExp{var,exp,pos}) =
         | trexp (A.IfExp{test,then',else',pos}) =
         | trexp (A.WhileExp{test,body,pos}) =
@@ -72,7 +72,7 @@ struct
         | trvar (A.FieldVar(var,id,pos)) = (case (trvar var) of
             {exp, ty=record as T.RECORD (fields, _)} => {exp=R.nilExp(), ty=record}
             | _ => (err pos "no such var"; {exp=R.nilExp(), ty=T.UNIT}))
-        | trvar (A.SubscriptVar(var, exp, pos)) = 
+        | trvar (A.SubscriptVar(var, exp, pos)) =
             (checkInt(trexp exp, pos);
              {exp=R.nilExp(), ty=T.UNIT})
 
@@ -80,7 +80,7 @@ struct
           trexp
       end
 
-    and transDec (venv, tenv) = 
+    and transDec (venv, tenv) =
     and transDecs (venv, tenv, decs) =
 
     fun transProg(absyn) = (transExp(E.base_venv, E.base_tenv) absyn; ())
