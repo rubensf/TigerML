@@ -67,8 +67,9 @@ struct
           | (A.EqOp | A.NeqOp) => (* Strings, Ints, Arrays, Records *)
         | trexp (A.RecordExp{fields, typ, pos}) =
         | trexp (A.SeqExp exps) =
+            {exp=R.nil(), ty=T.UNIT}
         | trexp (A.AssignExp{var, exp, pos}) =
-        | trexp (A.IfExp{test, then', else', pos}) =
+        | trexp (A.IfExp {test, then', else', pos}) =
             (case else' of 
               SOME else' =>
                 checkInt(trexp(test), pos);
@@ -76,6 +77,9 @@ struct
                 checkUnit(trexp(else'), pos);
                 {exp = T.nil(), ty = T.UNIT}
               | NONE =>
+                checkInt(trexp(test), pos);
+                checkUnit(trexp(then'), pos);
+                {exp = T.nil(), ty = T.UNIT}
             )
         | trexp (A.WhileExp{test, body, pos}) =
         | trexp (A.ForExp{var, escape, lo, hi, body, pos}) =
