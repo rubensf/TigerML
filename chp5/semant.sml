@@ -2,6 +2,7 @@
 structure Translate =
 struct
   type exp = unit
+  fun nil() = ()
 end
 
 signature SEMANT =
@@ -43,12 +44,17 @@ struct
 
   fun transExp(venv, tenv, exp) =
     let
-      fun trexp (A.VarExp) =
-        | trexp (A.NilExp var) =
+      fun trexp (A.VarExp var) =
+            trvar var
+        | trexp (A.NilExp) =
+            {exp=R.nil(), ty=T.NIL}
         | trexp (A.IntExp i) =
+            {exp=R.nil(), ty=T.INT}
         | trexp (A.StringExp (str,pos)) =
-        | trexp (A.CallExp{func,args,pos}) =
-        | trexp (A.OpExp{left,oper,right,pos})) =
+            {exp=R.nil(), ty=T.STRING}
+        | trexp (A.CallExp {func, args, pos}) =
+
+        | trexp (A.OpExp {left, oper, right, pos})) =
           case oper of
             (A.PlusOp | A.MinusOp | A.TimesOp | A.DivideOp |
              A.LtOp | A.LeOp | A.GtOp | A.GeOp) =>
@@ -56,25 +62,33 @@ struct
                {exp=R.exp,ty=T.INT})
           | (A.EqOp | A.NeqOp) => (* Put String check here *)
 
-        | trexp (A.RecordExp{fields,typ,pos}) =
+        | trexp (A.RecordExp {fields, typ, pos}) =
         | trexp (A.SeqExp exps) =
         | trexp (A.AssignExp{var,exp,pos}) =
-        | trexp (A.IfExp{test,then',else',pos}) =
+        | trexp (A.IfExp {test, then', else', pos}) =
+            (case else' of 
+              SOME else' =>
+                checkInt(trexp(test), pos);
+                checkUnit(trexp(then'), pos);
+                checkUnit(trexp(else'), pos);
+                {exp = T.nil(), ty = T.UNIT}
+              | NONE =>
+            )
         | trexp (A.WhileExp{test,body,pos}) =
         | trexp (A.ForExp{var,escape,lo,hi,body,pos}) =
         | trexp (A.BreakExp pos) =
         | trexp (A.LetExp {decs,body,pos}) =
         | trexp (A.ArrayExp{typ,size,init,pos}) =
       and trvar (A.SimpleVar(id,pos)) = (case Symbol.look(venv,id) of
-            SOME(E.VarEntry(ty)) => {exp=(),ty=actual_ty ty}
+            SOME(E.VarEntry(ty)) => {exp=R.nil(),ty=actual_ty ty}
                           | NONE => (error pos ("undefined variable: " ^ Symbol.name id);
-                                     {exp=R.nilExp(), ty=T.INT}))
+                                     {exp=R.nil(), ty=T.INT}))
         | trvar (A.FieldVar(var,id,pos)) = (case (trvar var) of
-            {exp, ty=record as T.RECORD (fields, _)} => {exp=R.nilExp(), ty=record}
-            | _ => (err pos "no such var"; {exp=R.nilExp(), ty=T.UNIT}))
+            {exp, ty=record as T.RECORD (fields, _)} => {exp=R.nil(), ty=record}
+            | _ => (err pos "no such var"; {exp=R.nil(), ty=T.UNIT}))
         | trvar (A.SubscriptVar(var, exp, pos)) =
             (checkInt(trexp exp, pos);
-             {exp=R.nilExp(), ty=T.UNIT})
+             {exp=R.nil(), ty=T.UNIT})
 
       in
           trexp
