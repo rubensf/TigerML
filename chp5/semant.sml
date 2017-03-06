@@ -69,7 +69,7 @@ struct
         | trexp (A.SeqExp exps) =
         | trexp (A.AssignExp{var, exp, pos}) =
         | trexp (A.IfExp{test, then', else', pos}) =
-            (case else' of 
+            (case else' of
               SOME else' =>
                 checkInt(trexp(test), pos);
                 checkUnit(trexp(then'), pos);
@@ -88,24 +88,32 @@ struct
     and transVar(venv, tenv, var) =
       let
         fun trvar (A.SimpleVar (id, pos)) =
-            case Symbol.look (venv, id) of
-              SOME (E.VarEntry evrty) => {exp=R.exp, ty=#ty evrty}
-            | SOME (E.FunEntry _)     => (error pos (Symbol.name id ^ " is function, not a variable.");
-                                          {exp=R.nil(), ty=T.NIL})
-            | _                       => (error pos ("Undefined variable: " ^ Symbol.name id);
-                                          {exp=R.nil(), ty=T.NIL})
-          | trvar (A.FieldVar(var, id, pos)) =
-            case (trvar var) of
-              {exp, ty=record as T.RECORD (fields, _)} => {exp=R.nil(), ty=record}
-            | _ => (err pos "no such var"; {exp=R.nil(), ty=T.UNIT})
+              (case Symbol.look (venv, id) of
+                 SOME (E.VarEntry evrty) => {exp=R.exp, ty=(#ty evrty)}
+               | SOME (E.FunEntry _)     => (error pos (Symbol.name id ^ " is function, not a variable.");
+                                             {exp=R.nilExp(), ty=T.NIL})
+               | _                       => (error pos ("Undefined variable: " ^ Symbol.name id);
+                                             {exp=R.nilExp(), ty=T.NIL}))
+          | trvar (A.FieldVar (var, id, pos)) =
+              (case (trvar var) of
+                 {exp, ty=T.RECORD (fieldlist, uniqv)} =>
+                   (case List.find (fn (s, ty) => s = id) fieldlist of
+                      SOME (s, ty) => {exp=R.nilExp(), ty=record}
+                    | _            => (err pos ("Field \"" ^ Symbol.name id ^ "\" does not belong to record.");
+                                       {exp=R.nil(), ty=T.UNIT}))
+               | _                                  => (err pos ("Var " ^ Symbol.name id ^ " is not a record.");
+                                                        {exp=R.nilExp(), ty=T.UNIT}))
           | trvar (A.SubscriptVar(var, exp, pos)) =
-            (checkInt(trexp exp, pos);
-             {exp=R.nil(), ty=T.UNIT})
+              (checkInt(trexp exp, pos);
+               case (trvar var) of
+                 {exp, ty=T.ARRAY (ty, uniqv)} => {exp=R.nilExp(), ty=ty}
+               | _                             => (err pos ("Var " ^ Symbol.name id ^ " is not an array.");
+                                                   {exp=R.nilExp(), ty=T.UNIT}))
       in
         trvar var
       end
 
-    and transDec (venv, tenv) = 
+    and transDec (venv, tenv) =
     and transDecs (venv, tenv, decs) =
 
     fun transProg(absyn) = (transExp(E.base_venv, E.base_tenv) absyn; ())
