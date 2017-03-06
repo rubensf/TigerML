@@ -36,7 +36,6 @@ struct
       | _ => error pos "Integer required."
 
   fun checkString({exp, ty}, pos) =
-
       case ty of
         T.String => ()
       | _ => error pos "String required."
@@ -67,8 +66,9 @@ struct
           | (A.EqOp | A.NeqOp) => (* Strings, Ints, Arrays, Records *)
         | trexp (A.RecordExp{fields, typ, pos}) =
         | trexp (A.SeqExp exps) =
+            {exp=R.nil(), ty=T.UNIT}
         | trexp (A.AssignExp{var, exp, pos}) =
-        | trexp (A.IfExp{test, then', else', pos}) =
+        | trexp (A.IfExp {test, then', else', pos}) =
             (case else' of
               SOME else' =>
                 checkInt(trexp(test), pos);
@@ -76,11 +76,18 @@ struct
                 checkUnit(trexp(else'), pos);
                 {exp = T.nil(), ty = T.UNIT}
               | NONE =>
+                checkInt(trexp(test), pos);
+                checkUnit(trexp(then'), pos);
+                {exp = T.nil(), ty = T.UNIT}
             )
         | trexp (A.WhileExp{test, body, pos}) =
         | trexp (A.ForExp{var, escape, lo, hi, body, pos}) =
         | trexp (A.BreakExp pos) = {exp=R.exp, ty = T.UNIT}
         | trexp (A.LetExp {decs, body, pos}) =
+            let val {venv=venv',tenv=tenv'} =
+              transDecs(venv,tenv,decs)
+            in transExp(venv',tenv') body
+            end
         | trexp (A.ArrayExp{typ, size, init, pos}) =
       in
           trexp exp
@@ -113,7 +120,32 @@ struct
         trvar var
       end
 
-    and transDec (venv, tenv) =
+    and transDec (venv, tenv, dec) =
+      let
+        fun trdec (A.VarDec{name,escape,typ=NONE,init,pos}) =
+          let val {exp,ty} = transExp(venv,tenv,init)
+          in {tenv=tenv,
+              venv=S.enter(venv,name,E.VarEntry{ty=ty})}
+          end
+          | trdec (A.TypeDec[{name,ty}]) =
+              {venv=venv,
+               tenv=S.enter(tenv,name,transTy(tenv,ty))}
+          | trdec (A.FunctionDec[{name,params,body,pos,result=SOME(rt,pos)}]) =
+              let
+                val SOME(result_ty) = S.look(tenv,rt)
+                fun transparam{name,typ,pos} = case S.look(tenv,typ) of SOME t => {name=name,ty=t}
+                val params' = map transparam params
+                val venv' = S.enter(venv,name,E.FunEntry{formals=map #ty params',result=result_ty})
+                fun enterparam ({name,ty},venv) = S.enter(venv,name,E.VarEntry{access=(),ty=ty})
+                val venv'' = fold enterparam params' venv'
+              in
+                transExp(venv'',tenv) body;
+                {venv=venv',tenv=tenv}
+              end
+      in
+        trdec dec
+      end
+
     and transDecs (venv, tenv, decs) =
 
     fun transProg(absyn) = (transExp(E.base_venv, E.base_tenv) absyn; ())
