@@ -34,7 +34,7 @@ struct
                    | _ => error pos "Integer required"
 
   fun checkString({exp, ty}, pos) =
-      case ty of T.String => ()
+      case ty of T.STRING => ()
                       | _ => error pos "String required"
 
   fun checkUnit({exp, ty}, pos) =
@@ -44,9 +44,9 @@ struct
   fun transExp(venv, tenv, exp) =
     let
       fun trexp (A.VarExp) =
-        | trexp (A.NilExp var) =
-        | trexp (A.IntExp i) =
-        | trexp (A.StringExp (str,pos)) =
+        | trexp (A.NilExp var) = {exp=R.exp, ty=T.NIL}
+        | trexp (A.IntExp i) = {exp=R.exp, ty=T.INT}
+        | trexp (A.StringExp (str,pos)) = {exp=R.exp, ty= T.STRING}
         | trexp (A.CallExp{func,args,pos}) =
         | trexp (A.OpExp{left,oper,right,pos})) =
           case oper of
@@ -54,7 +54,7 @@ struct
              A.LtOp | A.LeOp | A.GtOp | A.GeOp) =>
               (checkInt(trexp left, pos); checkInt(trexp right, pos);
                {exp=R.exp,ty=T.INT})
-          | (A.EqOp | A.NeqOp) => (* Put String check here *)
+          | (A.EqOp | A.NeqOp) => (* Strings, Ints, Arrays, Records *)
 
         | trexp (A.RecordExp{fields,typ,pos}) =
         | trexp (A.SeqExp exps) =
@@ -62,7 +62,7 @@ struct
         | trexp (A.IfExp{test,then',else',pos}) =
         | trexp (A.WhileExp{test,body,pos}) =
         | trexp (A.ForExp{var,escape,lo,hi,body,pos}) =
-        | trexp (A.BreakExp pos) =
+        | trexp (A.BreakExp pos) = {exp=R.exp, ty=T.UNIT}
         | trexp (A.LetExp {decs,body,pos}) = 
           let val {venv=venv', tenv=tenv'} = transDecs(venv,tenv,decs)
           in transExp(venv',tenv') body
@@ -83,7 +83,7 @@ struct
           trexp
       end
 
-    and transDec (venv, tenv) =
+    and transDec (venv, tenv) = 
     and transDecs (venv, tenv, decs) =
 
     fun transProg(absyn) = (transExp(E.base_venv, E.base_tenv) absyn; ())
