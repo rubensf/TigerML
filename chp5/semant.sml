@@ -122,6 +122,18 @@ struct
           | trdec (A.TypeDec[{name,ty}]) = 
               {venv=venv,
                tenv=S.enter(tenv,name,transTy(tenv,ty))}
+          | trdec (A.FunctionDec[{name,params,body,pos,result=SOME(rt,pos)}]) = 
+              let 
+                val SOME(result_ty) = S.look(tenv,rt)
+                fun transparam{name,typ,pos} = case S.look(tenv,typ) of SOME t => {name=name,ty=t}
+                val params' = map transparam params
+                val venv' = S.enter(venv,name,E.FunEntry{formals=map #ty params',result=result_ty})
+                fun enterparam ({name,ty},venv) = S.enter(venv,name,E.VarEntry{access=(),ty=ty})
+                val venv'' = fold enterparam params' venv'
+              in
+                transExp(venv'',tenv) body;
+                {venv=venv',tenv=tenv}
+              end
       in
         trdec dec
       end
