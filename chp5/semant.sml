@@ -83,7 +83,7 @@ struct
               {exp=R.nil(), ty=T.UNIT}
             end
         | trexp (A.IfExp {test, then', else', pos}) =
-            (case else' of 
+            (case else' of
               SOME else' =>
                 let
                   val test' = trexp test
@@ -133,24 +133,57 @@ struct
     and transVar(venv, tenv, var) =
       let
         fun trvar (A.SimpleVar (id, pos)) =
-            case Symbol.look (venv, id) of
-              SOME (E.VarEntry evrty) => {exp=R.exp, ty=#ty evrty}
-            | SOME (E.FunEntry _)     => (error pos (Symbol.name id ^ " is function, not a variable.");
-                                          {exp=R.nil(), ty=T.NIL})
-            | _                       => (error pos ("Undefined variable: " ^ Symbol.name id);
-                                          {exp=R.nil(), ty=T.NIL})
-          | trvar (A.FieldVar(var, id, pos)) =
-            case (trvar var) of
-              {exp, ty=record as T.RECORD (fields, _)} => {exp=R.nil(), ty=record}
-            | _ => (err pos "no such var"; {exp=R.nil(), ty=T.UNIT})
+              (case Symbol.look (venv, id) of
+                 SOME (E.VarEntry evrty) => {exp=R.exp, ty=(#ty evrty)}
+               | SOME (E.FunEntry _)     => (error pos (Symbol.name id ^ " is function, not a variable.");
+                                             {exp=R.nilExp(), ty=T.NIL})
+               | _                       => (error pos ("Undefined variable: " ^ Symbol.name id);
+                                             {exp=R.nilExp(), ty=T.NIL}))
+          | trvar (A.FieldVar (var, id, pos)) =
+              (case (trvar var) of
+                 {exp, ty=T.RECORD (fieldlist, uniqv)} =>
+                   (case List.find (fn (s, ty) => s = id) fieldlist of
+                      SOME (s, ty) => {exp=R.nilExp(), ty=record}
+                    | _            => (err pos ("Field \"" ^ Symbol.name id ^ "\" does not belong to record.");
+                                       {exp=R.nil(), ty=T.UNIT}))
+               | _                                  => (err pos ("Var " ^ Symbol.name id ^ " is not a record.");
+                                                        {exp=R.nilExp(), ty=T.UNIT}))
           | trvar (A.SubscriptVar(var, exp, pos)) =
-            (checkInt(trexp exp, pos);
-             {exp=R.nil(), ty=T.UNIT})
+              (checkInt(trexp exp, pos);
+               case (trvar var) of
+                 {exp, ty=T.ARRAY (ty, uniqv)} => {exp=R.nilExp(), ty=ty}
+               | _                             => (err pos ("Var " ^ Symbol.name id ^ " is not an array.");
+                                                   {exp=R.nilExp(), ty=T.UNIT}))
       in
         trvar var
       end
 
-    and transDec (venv, tenv) = 
+    and transDec (venv, tenv, dec) =
+      let
+        fun trdec (A.VarDec{name,escape,typ=NONE,init,pos}) =
+          let val {exp,ty} = transExp(venv,tenv,init)
+          in {tenv=tenv,
+              venv=S.enter(venv,name,E.VarEntry{ty=ty})}
+          end
+          | trdec (A.TypeDec[{name,ty}]) =
+              {venv=venv,
+               tenv=S.enter(tenv,name,transTy(tenv,ty))}
+          | trdec (A.FunctionDec[{name,params,body,pos,result=SOME(rt,pos)}]) =
+              let
+                val SOME(result_ty) = S.look(tenv,rt)
+                fun transparam{name,typ,pos} = case S.look(tenv,typ) of SOME t => {name=name,ty=t}
+                val params' = map transparam params
+                val venv' = S.enter(venv,name,E.FunEntry{formals=map #ty params',result=result_ty})
+                fun enterparam ({name,ty},venv) = S.enter(venv,name,E.VarEntry{access=(),ty=ty})
+                val venv'' = fold enterparam params' venv'
+              in
+                transExp(venv'',tenv) body;
+                {venv=venv',tenv=tenv}
+              end
+      in
+        trdec dec
+      end
+
     and transDecs (venv, tenv, decs) =
 
     fun transProg(absyn) = (transExp(E.base_venv, E.base_tenv) absyn; ())
