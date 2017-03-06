@@ -36,7 +36,6 @@ struct
       | _ => error pos "Integer required."
 
   fun checkString({exp, ty}, pos) =
-
       case ty of
         T.String => ()
       | _ => error pos "String required."
@@ -84,7 +83,11 @@ struct
         | trexp (A.WhileExp{test, body, pos}) =
         | trexp (A.ForExp{var, escape, lo, hi, body, pos}) =
         | trexp (A.BreakExp pos) = {exp=R.exp, ty = T.UNIT}
-        | trexp (A.LetExp {decs, body, pos}) =
+        | trexp (A.LetExp {decs, body, pos}) = 
+            let val {venv=venv',tenv=tenv'} =
+              transDecs(venv,tenv,decs)
+            in transExp(venv',tenv') body
+            end
         | trexp (A.ArrayExp{typ, size, init, pos}) =
       in
           trexp exp
