@@ -36,6 +36,7 @@ struct
       | _ => error pos "Integer required."
 
   fun checkString({exp, ty}, pos) =
+
       case ty of
         T.String => ()
       | _ => error pos "String required."
@@ -62,9 +63,8 @@ struct
             (A.PlusOp | A.MinusOp | A.TimesOp | A.DivideOp |
              A.LtOp | A.LeOp | A.GtOp | A.GeOp) =>
               (checkInt(trexp left, pos); checkInt(trexp right, pos);
-               {exp=R.exp, ty=T.INT})
-          | (A.EqOp | A.NeqOp) => (* Put String check here *)
-
+               {exp=R.exp,ty=T.INT})
+          | (A.EqOp | A.NeqOp) => (* Strings, Ints, Arrays, Records *)
         | trexp (A.RecordExp{fields, typ, pos}) =
         | trexp (A.SeqExp exps) =
         | trexp (A.AssignExp{var, exp, pos}) =
@@ -79,7 +79,7 @@ struct
             )
         | trexp (A.WhileExp{test, body, pos}) =
         | trexp (A.ForExp{var, escape, lo, hi, body, pos}) =
-        | trexp (A.BreakExp pos) =
+        | trexp (A.BreakExp pos) = {exp=R.exp, ty = T.UNIT}
         | trexp (A.LetExp {decs, body, pos}) =
         | trexp (A.ArrayExp{typ, size, init, pos}) =
       in
@@ -105,7 +105,7 @@ struct
         trvar var
       end
 
-    and transDec (venv, tenv) =
+    and transDec (venv, tenv) = 
     and transDecs (venv, tenv, decs) =
 
     fun transProg(absyn) = (transExp(E.base_venv, E.base_tenv) absyn; ())
