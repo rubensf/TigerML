@@ -30,6 +30,8 @@ struct
 
   val error = ErrorMsg.error
 
+  val nest = ref 0
+
   fun checkInt({exp, ty}, pos) =
       case ty of
         T.INT => ()
@@ -44,6 +46,11 @@ struct
       case ty of
         T.UNIT => ()
       | _ => error pos "Unit required."
+
+  fun checkTypeMatch({exp1, ty1}, {exp2, ty2}, pos) =
+      case ty1 = ty2 of
+        true => true
+      | false => (error pos "Type mismatch."; false)
 
   fun transExp(venv, tenv, exp) =
     let
@@ -68,27 +75,58 @@ struct
         | trexp (A.SeqExp exps) =
             {exp=R.nil(), ty=T.UNIT}
         | trexp (A.AssignExp{var, exp, pos}) =
+            let
+              val var' = transVar(venv, tenv, var)
+              val exp' = trexp exp
+            in
+              checkTypeMatch(var', exp', pos);
+              {exp=R.nil(), ty=T.UNIT}
+            end
         | trexp (A.IfExp {test, then', else', pos}) =
             (case else' of 
               SOME else' =>
-                checkInt(trexp(test), pos);
-                checkUnit(trexp(then'), pos);
-                checkUnit(trexp(else'), pos);
-                {exp = T.nil(), ty = T.UNIT}
+                let
+                  val test' = trexp test
+                  val then'' = trexp then'
+                  val else'' = trexp else'
+                  val {exp=if_exp, ty=if_ty} = then''
+                in
+                  checkInt(test');
+                  checkTypeMatch(then'', else'', pos);
+                  {exp = T.nil(), ty = if_ty}
+                end
               | NONE =>
                 checkInt(trexp(test), pos);
                 checkUnit(trexp(then'), pos);
                 {exp = T.nil(), ty = T.UNIT}
             )
         | trexp (A.WhileExp{test, body, pos}) =
+            checkInt(trexp(test), pos);
+            checkUnit(trexp(body), pos);
+            {exp = T.nil(), ty = T.UNIT}
         | trexp (A.ForExp{var, escape, lo, hi, body, pos}) =
-        | trexp (A.BreakExp pos) = {exp=R.exp, ty = T.UNIT}
+            let
+              val venv' = S.enter(venv, var, E.VarEntry{ty=T.INT})
+            in
+              checkInt(trexp(lo), pos);
+              checkInt(trexp(hi), pos);
+              checkUnit(transExp(venv', tenv, body), pos);
+              {exp = T.nil(), ty = T.UNIT}
+            end
+        | trexp (A.BreakExp pos) = 
+            case nest > 0 of
+              true => {exp = T.nil(), ty = T.UNIT}
+            | false=> 
+                (error pos "Break must be inside a loop";
+                {exp = T.nil(), ty = T.UNIT})
         | trexp (A.LetExp {decs, body, pos}) = 
-            let val {venv=venv',tenv=tenv'} =
-              transDecs(venv,tenv,decs)
-            in transExp(venv',tenv') body
+            let 
+              val {venv=venv',tenv=tenv'} = transDecs(venv,tenv,decs)
+            in 
+              transExp(venv',tenv') body
             end
         | trexp (A.ArrayExp{typ, size, init, pos}) =
+            {exp = T.nil(), ty = T.UNIT}
       in
           trexp exp
       end
