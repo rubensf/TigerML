@@ -108,7 +108,20 @@ struct
         trvar var
       end
 
-    and transDec (venv, tenv) = 
+    and transDec (venv, tenv, dec) = 
+      let
+        fun trdec (A.VarDec{name,escape,typ=NONE,init,pos}) =
+          let val {exp,ty} = transExp(venv,tenv,init)
+          in {tenv=tenv,
+              venv=S.enter(venv,name,E.VarEntry{ty=ty})}
+          end
+          | trdec (A.TypeDec[{name,ty}]) = 
+              {venv=venv,
+               tenv=S.enter(tenv,name,transTy(tenv,ty))}
+      in
+        trdec dec
+      end
+
     and transDecs (venv, tenv, decs) =
 
     fun transProg(absyn) = (transExp(E.base_venv, E.base_tenv) absyn; ())
