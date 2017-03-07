@@ -2,7 +2,7 @@
 structure Translate =
 struct
   type exp = unit
-  fun nil() = ()
+  fun nilExp() = ()
 end
 
 signature SEMANT =
@@ -42,21 +42,21 @@ struct
   fun checkInt({exp, ty}, pos) =
       case ty of
         T.INT => ()
-      | _ => error pos "Integer required."
+      | _     => error pos "Integer required."
 
   fun checkString({exp, ty}, pos) =
       case ty of
         T.String => ()
-      | _ => error pos "String required."
+      | _        => error pos "String required."
 
   fun checkUnit({exp, ty}, pos) =
       case ty of
         T.UNIT => ()
-      | _ => error pos "Unit required."
+      | _      => error pos "Unit required."
 
   fun checkTypeMatch({exp1, ty1}, {exp2, ty2}, pos) =
       case ty1 = ty2 of
-        true => true
+        true  => true
       | false => (error pos "Type mismatch."; false)
 
   fun transExp(venv, tenv, exp) =
@@ -64,31 +64,31 @@ struct
       fun trexp (A.VarExp var) =
             transVar(venv, tenv, var)
         | trexp (A.NilExp) =
-            {exp=R.nil(), ty=T.NIL}
+            {exp=R.nilExp(), ty=T.NIL}
         | trexp (A.IntExp i) =
-            {exp=R.nil(), ty=T.INT}
+            {exp=R.nilExp(), ty=T.INT}
         | trexp (A.StringExp (str,pos)) =
-            {exp=R.nil(), ty=T.STRING}
+            {exp=R.nilExp(), ty=T.STRING}
         | trexp (A.CallExp {func, args, pos}) =
             case S.look(venv, func) of
               SOME (E.FunEntry {formals, result}) =>
                 case length formals = length args of
                   true =>
-                    {exp=R.nil(), ty=result}
+                    {exp=R.nilExp(), ty=result}
                 | false=>
                     (
                       error pos ("Arguments mismatch");
-                      {exp=R.nil(), ty=T.UNIT}
+                      {exp=R.nilExp(), ty=T.UNIT}
                     )
               | SOME (E.VarEntry {ty}) =>
                 (
                   error pos ("Function expected, but variable found");
-                  {exp=R.nil(), ty=T.UNIT}
+                  {exp=R.nilExp(), ty=T.UNIT}
                 )
               | NONE =>
                 (
                   error pos ("Function " ^ S.name func ^ " does not exist.");
-                  {exp=R.nil(), ty=T.UNIT}
+                  {exp=R.nilExp(), ty=T.UNIT}
                 )
         | trexp (A.OpExp {left, oper, right, pos})) =
           case oper of
@@ -99,14 +99,14 @@ struct
           | (A.EqOp | A.NeqOp) => (* Strings, Ints, Arrays, Records *)
         | trexp (A.RecordExp{fields, typ, pos}) =
         | trexp (A.SeqExp exps) =
-            {exp=R.nil(), ty=T.UNIT}
+            {exp=R.nilExp(), ty=T.UNIT}
         | trexp (A.AssignExp{var, exp, pos}) =
             let
               val var' = transVar(venv, tenv, var)
               val exp' = trexp exp
             in
               checkTypeMatch(var', exp', pos);
-              {exp=R.nil(), ty=T.UNIT}
+              {exp=R.nilExp(), ty=T.UNIT}
             end
         | trexp (A.IfExp {test, then', else', pos}) =
             (case else' of
@@ -171,10 +171,10 @@ struct
                    (case List.find (fn (s, ty) => s = id) fieldlist of
                       SOME (s, ty) => {exp=R.nilExp(), ty=record}
                     | _            => (err pos ("Field \"" ^ Symbol.name id ^ "\" does not belong to record.");
-                                       {exp=R.nil(), ty=T.UNIT}))
+                                       {exp=R.nilExp(), ty=T.UNIT}))
                | _                                  => (err pos ("Var " ^ Symbol.name id ^ " is not a record.");
                                                         {exp=R.nilExp(), ty=T.UNIT}))
-          | trvar (A.SubscriptVar(var, exp, pos)) =
+          | trvar (A.SubscriptVar (var, exp, pos)) =
               (checkInt(trexp exp, pos);
                case (trvar var) of
                  {exp, ty=T.ARRAY (ty, uniqv)} => {exp=R.nilExp(), ty=ty}
@@ -185,32 +185,50 @@ struct
       end
     and transDec (venv, tenv, dec) =
       let
-        fun trdec (A.VarDec{name,escape,typ=NONE,init,pos}) =
-          let val {exp,ty} = transExp(venv,tenv,init)
-          in {tenv=tenv,
-              venv=S.enter(venv,name,E.VarEntry{ty=ty})}
-          end
-          | trdec (A.TypeDec[{name,ty}]) =
-              {venv=venv,
-               tenv=S.enter(tenv,name,transTy(tenv,ty))}
-          | trdec (A.FunctionDec[{name,params,body,pos,result=SOME(rt,pos)}]) =
+        fun trdec (A.VarDec {name, escape, typ, init, pos}) =
               let
-                val SOME(result_ty) = S.look(tenv,rt)
-                fun transparam{name,typ,pos} = case S.look(tenv,typ) of SOME t => {name=name,ty=t}
-                val params' = map transparam params
-                val venv' = S.enter(venv,name,E.FunEntry{formals=map #ty params',result=result_ty})
-                fun enterparam ({name,ty},venv) = S.enter(venv,name,E.VarEntry{access=(),ty=ty})
-                val venv'' = fold enterparam params' venv'
+                val {exp, ty} = transExp(venv, tenv, init)
               in
-                transExp(venv'',tenv) body;
-                {venv=venv',tenv=tenv}
+                case typ of
+                  SOME (S.symbol t) => checkTypeMatch({exp1=exp, ty1=ty}, {exp2=R.nilExp(), ty2=t}, pos)
+                | _                 => ();
+                {tenv=tenv, venv=S.enter(venv, name, E.VarEntry{ty=ty})}
+              end
+          | trdec (A.TypeDec [{name, ty}]) =
+                {venv=venv, tenv=S.enter(tenv,name,transTy(tenv,ty))}
+          | trdec (A.FunctionDec [{name, params, body, pos, result}]) =
+              let
+                val result_ty = case S.look(tenv, rt) of
+                                  NONE     => (error pos ("Type " ^ Symbol.name typ ^ " does not exist."); NONE)
+                                | SOME (t) => t
+
+                fun transparam{name, typ, pos} =
+                  case S.look(tenv, typ) of
+                    SOME t => {name=name, ty=t}
+                  | _      => (error pos ("Type " ^ Symbol.name typ ^ " does not exist.");
+                               {name="", ty=T.NIL})
+                val params' = map transparam params
+
+                val venv' = S.enter(venv, name, E.FunEntry{formals=map #ty params', result=result_ty})
+
+                fun enterparam ({name, ty}, venv) = S.enter(venv, name, E.VarEntry{access=(),ty=ty})
+                val venv'' = fold enterparam params' venv'
+
+                val retTypeFound = (#ty (transExp(venv'',tenv) body))
+              in
+                case result_ty of
+                  SOME (T.ty t) => if retTypeFound = t
+                                     then ()
+                                     else error pos ("Return of " ^ Symbol.name name ^ " doesn't conform.")
+                | NONE          => if retTypeFound = T.UNIT
+                                     then ()
+                                     else error pos ("Return of " ^ Symbol.name name ^ " doesn't conform.");
+                {venv=venv', tenv=tenv}
               end
       in
         trdec dec
       end
-
     and transDecs (venv, tenv, decs) =
-
-    fun transProg(absyn) = (transExp(E.base_venv, E.base_tenv) absyn; ())
+    and transProg(absyn) = (transExp(E.base_venv, E.base_tenv) absyn; ())
 
 end
