@@ -101,7 +101,7 @@ struct
                 | (T.ARRAY _, T.ARRAY _) => {exp=R.exp, ty=T.INT}
                 | (T.RECORD _, T.RECORD _) => {exp=R.exp, ty=T.INT}
               end
-        | trexp (A.RecordExp{fields, typ, pos}) =
+        | trexp (A.RecordExp{fields, typ, pos}) = NIL
         | trexp (A.SeqExp exps) =
             {exp=R.nilExp(), ty=T.UNIT}
         | trexp (A.AssignExp{var, exp, pos}) =
@@ -131,9 +131,9 @@ struct
                 {exp = T.nil(), ty = T.UNIT}
             )
         | trexp (A.WhileExp{test, body, pos}) =
-            checkInt(trexp(test), pos);
+            (checkInt(trexp(test), pos);
             checkUnit(trexp(body), pos);
-            {exp = T.nil(), ty = T.UNIT}
+            {exp = T.nil(), ty = T.UNIT})
         | trexp (A.ForExp{var, escape, lo, hi, body, pos}) =
             let
               val venv' = S.enter(venv, var, E.VarEntry{ty=T.INT})
@@ -144,10 +144,12 @@ struct
               {exp = T.nil(), ty = T.UNIT}
             end
         | trexp (A.BreakExp pos) =
+            let in
             case nest > 0 of
               true  => {exp = T.nil(), ty = T.UNIT}
             | false => (error pos "Break must be inside a loop";
                         {exp = T.nil(), ty = T.UNIT})
+            end
         | trexp (A.LetExp {decs, body, pos}) =
             let
               val {venv=venv',tenv=tenv'} = transDecs(venv,tenv,decs)
@@ -161,13 +163,13 @@ struct
               checkInt(trexp(size), pos);
               case array_ty of
                 T.ARRAY (ty, u) =>
-                  checkTypeMatch({exp=(),ty=ty},trexp init);
-                  {exp = T.nil(), ty = array_ty}
+                  (checkTypeMatch({exp=(),ty=ty},trexp init);
+                  {exp = T.nil(), ty = array_ty})
                 | _ => (error pos "Array expected"; {exp = T.nil(), ty = T.UNIT})
             end
-      in
-          trexp exp
-      end
+    in
+        trexp exp
+    end
     and transVar(venv, tenv, var) =
       let
         fun trvar (A.SimpleVar (id, pos)) =
@@ -240,7 +242,7 @@ struct
       in
         trdec dec
       end
-    and transDecs (venv, tenv, decs) =
+    and transDecs (venv, tenv, decs) = NIL
     and transProg(absyn) = (transExp(E.base_venv, E.base_tenv) absyn; ())
 
 end
