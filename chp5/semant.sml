@@ -70,6 +70,7 @@ struct
         | trexp (A.StringExp (str,pos)) =
             {exp=R.nil(), ty=T.STRING}
         | trexp (A.CallExp {func, args, pos}) =
+            let in
             case S.look(venv, func) of
               SOME (E.FunEntry {formals, result}) =>
                 case length formals = length args of
@@ -90,7 +91,13 @@ struct
                   error pos ("Function " ^ S.name func ^ " does not exist.");
                   {exp=R.nil(), ty=T.UNIT}
                 )
-        | trexp (A.OpExp {left, oper, right, pos})) =
+              | _ => 
+                (
+                  error pos ("Function "^ S.name func ^ " could not be translated");
+                  {exp=R.exp, ty=T.UNIT}
+                )
+            end
+        | trexp (A.OpExp {left, oper, right, pos}) =
           case oper of
             (A.PlusOp | A.MinusOp | A.TimesOp | A.DivideOp |
              A.LtOp | A.LeOp | A.GtOp | A.GeOp) =>
