@@ -19,7 +19,7 @@ sig
   val transTy   :        tenv * Absyn.ty  -> Types.ty
 end
 
-structure Semant =
+structure Semant :> SEMANT =
 struct
   structure A = Absyn
   structure E = Env
@@ -28,8 +28,12 @@ struct
   structure S = Symbol
   structure T = Types
 
-  val error = ErrorMsg.error
+  type venv = E.enventry S.table
+  type tenv = T.ty S.table
 
+  type expty = {exp: R.exp, ty: T.ty}
+
+  val error = ErrorMsg.error
   val nest = ref 0
 
   fun actual_ty (pos, tenv, ty) =
@@ -54,8 +58,8 @@ struct
         T.UNIT => ()
       | _      => error pos "Unit required."
 
-  fun checkTypeMatch({exp1, ty1}, {exp2, ty2}, pos) =
-      case ty1 = ty2 of
+  fun checkTypeMatch(v1: expty, v2: expty, pos) =
+      case (#ty v1) = (#ty v2) of
         true  => true
       | false => (error pos "Type mismatch."; false)
 
@@ -72,10 +76,10 @@ struct
         | trexp (A.CallExp {func, args, pos}) =
             (case S.look(venv, func) of
                SOME (E.FunEntry {formals, result}) =>
-                 case length formals = length args of
+                 case (length formals) = (length args) of
                    true  => {exp=R.nilExp(), ty=result}
                  | false =>
-                     (error pos ("Arguments mismatch");{exp=R.nilExp(), ty=T.UNIT})
+                     (error pos ("Arguments mismatch"); {exp=R.nilExp(), ty=T.UNIT})
                | SOME (E.VarEntry {ty}) => (error pos ("Function expected, but variable found");
                        {exp=R.nilExp(), ty=T.UNIT})
                | NONE => (error pos ("Function " ^ S.name func ^ " does not exist.");
@@ -104,26 +108,33 @@ struct
                   end)
         | trexp (A.RecordExp{fields, typ, pos}) =
             (let
-               val typty = (#ty (trexp typ))
+               val typty =
+                 case S.look (tenv, typ) of
+                   SOME t => t
+                 | NONE   => (error pos "Type doesn't exist."; T.UNIT)
              in
-               if typty = T.RECORD andalso length (#1 typty) = length fields
-                 then ((foldl (fn (x, ans) =>
-                                let
-                                  val defname = (#1 x)
-                                  val deftype = (#2 x)
-                                  val lhead = (hd ans)
-                                  val givenname = (#1 lhead)
-                                  val giventype = (#2 lhead)
-                                  val givenpos = (#3 lhead)
-                                in
-                                  if defname = givenname andalso deftype = giventype
-                                    then ()
-                                    else error givenpos "Incorrect record type.";
-                                  tl ans
-                                end)
-                         fields (#1 typty));
-                       {exp=R.nilExp(), ty=T.UNIT})
-                 else (error pos (S.name typ ^ " isn't an appropriate type.");
+               case typty of
+                 T.RECORD (stlist, uniqv) =>
+                   if (length stlist) = (length fields)
+                     then ((foldl (fn (x, ans) =>
+                                     let
+                                       val defname = (#1 x)
+                                       val deftype = (#2 x)
+                                       val lhead = (hd ans)
+                                       val givenname = (#1 lhead)
+                                       val giventype = (#2 lhead)
+                                       val givenpos = (#3 lhead)
+                                     in
+                                       if defname = givenname andalso deftype = giventype
+                                         then ()
+                                         else error givenpos "Incorrect record type.";
+                                       tl ans
+                                     end)
+                              fields stlist);
+                            {exp=R.nilExp(), ty=T.UNIT})
+                      else (error pos "Record fields length differ.";
+                            {exp=R.nilExp(), ty=T.UNIT})
+               | _ => (error pos (S.name typ ^ " isn't an appropriate type.");
                        {exp=R.nilExp(), ty=T.UNIT})
              end)
         | trexp (A.SeqExp exps) =
@@ -150,14 +161,14 @@ struct
                   val else'' = trexp else'
                   val {exp=if_exp, ty=if_ty} = then''
                 in
-                  checkInt(test');
+                  checkInt(test', pos);
                   checkTypeMatch(then'', else'', pos);
                   {exp = R.nilExp(), ty = if_ty}
                 end
               | NONE =>
-                checkInt(trexp(test), pos);
-                checkUnit(trexp(then'), pos);
-                {exp = R.nilExp(), ty = T.UNIT}
+                (checkInt(trexp(test), pos);
+                 checkUnit(trexp(then'), pos);
+                 {exp = R.nilExp(), ty = T.UNIT})
             )
         | trexp (A.WhileExp{test, body, pos}) =
             (checkInt(trexp(test), pos);
@@ -174,16 +185,16 @@ struct
             end
         | trexp (A.BreakExp pos) =
             let in
-            case nest > 0 of
+            case !nest > 0 of
               true  => {exp = R.nilExp(), ty = T.UNIT}
             | false => (error pos "Break must be inside a loop";
                         {exp = R.nilExp(), ty = T.UNIT})
             end
         | trexp (A.LetExp {decs, body, pos}) =
             let
-              val {venv=venv',tenv=tenv'} = transDecs(venv,tenv,decs)
+              val {venv=venv', tenv=tenv'} = transDecs(venv,tenv,decs)
             in
-              transExp(venv',tenv') body
+              transExp(venv', tenv', body)
             end
         | trexp (A.ArrayExp{typ, size, init, pos}) =
             let
@@ -212,7 +223,7 @@ struct
               (case (trvar var) of
                  {exp, ty=T.RECORD (fieldlist, uniqv)} =>
                    (case List.find (fn (s, ty) => s = id) fieldlist of
-                      SOME (s, ty) => {exp=R.nilExp(), ty=T.RECORD}
+                      SOME (s, ty) => {exp=R.nilExp(), ty=ty}
                     | _            => (error pos ("Field \"" ^ Symbol.name id ^ "\" does not belong to record.");
                                        {exp=R.nilExp(), ty=T.UNIT}))
                | _                                  => (error pos ("Var " ^ Symbol.name id ^ " is not a record.");
@@ -230,15 +241,15 @@ struct
       let
         fun trdec (A.VarDec {name, escape, typ, init, pos}) =
               let
-                val {exp, ty} = transExp(venv, tenv, init)
+                val trValue = transExp(venv, tenv, init)
               in
-                case typ of
-                  SOME t => checkTypeMatch({exp1=exp, ty1=ty}, {exp2=R.nilExp(), ty2=t}, pos)
-                {tenv=tenv, venv=S.enter(venv, name, E.VarEntry{ty=ty})}
+                (case typ of
+                   SOME t => checkTypeMatch(trValue, {exp=R.nilExp(), ty=t}, pos);
+                 {tenv=tenv, venv=S.enter(venv, name, E.VarEntry{ty=ty})})
               end
-          | trdec (A.TypeDec [{name, ty}]) =
+          | trdec (A.TypeDec [{name, ty, pos}]) =
                 {venv=venv, tenv=S.enter(tenv,name,transTy(tenv,ty))}
-          | trdec (A.FunctionDec [{name, params, body, pos, result=(rt, pos2)}]) =
+          | trdec (A.FunctionDec (A.fundeclist [{name, params, body, pos, result=(rt, pos2)}])) =
               let
                 val result_ty = case S.look(tenv, rt) of
                                   NONE     => (error pos2 ("Type " ^ Symbol.name rt ^ " does not exist."); NONE)
@@ -272,6 +283,11 @@ struct
       end
     and transDecs (venv, tenv, decs) = nil
     and transProg (absyn) = (transExp(E.base_venv, E.base_tenv) absyn; ())
-    and transTy (tenv, typ) = nil
+
+    and transTy (tenv, typ) =
+      case typ of
+        A.NameTy (s, pos) => case S.look(tenv, typ) of
+                               SOME (ty) => ty
+                             | NONE      => (error pos "Non existent type.")
 
 end
