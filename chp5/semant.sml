@@ -77,7 +77,18 @@ struct
              A.LtOp | A.LeOp | A.GtOp | A.GeOp) =>
               (checkInt(trexp left, pos); checkInt(trexp right, pos);
                {exp=R.exp,ty=T.INT})
-          | (A.EqOp | A.NeqOp) => (* Strings, Ints, Arrays, Records *)
+          | (A.EqOp | A.NeqOp) => 
+              let 
+                real_left = actual_ty(pos, tenv, #ty (trexp left))
+                real_right = actual_ty(pos, tenv, #ty (trexp right))
+              in
+                case (real_left, real_right) of 
+                  (T.INT, T.INT) => {exp=R.exp, ty=T.INT}
+                | (T.STRING, T.STRING) => {exp=R.exp, ty=T.INT}
+                | (T.NIL, T.RECORD _) => {exp=R.exp, ty=T.INT}
+                | (T.RECORD _, T.NIL) => {exp=R.exp, ty=T.INT}
+                | (T.ARRAY _, T.ARRAY _) => {exp=R.exp, ty=T.INT}
+                | (T.RECORD _, T.RECORD _) => {exp=R.exp, ty=T.INT}
         | trexp (A.RecordExp{fields, typ, pos}) =
         | trexp (A.SeqExp exps) =
             {exp=R.nil(), ty=T.UNIT}
