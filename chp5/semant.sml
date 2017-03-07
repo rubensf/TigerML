@@ -107,7 +107,7 @@ struct
               val exps' = map trexp (map #1 exps)
               val list_ty = List.last exps'
             in
-              {exp=R.nilExp(), ty=#ty list_ty}
+              {exp=R.nilExp(), ty=(#ty list_ty)}
             end 
         | trexp (A.AssignExp{var, exp, pos}) =
             let
