@@ -32,6 +32,13 @@ struct
 
   val nest = ref 0
 
+  fun actual_ty (pos, tenv, ty) = 
+    case S.look(tenv, ty) of 
+        SOME (T.NAME (symb, ref(SOME(other_ty)))) => actual_ty(tenv, other_ty)
+      | SOME (T.NAME (symb, ref(NONE))) => (error pos ("Type " ^ (S.name ty) ^ "is ref to NONE"))
+      | NONE => (error pos ("Type " ^ (S.name ty) ^ "is not in the table"))
+      | SOME (SOME real_ty) => real_ty
+
   fun checkInt({exp, ty}, pos) =
       case ty of
         T.INT => ()
