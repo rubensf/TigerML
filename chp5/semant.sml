@@ -73,24 +73,21 @@ struct
             case S.look(venv, func) of
               SOME (E.FunEntry {formals, result}) =>
                 case length formals = length args of
-                  true =>
-                    {exp=R.nil(), ty=result}
+                  true => {exp=R.nil(), ty=result}
                 | false=>
-                    (
-                      error pos ("Arguments mismatch");
-                      {exp=R.nil(), ty=T.UNIT}
-                    )
+                    (error pos ("Arguments mismatch");{exp=R.nil(), ty=T.UNIT})
               | SOME (E.VarEntry {ty}) => 
-                (
-                  error pos ("Function expected, but variable found");
-                  {exp=R.nil(), ty=T.UNIT}
-                )
+                  (error pos ("Function expected, but variable found");{exp=R.nil(), ty=T.UNIT})
               | NONE =>
-                (
-                  error pos ("Function " ^ S.name func ^ " does not exist.");
-                  {exp=R.nil(), ty=T.UNIT}
-                )
+                  (error pos ("Function " ^ S.name func ^ " does not exist.");{exp=R.nil(), ty=T.UNIT})
         | trexp (A.OpExp {left, oper, right, pos})) =
+            let
+              val left' = trexp left
+              val right' = trexp right
+              
+            in
+              body
+            end
           case oper of
             (A.PlusOp | A.MinusOp | A.TimesOp | A.DivideOp |
              A.LtOp | A.LeOp | A.GtOp | A.GeOp) =>
@@ -152,8 +149,16 @@ struct
               transExp(venv',tenv') body
             end
         | trexp (A.ArrayExp{typ, size, init, pos}) =
-            (checkInt(trexp(size), pos);
-            {exp = T.nil(), ty = T.UNIT})
+            let
+              val array_ty = actual_ty(pos, tenv, typ)
+            in
+              checkInt(trexp(size), pos);
+              case array_ty of
+                T.ARRAY (ty, u) =>
+                  checkTypeMatch({exp=(),ty=ty},trexp init);
+                  {exp = T.nil(), ty = array_ty}
+                | _ => (error pos "Array expected"; {exp = T.nil(), ty = T.UNIT})
+            end
       in
           trexp exp
       end
