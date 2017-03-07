@@ -70,33 +70,37 @@ struct
         | trexp (A.StringExp (str,pos)) =
             {exp=R.nilExp(), ty=T.STRING}
         | trexp (A.CallExp {func, args, pos}) =
-            case S.look(venv, func) of
-              SOME (E.FunEntry {formals, result}) =>
-                case length formals = length args of
-                  true =>
-                    {exp=R.nilExp(), ty=result}
-                | false=>
-                    (
-                      error pos ("Arguments mismatch");
-                      {exp=R.nilExp(), ty=T.UNIT}
-                    )
-              | SOME (E.VarEntry {ty}) =>
-                (
-                  error pos ("Function expected, but variable found");
-                  {exp=R.nilExp(), ty=T.UNIT}
-                )
-              | NONE =>
-                (
-                  error pos ("Function " ^ S.name func ^ " does not exist.");
-                  {exp=R.nilExp(), ty=T.UNIT}
-                )
-        | trexp (A.OpExp {left, oper, right, pos})) =
+            (case S.look(venv, func) of
+               SOME (E.FunEntry {formals, result}) =>
+                 case length formals = length args of
+                   true  => {exp=R.nilExp(), ty=result}
+                 | false =>
+                     (error pos ("Arguments mismatch");{exp=R.nilExp(), ty=T.UNIT})
+               | SOME (E.VarEntry {ty}) => (error pos ("Function expected, but variable found");
+                       {exp=R.nilExp(), ty=T.UNIT})
+               | NONE => (error pos ("Function " ^ S.name func ^ " does not exist.");
+                          {exp=R.nilExp(), ty=T.UNIT})
+               | _ => (error pos ("Function "^ S.name func ^ " could not be translated");
+                       {exp=R.exp, ty=T.UNIT}))
+        | trexp (A.OpExp {left, oper, right, pos}) =
           case oper of
             (A.PlusOp | A.MinusOp | A.TimesOp | A.DivideOp |
              A.LtOp | A.LeOp | A.GtOp | A.GeOp) =>
               (checkInt(trexp left, pos); checkInt(trexp right, pos);
                {exp=R.exp,ty=T.INT})
-          | (A.EqOp | A.NeqOp) => (* Strings, Ints, Arrays, Records *)
+          | (A.EqOp | A.NeqOp) =>
+              let
+                val real_left = actual_ty(pos, tenv, #ty (trexp left))
+                val real_right = actual_ty(pos, tenv, #ty (trexp right))
+              in
+                case (real_left, real_right) of
+                  (T.INT, T.INT) => {exp=R.exp, ty=T.INT}
+                | (T.STRING, T.STRING) => {exp=R.exp, ty=T.INT}
+                | (T.NIL, T.RECORD _) => {exp=R.exp, ty=T.INT}
+                | (T.RECORD _, T.NIL) => {exp=R.exp, ty=T.INT}
+                | (T.ARRAY _, T.ARRAY _) => {exp=R.exp, ty=T.INT}
+                | (T.RECORD _, T.RECORD _) => {exp=R.exp, ty=T.INT}
+              end
         | trexp (A.RecordExp{fields, typ, pos}) =
         | trexp (A.SeqExp exps) =
             {exp=R.nilExp(), ty=T.UNIT}
@@ -151,8 +155,16 @@ struct
               transExp(venv',tenv') body
             end
         | trexp (A.ArrayExp{typ, size, init, pos}) =
-            (checkInt(trexp(size), pos);
-            {exp = T.nil(), ty = T.UNIT})
+            let
+              val array_ty = actual_ty(pos, tenv, typ)
+            in
+              checkInt(trexp(size), pos);
+              case array_ty of
+                T.ARRAY (ty, u) =>
+                  checkTypeMatch({exp=(),ty=ty},trexp init);
+                  {exp = T.nil(), ty = array_ty}
+                | _ => (error pos "Array expected"; {exp = T.nil(), ty = T.UNIT})
+            end
       in
           trexp exp
       end
