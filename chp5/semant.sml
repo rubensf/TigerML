@@ -2,7 +2,7 @@
 structure Translate =
 struct
   type exp = unit
-  fun nil() = ()
+  fun nilExp() = ()
 end
 
 signature SEMANT =
@@ -64,28 +64,21 @@ struct
       fun trexp (A.VarExp var) =
             transVar(venv, tenv, var)
         | trexp (A.NilExp) =
-            {exp=R.nil(), ty=T.NIL}
+            {exp=R.nilExp(), ty=T.NIL}
         | trexp (A.IntExp i) =
-            {exp=R.nil(), ty=T.INT}
+            {exp=R.nilExp(), ty=T.INT}
         | trexp (A.StringExp (str,pos)) =
-            {exp=R.nil(), ty=T.STRING}
+            {exp=R.nilExp(), ty=T.STRING}
         | trexp (A.CallExp {func, args, pos}) =
             let in
             case S.look(venv, func) of
               SOME (E.FunEntry {formals, result}) =>
                 case length formals = length args of
-                  true =>
-                    {exp=R.nil(), ty=result}
+                  true => {exp=R.nilExp(), ty=result}
                 | false=>
-                    (
-                      error pos ("Arguments mismatch");
-                      {exp=R.nil(), ty=T.UNIT}
-                    )
-              | SOME (E.VarEntry {ty}) =>
-                (
-                  error pos ("Function expected, but variable found");
-                  {exp=R.nil(), ty=T.UNIT}
-                )
+                    (error pos ("Arguments mismatch");{exp=R.nilExp(), ty=T.UNIT})
+              | SOME (E.VarEntry {ty}) => 
+                  (error pos ("Function expected, but variable found");{exp=R.nilExp(), ty=T.UNIT})
               | NONE =>
                 (
                   error pos ("Function " ^ S.name func ^ " does not exist.");
@@ -118,14 +111,14 @@ struct
               end
         | trexp (A.RecordExp{fields, typ, pos}) =
         | trexp (A.SeqExp exps) =
-            {exp=R.nil(), ty=T.UNIT}
+            {exp=R.nilExp(), ty=T.UNIT}
         | trexp (A.AssignExp{var, exp, pos}) =
             let
               val var' = transVar(venv, tenv, var)
               val exp' = trexp exp
             in
               checkTypeMatch(var', exp', pos);
-              {exp=R.nil(), ty=T.UNIT}
+              {exp=R.nilExp(), ty=T.UNIT}
             end
         | trexp (A.IfExp {test, then', else', pos}) =
             (case else' of
@@ -170,8 +163,16 @@ struct
               transExp(venv',tenv') body
             end
         | trexp (A.ArrayExp{typ, size, init, pos}) =
-            (checkInt(trexp(size), pos);
-            {exp = T.nil(), ty = T.UNIT})
+            let
+              val array_ty = actual_ty(pos, tenv, typ)
+            in
+              checkInt(trexp(size), pos);
+              case array_ty of
+                T.ARRAY (ty, u) =>
+                  checkTypeMatch({exp=(),ty=ty},trexp init);
+                  {exp = T.nil(), ty = array_ty}
+                | _ => (error pos "Array expected"; {exp = T.nil(), ty = T.UNIT})
+            end
       in
           trexp exp
       end
@@ -190,7 +191,7 @@ struct
                    (case List.find (fn (s, ty) => s = id) fieldlist of
                       SOME (s, ty) => {exp=R.nilExp(), ty=record}
                     | _            => (err pos ("Field \"" ^ Symbol.name id ^ "\" does not belong to record.");
-                                       {exp=R.nil(), ty=T.UNIT}))
+                                       {exp=R.nilExp(), ty=T.UNIT}))
                | _                                  => (err pos ("Var " ^ Symbol.name id ^ " is not a record.");
                                                         {exp=R.nilExp(), ty=T.UNIT}))
           | trvar (A.SubscriptVar(var, exp, pos)) =
