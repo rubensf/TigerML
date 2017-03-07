@@ -103,7 +103,12 @@ struct
               end
         | trexp (A.RecordExp{fields, typ, pos}) =
         | trexp (A.SeqExp exps) =
-            {exp=R.nilExp(), ty=T.UNIT}
+            let
+              val exps' = map trexp (map #1 exps)
+              val list_ty = List.last exps'
+            in
+              {exp=R.nilExp(), ty=#ty list_ty}
+            end 
         | trexp (A.AssignExp{var, exp, pos}) =
             let
               val var' = transVar(venv, tenv, var)
