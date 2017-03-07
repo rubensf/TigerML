@@ -32,8 +32,8 @@ struct
 
   val nest = ref 0
 
-  fun actual_ty (pos, tenv, ty) = 
-    case S.look(tenv, ty) of 
+  fun actual_ty (pos, tenv, ty) =
+    case S.look(tenv, ty) of
         SOME (T.NAME (symb, ref(SOME(other_ty)))) => actual_ty(tenv, other_ty)
       | SOME (T.NAME (symb, ref(NONE))) => (error pos ("Type " ^ (S.name ty) ^ "is ref to NONE"))
       | NONE => (error pos ("Type " ^ (S.name ty) ^ "is not in the table"))
@@ -80,7 +80,7 @@ struct
                       error pos ("Arguments mismatch");
                       {exp=R.nil(), ty=T.UNIT}
                     )
-              | SOME (E.VarEntry {ty}) => 
+              | SOME (E.VarEntry {ty}) =>
                 (
                   error pos ("Function expected, but variable found");
                   {exp=R.nil(), ty=T.UNIT}
@@ -139,16 +139,15 @@ struct
               checkUnit(transExp(venv', tenv, body), pos);
               {exp = T.nil(), ty = T.UNIT}
             end
-        | trexp (A.BreakExp pos) = 
+        | trexp (A.BreakExp pos) =
             case nest > 0 of
-              true => {exp = T.nil(), ty = T.UNIT}
-            | false=> 
-                (error pos "Break must be inside a loop";
-                {exp = T.nil(), ty = T.UNIT})
-        | trexp (A.LetExp {decs, body, pos}) = 
-            let 
+              true  => {exp = T.nil(), ty = T.UNIT}
+            | false => (error pos "Break must be inside a loop";
+                        {exp = T.nil(), ty = T.UNIT})
+        | trexp (A.LetExp {decs, body, pos}) =
+            let
               val {venv=venv',tenv=tenv'} = transDecs(venv,tenv,decs)
-            in 
+            in
               transExp(venv',tenv') body
             end
         | trexp (A.ArrayExp{typ, size, init, pos}) =
@@ -184,7 +183,6 @@ struct
       in
         trvar var
       end
-
     and transDec (venv, tenv, dec) =
       let
         fun trdec (A.VarDec{name,escape,typ=NONE,init,pos}) =
