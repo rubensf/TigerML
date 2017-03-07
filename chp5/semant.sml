@@ -32,8 +32,8 @@ struct
 
   val nest = ref 0
 
-  fun actual_ty (pos, tenv, ty) = 
-    case S.look(tenv, ty) of 
+  fun actual_ty (pos, tenv, ty) =
+    case S.look(tenv, ty) of
         SOME (T.NAME (symb, ref(SOME(other_ty)))) => actual_ty(tenv, other_ty)
       | SOME (T.NAME (symb, ref(NONE))) => (error pos ("Type " ^ (S.name ty) ^ "is ref to NONE"))
       | NONE => (error pos ("Type " ^ (S.name ty) ^ "is not in the table"))
@@ -70,7 +70,26 @@ struct
         | trexp (A.StringExp (str,pos)) =
             {exp=R.nil(), ty=T.STRING}
         | trexp (A.CallExp {func, args, pos}) =
-
+            case S.look(venv, func) of
+              SOME (E.FunEntry {formals, result}) =>
+                case length formals = length args of
+                  true =>
+                    {exp=R.nil(), ty=result}
+                | false=>
+                    (
+                      error pos ("Arguments mismatch");
+                      {exp=R.nil(), ty=T.UNIT}
+                    )
+              | SOME (E.VarEntry {ty}) =>
+                (
+                  error pos ("Function expected, but variable found");
+                  {exp=R.nil(), ty=T.UNIT}
+                )
+              | NONE =>
+                (
+                  error pos ("Function " ^ S.name func ^ " does not exist.");
+                  {exp=R.nil(), ty=T.UNIT}
+                )
         | trexp (A.OpExp {left, oper, right, pos})) =
           case oper of
             (A.PlusOp | A.MinusOp | A.TimesOp | A.DivideOp |
@@ -131,20 +150,20 @@ struct
               checkUnit(transExp(venv', tenv, body), pos);
               {exp = T.nil(), ty = T.UNIT}
             end
-        | trexp (A.BreakExp pos) = 
+        | trexp (A.BreakExp pos) =
             case nest > 0 of
-              true => {exp = T.nil(), ty = T.UNIT}
-            | false=> 
-                (error pos "Break must be inside a loop";
-                {exp = T.nil(), ty = T.UNIT})
-        | trexp (A.LetExp {decs, body, pos}) = 
-            let 
+              true  => {exp = T.nil(), ty = T.UNIT}
+            | false => (error pos "Break must be inside a loop";
+                        {exp = T.nil(), ty = T.UNIT})
+        | trexp (A.LetExp {decs, body, pos}) =
+            let
               val {venv=venv',tenv=tenv'} = transDecs(venv,tenv,decs)
-            in 
+            in
               transExp(venv',tenv') body
             end
         | trexp (A.ArrayExp{typ, size, init, pos}) =
-            {exp = T.nil(), ty = T.UNIT}
+            (checkInt(trexp(size), pos);
+            {exp = T.nil(), ty = T.UNIT})
       in
           trexp exp
       end
@@ -175,7 +194,6 @@ struct
       in
         trvar var
       end
-
     and transDec (venv, tenv, dec) =
       let
         fun trdec (A.VarDec{name,escape,typ=NONE,init,pos}) =
