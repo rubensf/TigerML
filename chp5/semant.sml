@@ -43,25 +43,25 @@ struct
                                 | NONE       => T.UNIT)
       | _                   => ty
 
-  fun checkInt({exp, ty}, pos) =
+  fun checkInt({exp, ty}, pos, refstring) =
       case ty of
         T.INT => ()
-      | _     => error pos "Integer required."
+      | _     => error pos (refstring ^ ": Integer required.")
 
-  fun checkString({exp, ty}, pos) =
+  fun checkString({exp, ty}, pos, refstring) =
       case ty of
         T.STRING => ()
-      | _        => error pos "String required."
+      | _        => error pos (refstring ^ ": String required.")
 
-  fun checkUnit({exp, ty}, pos) =
+  fun checkUnit({exp, ty}, pos, refstring) =
       case ty of
         T.UNIT => ()
-      | _      => error pos "Unit required."
+      | _      => error pos (refstring ^ "Unit required.")
 
-  fun checkTypeMatch(v1: expty, v2: expty, pos) =
+  fun checkTypeMatch(v1: expty, v2: expty, pos, refstring) =
       case (#ty v1) = (#ty v2) of
         true  => true
-      | false => (error pos "Type mismatch."; false)
+      | false => (error pos (refstring ^ "Type mismatch."); false)
 
   fun transExp(venv, tenv, exp) =
     let
@@ -85,25 +85,32 @@ struct
                | NONE => (error pos ("Function " ^ S.name func ^ " does not exist.");
                           {exp=R.nilExp(), ty=T.UNIT}))
         | trexp (A.OpExp {left, oper, right, pos}) =
-            (case oper of
-               (A.PlusOp | A.MinusOp | A.TimesOp | A.DivideOp |
-                A.LtOp | A.LeOp | A.GtOp | A.GeOp) =>
-                  (checkInt(trexp left, pos); checkInt(trexp right, pos);
-                   {exp=R.nilExp(),ty=T.INT})
-             | (A.EqOp | A.NeqOp) =>
-                  let
-                    val real_left = actual_ty(pos, tenv, #ty (trexp left))
-                    val real_right = actual_ty(pos, tenv, #ty (trexp right))
-                  in
-                    case (real_left, real_right) of
-                      (T.INT, T.INT)           => {exp=R.nilExp(), ty=T.INT}
-                    | (T.STRING, T.STRING)     => {exp=R.nilExp(), ty=T.INT}
-                    | (T.NIL, T.RECORD _)      => {exp=R.nilExp(), ty=T.INT}
-                    | (T.RECORD _, T.NIL)      => {exp=R.nilExp(), ty=T.INT}
-                    | (T.ARRAY _, T.ARRAY _)   => {exp=R.nilExp(), ty=T.INT}
-                    | (T.RECORD _, T.RECORD _) => {exp=R.nilExp(), ty=T.INT}
-                    | _                        => (error pos "error"; {exp=R.nilExp(), ty=T.INT})
-                  end)
+            (let
+              val real_left = actual_ty(pos, tenv, #ty (trexp left))
+              val real_right = actual_ty(pos, tenv, #ty (trexp right))
+             in
+               case oper of
+                 (A.PlusOp | A.MinusOp | A.TimesOp | A.DivideOp) =>
+                    (case (real_left, real_right) of
+                       (T.INT, T.INT)       => {exp=R.nilExp(), ty=T.INT}
+                     | _                    => (error pos "Can only operate ints.";
+                                                {exp=R.nilExp(), ty=T.INT}))
+               | (A.LtOp | A.LeOp | A.GtOp | A.GeOp) =>
+                    (case (real_left, real_right) of
+                       (T.INT, T.INT)       => {exp=R.nilExp(), ty=T.INT}
+                     | (T.STRING, T.STRING) => {exp=R.nilExp(), ty=T.INT}
+                     | _                    => (error pos "Can only compare ints and strings.";
+                                                {exp=R.nilExp(), ty=T.INT}))
+               | (A.EqOp | A.NeqOp) =>
+                    (if real_left = real_right
+                       then {exp=R.nilExp(), ty=T.INT}
+                       else if real_left = T.NIL andalso real_right <> T.NIL
+                              then {exp=R.nilExp(), ty=T.INT}
+                              else if real_left <> T.NIL andalso real_right = T.NIL
+                                     then {exp=R.nilExp(), ty=T.INT}
+                                     else (error pos "Can only compare same type for equality.";
+                                           {exp=R.nilExp(), ty=T.INT}))
+             end)
         | trexp (A.RecordExp{fields, typ, pos}) =
             (let
                val typty =
@@ -147,7 +154,7 @@ struct
               val var' = transVar(venv, tenv, var)
               val exp' = trexp exp
             in
-              checkTypeMatch(var', exp', pos);
+              checkTypeMatch(var', exp', pos, "Assignment");
               {exp=R.nilExp(), ty=T.UNIT}
             end
         | trexp (A.IfExp {test, then', else', pos}) =
@@ -159,26 +166,26 @@ struct
                   val else'' = trexp else'
                   val {exp=if_exp, ty=if_ty} = then''
                 in
-                  checkInt(test', pos);
-                  checkTypeMatch(then'', else'', pos);
+                  checkInt(test', pos, "If statement");
+                  checkTypeMatch(then'', else'', pos, "If statement");
                   {exp = R.nilExp(), ty = if_ty}
                 end
               | NONE =>
-                (checkInt(trexp(test), pos);
-                 checkUnit(trexp(then'), pos);
+                (checkInt(trexp(test), pos, "If statement");
+                 checkUnit(trexp(then'), pos, "If statement");
                  {exp = R.nilExp(), ty = T.UNIT})
             )
         | trexp (A.WhileExp{test, body, pos}) =
-            (checkInt(trexp(test), pos);
-            checkUnit(trexp(body), pos);
-            {exp = R.nilExp(), ty = T.UNIT})
+            (checkInt(trexp(test), pos, "While loop");
+             checkUnit(trexp(body), pos, "While loop");
+             {exp = R.nilExp(), ty = T.UNIT})
         | trexp (A.ForExp{var, escape, lo, hi, body, pos}) =
             let
               val venv' = S.enter(venv, var, E.VarEntry{ty=T.INT})
             in
-              checkInt(trexp(lo), pos);
-              checkInt(trexp(hi), pos);
-              checkUnit(transExp(venv', tenv, body), pos);
+              checkInt(trexp(lo), pos, "For loop");
+              checkInt(trexp(hi), pos, "For loop");
+              checkUnit(transExp(venv', tenv, body), pos, "For loop");
               {exp = R.nilExp(), ty = T.UNIT}
             end
         | trexp (A.BreakExp pos) =
@@ -190,7 +197,9 @@ struct
             end
         | trexp (A.LetExp {decs, body, pos}) =
             let
-              val {venv=venv', tenv=tenv'} = transDecs(venv,tenv,decs)
+              val {venv=venv', tenv=tenv'} = foldl (fn (x, ans) =>
+                                                      transDec (#venv ans, #tenv ans, x))
+                                               {venv=venv, tenv=tenv} decs
             in
               transExp(venv', tenv', body)
             end
@@ -202,10 +211,10 @@ struct
                              | NONE      => (error pos "This type doesn't exist.";
                                              T.ARRAY (T.UNIT, ref ()))
             in
-              checkInt(trexp(size), pos);
+              checkInt(trexp(size), pos, "Array Expr");
               case array_ty of
                 T.ARRAY (ty, u) =>
-                  (checkTypeMatch({exp=R.nilExp(),ty=ty}, trexp init, pos);
+                  (checkTypeMatch({exp=R.nilExp(),ty=ty}, trexp init, pos, "Array Expr");
                    {exp=R.nilExp(), ty=array_ty})
                 | _ => (error pos "Array expected"; {exp = R.nilExp(), ty = T.UNIT})
             end
@@ -231,7 +240,7 @@ struct
                | _                                  => (error pos ("Var " ^ Symbol.name id ^ " is not a record.");
                                                         {exp=R.nilExp(), ty=T.UNIT}))
           | trvar (A.SubscriptVar (var, exp, pos)) =
-              (checkInt(transExp (venv, tenv, exp), pos);
+              (checkInt(transExp (venv, tenv, exp), pos, "Field of var");
                case (trvar var) of
                  {exp, ty=T.ARRAY (ty, uniqv)} => {exp=R.nilExp(), ty=ty}
                | _                             => (error pos ("Var is not an array.");
@@ -251,7 +260,7 @@ struct
                            | NONE        => NONE
               in
                 (case typ' of
-                   SOME t => (checkTypeMatch(trValue, {exp=R.nilExp(), ty=t}, pos); ())
+                   SOME t => (checkTypeMatch(trValue, {exp=R.nilExp(), ty=t}, pos, "Var Decalration"); ())
                  | NONE   => ();
                  {tenv=tenv, venv=S.enter(venv, name, E.VarEntry {ty=(#ty trValue)})})
               end
@@ -287,13 +296,19 @@ struct
       in
         trdec dec
       end
-    and transDecs (venv, tenv, decs) = {venv=E.base_venv, tenv=E.base_tenv} (*Place holder*)
     and transProg (absyn) = (transExp(E.base_venv, E.base_tenv, absyn); ())
     and transTy (tenv, typ) =
       case typ of
-        A.NameTy (s, pos) => case S.look(tenv, s) of
-                               SOME (ty) => ty
-                             | NONE      => ((error pos "Non existent type."); T.UNIT)
-      (*| A.RecordTy rect   => (let)*)
+        A.NameTy (s, pos) => (case S.look(tenv, s) of
+                                SOME ty => ty
+                              | NONE    => ((error pos "Non existent type."); T.UNIT))
+      | A.RecordTy flist  => T.RECORD (foldl (fn (x, ans) => case S.look(tenv, (#typ x)) of
+                                                              SOME ty => ans @ [((#name x), ty)]
+                                                            | NONE    => (error (#pos x) "Non existent type.";
+                                                                          ans @ [((#name x), T.UNIT)]))
+                                        [] flist, ref ())
+      | A.ArrayTy (s, pos) => (case S.look(tenv, s) of
+                                 SOME ty => T.ARRAY (ty, ref ())
+                               | NONE    => ((error pos "Non existent type."); T.UNIT))
 
 end
