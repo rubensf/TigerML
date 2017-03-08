@@ -7,10 +7,10 @@ end
 
 signature SEMANT =
 sig
-  type venv = Env.enventry Symbol.table
-  type tenv = Types.ty Symbol.table
+  type venv
+  type tenv
 
-  type expty = {exp: Translate.exp, ty: Types.ty}
+  type expty
 
   val transProg : Absyn.exp -> unit
   val transVar  : venv * tenv * Absyn.var -> expty
@@ -38,9 +38,9 @@ struct
 
   fun actual_ty (pos, tenv, ty) =
     case ty of
-        T.NAME (s, tyopref) => case (!tyopref) of
-                                 SOME (ty') => actual_ty(pos, tenv, ty')
-                               | NONE       => T.UNIT
+        T.NAME (s, tyopref) => (case (!tyopref) of
+                                  SOME (ty') => actual_ty(pos, tenv, ty')
+                                | NONE       => T.UNIT)
       | _                   => ty
 
   fun checkInt({exp, ty}, pos) =
@@ -76,16 +76,14 @@ struct
         | trexp (A.CallExp {func, args, pos}) =
             (case S.look(venv, func) of
                SOME (E.FunEntry {formals, result}) =>
-                 case (length formals) = (length args) of
-                   true  => {exp=R.nilExp(), ty=result}
-                 | false =>
-                     (error pos ("Arguments mismatch"); {exp=R.nilExp(), ty=T.UNIT})
+                 (case (length formals) = (length args) of
+                    true  => {exp=R.nilExp(), ty=result}
+                  | false =>
+                      (error pos ("Arguments mismatch"); {exp=R.nilExp(), ty=T.UNIT}))
                | SOME (E.VarEntry {ty}) => (error pos ("Function expected, but variable found");
                        {exp=R.nilExp(), ty=T.UNIT})
                | NONE => (error pos ("Function " ^ S.name func ^ " does not exist.");
-                          {exp=R.nilExp(), ty=T.UNIT})
-               | _ => (error pos ("Function "^ S.name func ^ " could not be translated");
-                       {exp=R.nilExp(), ty=T.UNIT}))
+                          {exp=R.nilExp(), ty=T.UNIT}))
         | trexp (A.OpExp {left, oper, right, pos}) =
             (case oper of
                (A.PlusOp | A.MinusOp | A.TimesOp | A.DivideOp |
@@ -122,7 +120,7 @@ struct
                                        val deftype = (#2 x)
                                        val lhead = (hd ans)
                                        val givenname = (#1 lhead)
-                                       val giventype = (#2 lhead)
+                                       val giventype = (#ty (trexp (#2 lhead)))
                                        val givenpos = (#3 lhead)
                                      in
                                        if defname = givenname andalso deftype = giventype
@@ -198,13 +196,17 @@ struct
             end
         | trexp (A.ArrayExp{typ, size, init, pos}) =
             let
-              val array_ty = actual_ty(pos, tenv, typ)
+              val init_ty = (#ty (trexp init))
+              val array_ty = case S.look(tenv, typ) of
+                               SOME typ' => actual_ty(pos, tenv, typ')
+                             | NONE      => (error pos "This type doesn't exist.";
+                                             T.ARRAY (T.UNIT, ref ()))
             in
               checkInt(trexp(size), pos);
               case array_ty of
                 T.ARRAY (ty, u) =>
-                  (checkTypeMatch({exp=(),ty=ty},trexp init);
-                  {exp = R.nilExp(), ty = array_ty})
+                  (checkTypeMatch({exp=R.nilExp(),ty=ty}, trexp init, pos);
+                   {exp=R.nilExp(), ty=array_ty})
                 | _ => (error pos "Array expected"; {exp = R.nilExp(), ty = T.UNIT})
             end
     in
@@ -242,52 +244,56 @@ struct
         fun trdec (A.VarDec {name, escape, typ, init, pos}) =
               let
                 val trValue = transExp(venv, tenv, init)
+                val typ' = case typ of
+                             SOME (s, p) => (case S.look(tenv, s) of
+                                               SOME t => SOME t
+                                             | NONE   => (error pos "Type doesn't exist."; NONE))
+                           | NONE        => NONE
               in
-                (case typ of
-                   SOME t => checkTypeMatch(trValue, {exp=R.nilExp(), ty=t}, pos);
-                 {tenv=tenv, venv=S.enter(venv, name, E.VarEntry{ty=ty})})
+                (case typ' of
+                   SOME t => (checkTypeMatch(trValue, {exp=R.nilExp(), ty=t}, pos); ())
+                 | NONE   => ();
+                 {tenv=tenv, venv=S.enter(venv, name, E.VarEntry {ty=(#ty trValue)})})
               end
           | trdec (A.TypeDec [{name, ty, pos}]) =
-                {venv=venv, tenv=S.enter(tenv,name,transTy(tenv,ty))}
-          | trdec (A.FunctionDec (A.fundeclist [{name, params, body, pos, result=(rt, pos2)}])) =
+                {venv=venv, tenv=S.enter(tenv, name, transTy(tenv,ty))}
+          | trdec (A.FunctionDec [{name, params, result, body, pos}]) =
               let
-                val result_ty = case S.look(tenv, rt) of
-                                  NONE     => (error pos2 ("Type " ^ Symbol.name rt ^ " does not exist."); NONE)
-                                | SOME (t) => t
+                val result_ty = case result of
+                                  SOME (rt, pos2) => (case S.look(tenv, rt) of
+                                                        SOME t => t
+                                                      | NONE   => (error pos2 ("Type " ^ Symbol.name rt ^ " does not exist."); T.UNIT))
+                                | NONE => T.UNIT
 
-                fun transparam{name, typ, pos} =
+                fun transparam ({name, escape, typ, pos} : A.field) =
                   case S.look(tenv, typ) of
                     SOME t => {name=name, ty=t}
-                  | _      => (error pos ("Type " ^ Symbol.name typ ^ " does not exist.");
-                               {name="", ty=T.NIL})
+                  | NONE   => (error pos ("Type " ^ Symbol.name typ ^ " does not exist.");
+                               {name=S.symbol "", ty=T.NIL})
                 val params' = map transparam params
 
                 val venv' = S.enter(venv, name, E.FunEntry{formals=map #ty params', result=result_ty})
 
-                fun enterparam ({name, ty}, venv) = S.enter(venv, name, E.VarEntry{access=(),ty=ty})
-                val venv'' = foldl enterparam params' venv'
+                fun enterparam ({name, ty}, venv : venv) = S.enter(venv, name, E.VarEntry {ty=ty})
+                val venv'' = foldl enterparam venv' params'
 
-                val retTypeFound = (#ty (transExp(venv'',tenv) body))
+                val retTypeFound = (#ty (transExp(venv'', tenv, body)))
               in
-                case result_ty of
-                  SOME t => if retTypeFound = t
-                                     then ()
-                                     else error pos ("Return of " ^ Symbol.name name ^ " doesn't conform.")
-                | NONE   => if retTypeFound = T.UNIT
-                                     then ()
-                                     else error pos ("Return of " ^ Symbol.name name ^ " doesn't conform.");
+                if retTypeFound = result_ty
+                  then ()
+                  else error pos ("Return of " ^ Symbol.name name ^ " doesn't conform.");
                 {venv=venv', tenv=tenv}
               end
       in
         trdec dec
       end
-    and transDecs (venv, tenv, decs) = nil
-    and transProg (absyn) = (transExp(E.base_venv, E.base_tenv) absyn; ())
-
+    and transDecs (venv, tenv, decs) = {venv=E.base_venv, tenv=E.base_tenv} (*Place holder*)
+    and transProg (absyn) = (transExp(E.base_venv, E.base_tenv, absyn); ())
     and transTy (tenv, typ) =
       case typ of
-        A.NameTy (s, pos) => case S.look(tenv, typ) of
+        A.NameTy (s, pos) => case S.look(tenv, s) of
                                SOME (ty) => ty
-                             | NONE      => (error pos "Non existent type.")
+                             | NONE      => ((error pos "Non existent type."); T.UNIT)
+      (*| A.RecordTy rect   => (let)*)
 
 end

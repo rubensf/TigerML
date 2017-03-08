@@ -9,7 +9,8 @@ sig
   val base_venv : enventry Symbol.table
 end
 
-structure Env :> ENV =
+(* Make it transparent coz too much of a hassle not knowing type. *)
+structure Env : ENV =
 struct
   structure S = Symbol
   structure T = Types
