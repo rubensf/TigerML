@@ -138,19 +138,21 @@ struct
                                        tl ans
                                      end)
                               fields stlist);
-                            {exp=R.nilExp(), ty=T.UNIT})
+                            {exp=R.nilExp(), ty=typty})
                       else (error pos "Record fields length differ.";
                             {exp=R.nilExp(), ty=T.UNIT})
                | _ => (error pos (S.name typ ^ " isn't an appropriate type.");
                        {exp=R.nilExp(), ty=T.UNIT})
              end)
         | trexp (A.SeqExp exps) =
-            let
-              val exps' = map trexp (map #1 exps)
-              val list_ty = List.last exps'
-            in
-              {exp=R.nilExp(), ty=(#ty list_ty)}
-            end
+            if List.null exps
+              then {exp=R.nilExp(), ty=T.UNIT}
+              else let
+                     val exps' = map trexp (map #1 exps)
+                     val list_ty = List.last exps'
+                   in
+                     {exp=R.nilExp(), ty=(#ty list_ty)}
+                   end
         | trexp (A.AssignExp{var, exp, pos}) =
             let
               val var' = transVar(venv, tenv, var)
