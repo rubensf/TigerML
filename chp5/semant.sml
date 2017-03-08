@@ -56,12 +56,19 @@ struct
   fun checkUnit({exp, ty}, pos, refstring) =
       case ty of
         T.UNIT => ()
-      | _      => error pos (refstring ^ "Unit required.")
+      | _      => error pos (refstring ^ ": Unit required.")
 
   fun checkTypeMatch(v1: expty, v2: expty, pos, refstring) =
-      case (#ty v1) = (#ty v2) of
-        true  => true
-      | false => (error pos (refstring ^ "Type mismatch."); false)
+    let
+      val lval = (#ty v1)
+      val rval = (#ty v2)
+    in
+      if ((lval = rval andalso lval <> T.NIL) orelse
+          (lval <> rval andalso (lval = T.NIL orelse rval = T.NIL)))
+        then ()
+        else (error pos (refstring ^ ": Type mismatch - " ^ T.toString lval ^ " vs " ^ T.toString rval);
+              ())
+    end
 
   fun transExp(venv, tenv, exp) =
     let
@@ -101,15 +108,10 @@ struct
                      | (T.STRING, T.STRING) => {exp=R.nilExp(), ty=T.INT}
                      | _                    => (error pos "Can only compare ints and strings.";
                                                 {exp=R.nilExp(), ty=T.INT}))
-               | (A.EqOp | A.NeqOp) =>
-                    (if real_left = real_right
-                       then {exp=R.nilExp(), ty=T.INT}
-                       else if real_left = T.NIL andalso real_right <> T.NIL
-                              then {exp=R.nilExp(), ty=T.INT}
-                              else if real_left <> T.NIL andalso real_right = T.NIL
-                                     then {exp=R.nilExp(), ty=T.INT}
-                                     else (error pos "Can only compare same type for equality.";
-                                           {exp=R.nilExp(), ty=T.INT}))
+               | (A.EqOp | A.NeqOp) => (checkTypeMatch({exp=R.nilExp(), ty=real_left},
+                                                       {exp=R.nilExp(), ty=real_right},
+                                                       pos, "Equal/NEqual Comp");
+                                        {exp=R.nilExp(), ty=T.INT})
              end)
         | trexp (A.RecordExp{fields, typ, pos}) =
             (let
@@ -260,7 +262,7 @@ struct
                            | NONE        => NONE
               in
                 (case typ' of
-                   SOME t => (checkTypeMatch(trValue, {exp=R.nilExp(), ty=t}, pos, "Var Decalration"); ())
+                   SOME t => (checkTypeMatch(trValue, {exp=R.nilExp(), ty=t}, pos, "Var Declaration"); ())
                  | NONE   => ();
                  {tenv=tenv, venv=S.enter(venv, name, E.VarEntry {ty=(#ty trValue)})})
               end
