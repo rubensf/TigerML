@@ -1,0 +1,6 @@
+/* Error: syntax, can't use type nil */
+let
+	function foo(bar:nil) = print(bar)
+in
+  foo(1)
+end
