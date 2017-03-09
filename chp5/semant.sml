@@ -298,6 +298,16 @@ struct
               end
           | trdec (A.TypeDec tydecs) =
               let
+                val tnames = map #name tydecs
+
+                fun checkNames (x, []) = []
+                  | checkNames (x, ans) =
+                  (case List.find (fn y => y = x) ans of
+                     SOME _ => (error (#pos (hd tydecs)) "Multiple types with same name."; tl ans) (*This may print the error multiple times...*)
+                   | NONE   => tl ans)
+
+                val _ = foldl checkNames (tl tnames) tnames
+
                 fun addHeader({name, ty, pos}, tenv) = S.enter(tenv, name, T.NAME(name, ref NONE))
                 val tenv'  = foldr addHeader tenv tydecs;
 
