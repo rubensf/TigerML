@@ -36,10 +36,10 @@ struct
   val error = ErrorMsg.error
   val nest = ref 0
 
-  fun actual_ty (pos, tenv, ty) =
+  fun actual_ty (tenv, ty) =
     case ty of
         T.NAME (s, tyopref) => (case (!tyopref) of
-                                  SOME (ty') => actual_ty(pos, tenv, ty')
+                                  SOME (ty') => actual_ty(tenv, ty')
                                 | NONE       => T.UNIT)
       | _                   => ty
 
@@ -58,14 +58,19 @@ struct
         T.UNIT => ()
       | _      => error pos (refstring ^ ": Unit required.")
 
-  fun checkTypeMatch(ty1, ty2, pos, refstring) =
-    if ((ty1 = ty2 andalso ty1 <> T.NIL) orelse
-        (ty1 = T.NIL andalso (case ty2 of T.RECORD r => true | _ => false)) orelse
-        (ty2 = T.NIL andalso (case ty1 of T.RECORD r => true | _ => false)))
-      then true
-      else (error pos (refstring ^ ": Type mismatch. Expected: " ^ T.toString ty1 ^
-                       ". Given: " ^ T.toString ty2 ^ ".");
-            false)
+  fun checkTypeMatch(t1, t2, tenv, pos, refstring) =
+    let
+      val ty1 = actual_ty (tenv, t1)
+      val ty2 = actual_ty (tenv, t2)
+    in
+      if ((ty1 = ty2 andalso ty1 <> T.NIL) orelse
+          (ty1 = T.NIL andalso (case ty2 of T.RECORD r => true | _ => false)) orelse
+          (ty2 = T.NIL andalso (case ty1 of T.RECORD r => true | _ => false)))
+        then true
+        else (error pos (refstring ^ ": Type mismatch. Expected: " ^ T.toString ty1 ^
+                         ". Given: " ^ T.toString ty2 ^ ".");
+              false)
+    end
 
   fun transExp(venv, tenv, exp) =
     let
@@ -79,8 +84,8 @@ struct
             {exp=R.nilExp(), ty=T.STRING}
         | trexp (A.OpExp {left, oper, right, pos}) =
             (let
-              val real_left = actual_ty(pos, tenv, #ty (trexp left))
-              val real_right = actual_ty(pos, tenv, #ty (trexp right))
+              val real_left = actual_ty(tenv, #ty (trexp left))
+              val real_right = actual_ty(tenv, #ty (trexp right))
              in
                case oper of
                  (A.PlusOp | A.MinusOp | A.TimesOp | A.DivideOp) =>
@@ -94,7 +99,7 @@ struct
                      | (T.STRING, T.STRING) => {exp=R.nilExp(), ty=T.INT}
                      | _                    => (error pos "Can only compare ints and strings.";
                                                 {exp=R.nilExp(), ty=T.INT}))
-               | (A.EqOp | A.NeqOp) => (checkTypeMatch(real_left, real_right,
+               | (A.EqOp | A.NeqOp) => (checkTypeMatch(real_left, real_right, tenv,
                                                        pos, "Equal/NEqual Comp");
                                         {exp=R.nilExp(), ty=T.INT})
              end)
@@ -107,7 +112,7 @@ struct
                                      val defty   = (hd ans)
                                      val giventy = (#ty (trexp x))
                                    in
-                                     checkTypeMatch(defty, giventy, pos, "Function Call");
+                                     checkTypeMatch(defty, giventy, tenv, pos, "Function Call");
                                      tl ans
                                    end)
                               formals args);
@@ -121,8 +126,8 @@ struct
         | trexp (A.RecordExp{fields, typ, pos}) =
             (let
                val typty =
-                 case S.look (tenv, typ) of
-                   SOME t => t
+                 case S.look(tenv, typ) of
+                   SOME t => actual_ty (tenv, t)
                  | NONE   => (error pos "Type doesn't exist."; T.UNIT)
              in
                case typty of
@@ -141,7 +146,7 @@ struct
                                          then ()
                                          else (error givenpos ("Incorrect record type. Expected field " ^ Symbol.name defname ^
                                                                ". Given field " ^ Symbol.name givenname ^ "."); ());
-                                       checkTypeMatch(defty, giventy, givenpos, "Record Expression");
+                                       checkTypeMatch(defty, giventy, tenv, givenpos, "Record Expression");
                                        tl ans
                                      end)
                               fields stlist);
@@ -165,7 +170,7 @@ struct
               val var' = transVar(venv, tenv, var)
               val exp' = trexp exp
             in
-              checkTypeMatch(#ty var', #ty exp', pos, "Assignment");
+              checkTypeMatch(#ty var', #ty exp', tenv, pos, "Assignment");
               {exp=R.nilExp(), ty=(#ty var')}
             end
         | trexp (A.IfExp {test, then', else', pos}) =
@@ -178,7 +183,7 @@ struct
                   val {exp=if_exp, ty=if_ty} = then''
                 in
                   checkInt(test', pos, "If statement");
-                  checkTypeMatch(#ty then'', #ty else'', pos, "If statement");
+                  checkTypeMatch(#ty then'', #ty else'', tenv, pos, "If statement");
                   {exp=R.nilExp(), ty=if_ty}
                 end
               | NONE =>
@@ -225,14 +230,14 @@ struct
             let
               val init_ty = (#ty (trexp init))
               val array_ty = case S.look(tenv, typ) of
-                               SOME typ' => actual_ty(pos, tenv, typ')
+                               SOME typ' => actual_ty(tenv, typ')
                              | NONE      => (error pos "This type doesn't exist.";
                                              T.ARRAY (T.UNIT, ref ()))
             in
               checkInt(trexp(size), pos, "Array Expr");
               case array_ty of
                 T.ARRAY (ty, u) =>
-                  (checkTypeMatch(ty, #ty (trexp init), pos, "Array Expr");
+                  (checkTypeMatch(ty, #ty (trexp init), tenv, pos, "Array Expr");
                    {exp=R.nilExp(), ty=array_ty})
               | _ => (error pos "Array expected"; {exp = R.nilExp(), ty = T.UNIT})
             end
@@ -273,7 +278,7 @@ struct
                 val trValue = transExp(venv, tenv, init)
                 val typ' = case typ of
                              SOME (s, p) => (case S.look(tenv, s) of
-                                               SOME t => SOME t
+                                               SOME t => SOME (actual_ty (tenv, t))
                                              | NONE   => (error pos "Type doesn't exist."; NONE))
                            | NONE        => NONE
               in
@@ -284,7 +289,7 @@ struct
                                         | _                 => (error pos "Can only assign nil to records."; ()))
                   | {ty=_, ...}     => ());
                  (case typ' of
-                    SOME t => (checkTypeMatch(#ty trValue, t, pos, "Var Declaration"); ())
+                    SOME t => (checkTypeMatch(#ty trValue, t, tenv, pos, "Var Declaration"); ())
                   | NONE   => ());
                   {tenv=tenv, venv=S.enter(venv, name,
                                            (case typ' of
@@ -294,24 +299,26 @@ struct
           | trdec (A.TypeDec tydecs) =
               let
                 fun addHeader({name, ty, pos}, env) = S.enter(env, name, T.NAME(name, ref NONE))
-                fun processDec({name, ty, pos}, env) = 
-                      case S.look(env, name) of 
+                fun processDec({name, ty, pos}, env) =
+                      case S.look(env, name) of
                         SOME (T.NAME(symb, tyopref)) => (tyopref := SOME(transTy(env,ty)); env)
-                      | NONE                         => (error pos "Symbol not found during type declaration"; env)
-                      | _                             => (error pos "Error during type declaration"; env)
-                fun cycle(visited, tyop, pos) = case tyop of 
-                    NONE    => (error pos ("type not found when performing cycle detection:"); false)
-                  | SOME ty => (case ty of
-                        T.NAME(symb, tyopref) => (case (List.all (fn x => x <> symb) visited) of
-                            true  => cycle(symb::visited, !tyopref, pos)
-                          | false => false)
-                        | _ => (error pos "T.NAME not detected during type declaration";false))
+                      | _                            => (error pos "Error during type declaration."; env)
+                fun cycle(path, current) =
+                  case (List.find (fn x => x = current)) path of
+                    SOME _ => true
+                  | _      => case !(#2 current) of
+                                SOME (T.NAME n) => cycle(path @ [current], n)
+                              | _               => false
                 fun valid(env, nil)      = ()
-                  | valid(env, {name, ty, pos}::rest) = case S.look(env, name) of 
-                      SOME(T.NAME(_,tyopref)) => (case (not(cycle([name], !tyopref, pos))) of
-                          true  => (error (pos) ("cycle detected in type definition:" ^ S.name(name)))
-                        | false => valid(env, rest))
-                    | _                       => (error pos "Did not find type in cycle detection") 
+                  | valid(env, {name, ty, pos}::rest) =
+                      case S.look(env, name) of
+                        SOME (T.NAME t) =>
+                          (case !(#2 t) of
+                             SOME (T.NAME n) => if not(cycle([t], n))
+                                                  then valid(env, rest)
+                                                  else (error pos "Cycle found on type declarations."; valid(env, rest))
+                           | _               => valid(env, rest))
+                      | _                       => (error pos "Did not find type in cycle detection")
                 val tenv'  = foldr addHeader tenv tydecs;
                 val tenv'' = foldr processDec tenv' tydecs;
               in
@@ -322,13 +329,13 @@ struct
               let
                 val result_ty = case result of
                                   SOME (rt, pos2) => (case S.look(tenv, rt) of
-                                                        SOME t => t
+                                                        SOME t => actual_ty (tenv, t)
                                                       | NONE   => (error pos2 ("Type " ^ Symbol.name rt ^ " does not exist."); T.UNIT))
                                 | NONE => T.UNIT
 
                 fun transparam ({name, escape, typ, pos} : A.field) =
                   case S.look(tenv, typ) of
-                    SOME t => {name=name, ty=t}
+                    SOME t => {name=name, ty=actual_ty (tenv, t)}
                   | NONE   => (error pos ("Type " ^ Symbol.name typ ^ " does not exist.");
                                {name=S.symbol "", ty=T.NIL})
                 val params' = map transparam params
@@ -340,7 +347,7 @@ struct
 
                 val retTypeFound = (#ty (transExp(venv'', tenv, body)))
               in
-                checkTypeMatch(result_ty, retTypeFound, pos, "Function Declaration");
+                checkTypeMatch(result_ty, retTypeFound, tenv, pos, "Function Declaration");
                 {venv=venv', tenv=tenv}
               end
       in
