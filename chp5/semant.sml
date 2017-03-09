@@ -181,7 +181,9 @@ struct
             )
         | trexp (A.WhileExp{test, body, pos}) =
             (checkInt(trexp(test), pos, "While loop");
+             nest := !nest + 1;
              checkUnit(trexp(body), pos, "While loop");
+             nest := !nest - 1;
              {exp = R.nilExp(), ty = T.UNIT})
         | trexp (A.ForExp{var, escape, lo, hi, body, pos}) =
             let
@@ -189,7 +191,9 @@ struct
             in
               checkInt(trexp(lo), pos, "For loop");
               checkInt(trexp(hi), pos, "For loop");
+              nest := !nest + 1;
               checkUnit(transExp(venv', tenv, body), pos, "For loop");
+              nest := !nest - 1;
               {exp = R.nilExp(), ty = T.UNIT}
             end
         | trexp (A.BreakExp pos) =
