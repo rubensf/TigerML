@@ -298,12 +298,14 @@ struct
                       case S.look(env, name) of 
                         SOME (T.NAME(symb, tyopref)) => (tyopref := SOME(transTy(env,ty)); env)
                       | NONE                         => (error pos "Symbol not found during type declaration"; env)
+                      | _                             => (error pos "Error during type declaration"; env)
                 fun cycle(visited, tyop, pos) = case tyop of 
                     NONE    => (error pos ("type not found when performing cycle detection:"); false)
                   | SOME ty => (case ty of
-                        T.NAME(symb, tyopref) => case (List.all (fn x => x <> symb) visited) of
+                        T.NAME(symb, tyopref) => (case (List.all (fn x => x <> symb) visited) of
                             true  => cycle(symb::visited, !tyopref, pos)
                           | false => false)
+                        | _ => (error pos "T.NAME not detected during type declaration";false))
                 fun valid(env, nil)      = ()
                   | valid(env, {name, ty, pos}::rest) = case S.look(env, name) of 
                       SOME(T.NAME(_,tyopref)) => (case (not(cycle([name], !tyopref, pos))) of
