@@ -284,8 +284,31 @@ struct
                                               SOME t => E.VarEntry {ty=t}
                                             | NONE   => E.VarEntry {ty=(#ty trValue)}))})
               end
-          | trdec (A.TypeDec [{name, ty, pos}]) =
-                {venv=venv, tenv=S.enter(tenv, name, transTy(tenv,ty))}
+          | trdec (A.TypeDec tydecs) =
+              let
+                fun addHeader({name, ty, pos}, env) = S.enter(env, name, T.NAME(name, ref NONE))
+                fun processDec({name, ty, pos}, env) = 
+                      case S.look(env, name) of 
+                        SOME (T.NAME(symb, tyopref)) => (tyopref := SOME(transTy(env,ty)); env)
+                      | NONE                         => (error pos "Symbol not found during type declaration"; env)
+                fun cycle(visited, tyop, pos) = case tyop of 
+                    NONE    => (error pos ("type not found when performing cycle detection:"); false)
+                  | SOME ty => (case ty of
+                        T.NAME(symb, tyopref) => case (List.all (fn x => x <> symb) visited) of
+                            true  => cycle(symb::visited, !tyopref, pos)
+                          | false => false)
+                fun valid(env, nil)      = ()
+                  | valid(env, {name, ty, pos}::rest) = case S.look(env, name) of 
+                      SOME(T.NAME(_,tyopref)) => (case (not(cycle([name], !tyopref, pos))) of
+                          true  => (error (pos) ("cycle detected in type definition:" ^ S.name(name)))
+                        | false => valid(env, rest))
+                    | _                       => (error pos "Did not find type in cycle detection") 
+                val tenv'  = foldr addHeader tenv tydecs;
+                val tenv'' = foldr processDec tenv' tydecs;
+              in
+                valid (tenv'', tydecs);
+                {venv=venv, tenv=tenv''}
+              end
           | trdec (A.FunctionDec [{name, params, result, body, pos}]) =
               let
                 val result_ty = case result of
