@@ -171,7 +171,7 @@ struct
               val exp' = trexp exp
             in
               checkTypeMatch(#ty var', #ty exp', tenv, pos, "Assignment");
-              {exp=R.nilExp(), ty=(#ty var')}
+              {exp=R.nilExp(), ty=T.UNIT}
             end
         | trexp (A.IfExp {test, then', else', pos}) =
             (case else' of
