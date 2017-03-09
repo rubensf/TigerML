@@ -257,7 +257,7 @@ struct
               (case (trvar var) of
                  {exp, ty=T.RECORD (fieldlist, uniqv)} =>
                    (case List.find (fn (s, ty) => s = id) fieldlist of
-                      SOME (s, ty) => {exp=R.nilExp(), ty=ty}
+                      SOME ty => {exp=R.nilExp(), ty=actual_ty(ty)}
                     | _            => (error pos ("Field \"" ^ Symbol.name id ^ "\" does not belong to record.");
                                        {exp=R.nilExp(), ty=T.UNIT}))
                | _                                  => (error pos ("Var " ^ Symbol.name id ^ " is not a record.");
@@ -265,7 +265,7 @@ struct
           | trvar (A.SubscriptVar (var, exp, pos)) =
               (checkInt(transExp (venv, tenv, exp), pos, "Field of var");
                case (trvar var) of
-                 {exp, ty=T.ARRAY (ty, uniqv)} => {exp=R.nilExp(), ty=ty}
+                 {exp, ty=T.ARRAY (ty, uniqv)} => {exp=R.nilExp(), ty=actual_ty(tenv, ty)}
                | _                             => (error pos ("Var is not an array.");
                                                    {exp=R.nilExp(), ty=T.UNIT}))
       in
