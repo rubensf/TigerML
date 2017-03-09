@@ -6,7 +6,7 @@ struct
 		in
 			if !ErrorMsg.anyErrors
 			  then print "Errors with file syntax. Stopping compilation.\n"
-			  else (print "Parsing file: \n";
+			  else (print ("Parsing file: " ^ file ^ "\n");
 			        PrintAbsyn.print (TextIO.stdOut, ast);
 			        print "Semanting Analysis: \n";
 			        Semant.transProg ast)
