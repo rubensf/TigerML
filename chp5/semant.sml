@@ -159,7 +159,7 @@ struct
               val exp' = trexp exp
             in
               checkTypeMatch(var', exp', pos, "Assignment");
-              {exp=R.nilExp(), ty=T.UNIT}
+              {exp=R.nilExp(), ty=(#ty var')}
             end
         | trexp (A.IfExp {test, then', else', pos}) =
             (case else' of
@@ -263,10 +263,19 @@ struct
                                              | NONE   => (error pos "Type doesn't exist."; NONE))
                            | NONE        => NONE
               in
-                (case typ' of
-                   SOME t => (checkTypeMatch(trValue, {exp=R.nilExp(), ty=t}, pos, "Var Declaration"); ())
-                 | NONE   => ();
-                 {tenv=tenv, venv=S.enter(venv, name, E.VarEntry {ty=(#ty trValue)})})
+                ((case typ' of
+                    SOME t      => (checkTypeMatch(trValue, {exp=R.nilExp(), ty=t}, pos, "Var Declaration"); ())
+                  | NONE        => ());
+                 (case trValue of
+                    {ty=T.UNIT,...} => (error pos "Cannot assign to unit."; ())
+                  | {ty=T.NIL,...}  => (case typ' of
+                                          SOME t => (error pos "Cannot assign to nil without type."; ())
+                                        | NONE   => () (*Already checked above*))
+                  | {ty=_, ...}     => ());
+                  {tenv=tenv, venv=S.enter(venv, name,
+                                           (case typ' of
+                                              SOME t => E.VarEntry {ty=t}
+                                            | NONE   => E.VarEntry {ty=(#ty trValue)}))})
               end
           | trdec (A.TypeDec [{name, ty, pos}]) =
                 {venv=venv, tenv=S.enter(tenv, name, transTy(tenv,ty))}
