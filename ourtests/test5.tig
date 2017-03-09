@@ -1,0 +1,8 @@
+/* Error: multiple funcs with same name */
+let
+  function f1() = print ("dasas")
+  function f2() = print ("A")
+  function f1() = print ("dsa")
+in
+	1
+end

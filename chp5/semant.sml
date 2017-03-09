@@ -298,17 +298,22 @@ struct
               end
           | trdec (A.TypeDec tydecs) =
               let
-                fun addHeader({name, ty, pos}, env) = S.enter(env, name, T.NAME(name, ref NONE))
+                fun addHeader({name, ty, pos}, tenv) = S.enter(tenv, name, T.NAME(name, ref NONE))
+                val tenv'  = foldr addHeader tenv tydecs;
+
                 fun processDec({name, ty, pos}, env) =
                       case S.look(env, name) of
                         SOME (T.NAME(symb, tyopref)) => (tyopref := SOME(transTy(env,ty)); env)
                       | _                            => (error pos "Error during type declaration."; env)
+                val tenv'' = foldr processDec tenv' tydecs;
+
                 fun cycle(path, current) =
                   case (List.find (fn x => x = current)) path of
                     SOME _ => true
                   | _      => case !(#2 current) of
                                 SOME (T.NAME n) => cycle(path @ [current], n)
                               | _               => false
+
                 fun valid(env, nil)      = ()
                   | valid(env, {name, ty, pos}::rest) =
                       case S.look(env, name) of
@@ -319,35 +324,64 @@ struct
                                                   else (error pos "Cycle found on type declarations."; valid(env, rest))
                            | _               => valid(env, rest))
                       | _                       => (error pos "Did not find type in cycle detection")
-                val tenv'  = foldr addHeader tenv tydecs;
-                val tenv'' = foldr processDec tenv' tydecs;
               in
                 valid (tenv'', tydecs);
                 {venv=venv, tenv=tenv''}
               end
-          | trdec (A.FunctionDec [{name, params, result, body, pos}]) =
+          | trdec (A.FunctionDec fundecs) =
               let
-                val result_ty = case result of
-                                  SOME (rt, pos2) => (case S.look(tenv, rt) of
-                                                        SOME t => actual_ty (tenv, t)
-                                                      | NONE   => (error pos2 ("Type " ^ Symbol.name rt ^ " does not exist."); T.UNIT))
-                                | NONE => T.UNIT
+                val fnames = map #name fundecs
 
-                fun transparam ({name, escape, typ, pos} : A.field) =
-                  case S.look(tenv, typ) of
-                    SOME t => {name=name, ty=actual_ty (tenv, t)}
-                  | NONE   => (error pos ("Type " ^ Symbol.name typ ^ " does not exist.");
-                               {name=S.symbol "", ty=T.NIL})
-                val params' = map transparam params
+                fun checkNames (x, []) = []
+                  | checkNames (x, ans) =
+                  (case List.find (fn y => y = x) ans of
+                     SOME _ => (error (#pos (hd fundecs)) "Multiple functions with same name."; tl ans) (*This may print the error multiple times...*)
+                   | NONE   => tl ans)
 
-                val venv' = S.enter(venv, name, E.FunEntry{formals=map #ty params', result=result_ty})
+                val _ = foldl checkNames (tl fnames) fnames
 
-                fun enterparam ({name, ty}, venv : venv) = S.enter(venv, name, E.VarEntry {ty=ty})
-                val venv'' = foldl enterparam venv' params'
+                fun processDec({name, params, result, body, pos}, venv) =
+                  let
+                    val result_ty = case result of
+                                      SOME (rt, pos2) => (case S.look(tenv, rt) of
+                                                            SOME t => actual_ty (tenv, t)
+                                                          | NONE   => (error pos2 ("Type " ^ Symbol.name rt ^ " does not exist."); T.UNIT))
+                                    | NONE => T.UNIT
 
-                val retTypeFound = (#ty (transExp(venv'', tenv, body)))
+                    fun transparam ({name, escape, typ, pos} : A.field) =
+                      case S.look(tenv, typ) of
+                        SOME t => actual_ty (tenv, t)
+                      | NONE   => (error pos ("Type " ^ Symbol.name typ ^ " does not exist.");
+                                   T.UNIT)
+                    val params' = map transparam params
+                  in
+                    S.enter(venv, name, E.FunEntry{formals=params', result=result_ty})
+                  end
+
+                  val venv' = foldl processDec venv fundecs
+
+                  fun checkFunc {name, params, result, body, pos} =
+                    let
+                      (*Don't print errors here since was already printed on first pass.*)
+                      val result_ty = case result of
+                                        SOME (rt, pos2) => (case S.look(tenv, rt) of
+                                                              SOME t => actual_ty (tenv, t)
+                                                            | NONE   => T.UNIT)
+                                      | NONE => T.UNIT
+
+                      fun transparam ({name, escape, typ, pos} : A.field) =
+                        case S.look(tenv, typ) of
+                          SOME t => (name, actual_ty (tenv, t))
+                        | NONE   => (name, T.UNIT)
+
+                      fun enterparam ((name, ty), venv) = S.enter(venv, name, E.VarEntry {ty=ty})
+                      val venv'' = foldl enterparam venv' (map transparam params)
+                      val retTypeFound = (#ty (transExp(venv'', tenv, body)))
+                    in
+                      checkTypeMatch(result_ty, retTypeFound, tenv, pos, "Function Declaration")
+                    end
               in
-                checkTypeMatch(result_ty, retTypeFound, tenv, pos, "Function Declaration");
+                List.all checkFunc fundecs;
                 {venv=venv', tenv=tenv}
               end
       in
