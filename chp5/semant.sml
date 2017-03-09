@@ -205,9 +205,12 @@ struct
             end
         | trexp (A.LetExp {decs, body, pos}) =
             let
+              val depth = !nest
+              val _ = (nest := 0)
               val {venv=venv', tenv=tenv'} = foldl (fn (x, ans) =>
                                                       transDec (#venv ans, #tenv ans, x))
                                                {venv=venv, tenv=tenv} decs
+              val _ = (nest := depth)
             in
               transExp(venv', tenv', body)
             end
