@@ -58,17 +58,14 @@ struct
         T.UNIT => ()
       | _      => error pos (refstring ^ ": Unit required.")
 
-  fun checkTypeMatch(v1: expty, v2: expty, pos, refstring) =
-    let
-      val lval = (#ty v1)
-      val rval = (#ty v2)
-    in
-      if ((lval = rval andalso lval <> T.NIL) orelse
-          (lval <> rval andalso (lval = T.NIL orelse rval = T.NIL)))
-        then ()
-        else (error pos (refstring ^ ": Type mismatch - " ^ T.toString lval ^ " vs " ^ T.toString rval);
-              ())
-    end
+  fun checkTypeMatch(ty1, ty2, pos, refstring) =
+    if ((ty1 = ty2 andalso ty1 <> T.NIL) orelse
+        (ty1 = T.NIL andalso (case ty2 of T.RECORD r => true | _ => false)) orelse
+        (ty2 = T.NIL andalso (case ty1 of T.RECORD r => true | _ => false)))
+      then true
+      else (error pos (refstring ^ ": Type mismatch. Expected: " ^ T.toString ty1 ^
+                       ". Given: " ^ T.toString ty2 ^ ".");
+            false)
 
   fun transExp(venv, tenv, exp) =
     let
@@ -80,17 +77,6 @@ struct
             {exp=R.nilExp(), ty=T.INT}
         | trexp (A.StringExp (str,pos)) =
             {exp=R.nilExp(), ty=T.STRING}
-        | trexp (A.CallExp {func, args, pos}) =
-            (case S.look(venv, func) of
-               SOME (E.FunEntry {formals, result}) =>
-                 (case (length formals) = (length args) of
-                    true  => {exp=R.nilExp(), ty=result}
-                  | false =>
-                      (error pos ("Arguments mismatch"); {exp=R.nilExp(), ty=T.UNIT}))
-               | SOME (E.VarEntry {ty}) => (error pos ("Function expected, but variable found");
-                       {exp=R.nilExp(), ty=T.UNIT})
-               | NONE => (error pos ("Function " ^ S.name func ^ " does not exist.");
-                          {exp=R.nilExp(), ty=T.UNIT}))
         | trexp (A.OpExp {left, oper, right, pos}) =
             (let
               val real_left = actual_ty(pos, tenv, #ty (trexp left))
@@ -108,11 +94,30 @@ struct
                      | (T.STRING, T.STRING) => {exp=R.nilExp(), ty=T.INT}
                      | _                    => (error pos "Can only compare ints and strings.";
                                                 {exp=R.nilExp(), ty=T.INT}))
-               | (A.EqOp | A.NeqOp) => (checkTypeMatch({exp=R.nilExp(), ty=real_left},
-                                                       {exp=R.nilExp(), ty=real_right},
+               | (A.EqOp | A.NeqOp) => (checkTypeMatch(real_left, real_right,
                                                        pos, "Equal/NEqual Comp");
                                         {exp=R.nilExp(), ty=T.INT})
              end)
+        | trexp (A.CallExp {func, args, pos}) =
+            (case S.look(venv, func) of
+               SOME (E.FunEntry {formals, result}) =>
+                 if (length formals) = (length args)
+                   then ((foldl (fn (x, ans) =>
+                                   let
+                                     val defty   = (hd ans)
+                                     val giventy = (#ty (trexp x))
+                                   in
+                                     checkTypeMatch(defty, giventy, pos, "Function Call");
+                                     tl ans
+                                   end)
+                              formals args);
+                            {exp=R.nilExp(), ty=result})
+                   else (error pos "Function args length differ from defined.";
+                         {exp=R.nilExp(), ty=result})
+               | SOME (E.VarEntry {ty})            => (error pos ("Function expected, but variable found.");
+                                                       {exp=R.nilExp(), ty=ty})
+               | NONE                              => (error pos ("Function " ^ S.name func ^ " does not exist.");
+                                                       {exp=R.nilExp(), ty=T.UNIT}))
         | trexp (A.RecordExp{fields, typ, pos}) =
             (let
                val typty =
@@ -126,22 +131,24 @@ struct
                      then ((foldl (fn (x, ans) =>
                                      let
                                        val defname = (#1 x)
-                                       val deftype = (#2 x)
+                                       val defty = (#2 x)
                                        val lhead = (hd ans)
                                        val givenname = (#1 lhead)
-                                       val giventype = (#ty (trexp (#2 lhead)))
-                                       val givenpos = (#3 lhead)
+                                       val giventy   = (#ty (trexp (#2 lhead)))
+                                       val givenpos  = (#3 lhead)
                                      in
-                                       if defname = givenname andalso deftype = giventype
+                                       if defname = givenname
                                          then ()
-                                         else error givenpos "Incorrect record type.";
+                                         else (error givenpos ("Incorrect record type. Expected field " ^ Symbol.name defname ^
+                                                               ". Given field " ^ Symbol.name givenname ^ "."); ());
+                                       checkTypeMatch(defty, giventy, givenpos, "Record Expression");
                                        tl ans
                                      end)
                               fields stlist);
                             {exp=R.nilExp(), ty=typty})
-                      else (error pos "Record fields length differ.";
+                      else (error pos "Record fields length differ from defined.";
                             {exp=R.nilExp(), ty=T.UNIT})
-               | _ => (error pos (S.name typ ^ " isn't an appropriate type.");
+               | _ => (error pos (S.name typ ^ " isn't a type.");
                        {exp=R.nilExp(), ty=T.UNIT})
              end)
         | trexp (A.SeqExp exps) =
@@ -158,7 +165,7 @@ struct
               val var' = transVar(venv, tenv, var)
               val exp' = trexp exp
             in
-              checkTypeMatch(var', exp', pos, "Assignment");
+              checkTypeMatch(#ty var', #ty exp', pos, "Assignment");
               {exp=R.nilExp(), ty=(#ty var')}
             end
         | trexp (A.IfExp {test, then', else', pos}) =
@@ -171,13 +178,13 @@ struct
                   val {exp=if_exp, ty=if_ty} = then''
                 in
                   checkInt(test', pos, "If statement");
-                  checkTypeMatch(then'', else'', pos, "If statement");
-                  {exp = R.nilExp(), ty = if_ty}
+                  checkTypeMatch(#ty then'', #ty else'', pos, "If statement");
+                  {exp=R.nilExp(), ty=if_ty}
                 end
               | NONE =>
                 (checkInt(trexp(test), pos, "If statement");
                  checkUnit(trexp(then'), pos, "If statement");
-                 {exp = R.nilExp(), ty = T.UNIT})
+                 {exp=R.nilExp(), ty=T.UNIT})
             )
         | trexp (A.WhileExp{test, body, pos}) =
             (checkInt(trexp(test), pos, "While loop");
@@ -225,9 +232,9 @@ struct
               checkInt(trexp(size), pos, "Array Expr");
               case array_ty of
                 T.ARRAY (ty, u) =>
-                  (checkTypeMatch({exp=R.nilExp(),ty=ty}, trexp init, pos, "Array Expr");
+                  (checkTypeMatch(ty, #ty (trexp init), pos, "Array Expr");
                    {exp=R.nilExp(), ty=array_ty})
-                | _ => (error pos "Array expected"; {exp = R.nilExp(), ty = T.UNIT})
+              | _ => (error pos "Array expected"; {exp = R.nilExp(), ty = T.UNIT})
             end
     in
         trexp exp
@@ -270,15 +277,15 @@ struct
                                              | NONE   => (error pos "Type doesn't exist."; NONE))
                            | NONE        => NONE
               in
-                ((case typ' of
-                    SOME t      => (checkTypeMatch(trValue, {exp=R.nilExp(), ty=t}, pos, "Var Declaration"); ())
-                  | NONE        => ());
-                 (case trValue of
-                    {ty=T.UNIT,...} => (error pos "Cannot assign to unit."; ())
-                  | {ty=T.NIL,...}  => (case typ' of
-                                          SOME t => (error pos "Cannot assign to nil without type."; ())
-                                        | NONE   => () (*Already checked above*))
+                ((case trValue of
+                    {ty=T.UNIT, ...} => (error pos "Cannot assign to unit."; ())
+                  | {ty=T.NIL, ...}  => (case typ' of
+                                          SOME (T.RECORD r) => ()
+                                        | _                 => (error pos "Can only assign nil to records."; ()))
                   | {ty=_, ...}     => ());
+                 (case typ' of
+                    SOME t => (checkTypeMatch(#ty trValue, t, pos, "Var Declaration"); ())
+                  | NONE   => ());
                   {tenv=tenv, venv=S.enter(venv, name,
                                            (case typ' of
                                               SOME t => E.VarEntry {ty=t}
@@ -331,9 +338,7 @@ struct
 
                 val retTypeFound = (#ty (transExp(venv'', tenv, body)))
               in
-                if retTypeFound = result_ty
-                  then ()
-                  else error pos ("Return of " ^ Symbol.name name ^ " doesn't conform.");
+                checkTypeMatch(result_ty, retTypeFound, pos, "Function Declaration");
                 {venv=venv', tenv=tenv}
               end
       in
