@@ -1,0 +1,6 @@
+/* Error: Nil only for Records */
+let
+	function foo(bar:string) = print(bar)
+in
+  foo(nil)
+end

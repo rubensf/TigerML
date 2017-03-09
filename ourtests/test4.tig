@@ -1,0 +1,9 @@
+/* Correct nil usage */
+let
+	type rectype = {name:string}
+	var x := rectype {name="joao"}
+
+	function foo() : rectype = nil
+in
+	x := foo()
+end

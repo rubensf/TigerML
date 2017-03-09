@@ -1,0 +1,6 @@
+/* Error: calling wrong function call */
+let
+	function foo(bar:string) = print(bar)
+in
+	foo(1)
+end
