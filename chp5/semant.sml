@@ -257,7 +257,7 @@ struct
               (case (trvar var) of
                  {exp, ty=T.RECORD (fieldlist, uniqv)} =>
                    (case List.find (fn (s, ty) => s = id) fieldlist of
-                      SOME ty => {exp=R.nilExp(), ty=actual_ty(ty)}
+                      SOME ty => {exp=R.nilExp(), ty=actual_ty(tenv, #2 ty)}
                     | _            => (error pos ("Field \"" ^ Symbol.name id ^ "\" does not belong to record.");
                                        {exp=R.nilExp(), ty=T.UNIT}))
                | _                                  => (error pos ("Var " ^ Symbol.name id ^ " is not a record.");
