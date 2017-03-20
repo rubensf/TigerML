@@ -3,6 +3,7 @@ Group is
 absyn.sml
 errormsg.sml
 env.sml
+frame.sig
 main.sml
 parsetest.sml
 prabsyn.sml
@@ -10,6 +11,8 @@ semant.sml
 symbol.sml
 table.sig
 table.sml
+temp.sig
+temp.sml
 tiger.lex
 tiger.grm
 translate.sml
