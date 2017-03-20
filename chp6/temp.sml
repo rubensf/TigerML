@@ -10,7 +10,7 @@ struct
 
   fun newtemp() = let val t = !temps in temps := t+1; t end
   fun makestring t = "t" ^ Int.toString t
-  fun namedlabel = Symbol.symbol
+  fun namedlabel l = Symbol.symbol l
 
   local
     structure F = Format
