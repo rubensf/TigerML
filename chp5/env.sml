@@ -33,7 +33,7 @@ struct
   fun fillTypeFn ((name, ty), ans) = S.enter(ans, S.symbol name, ty)
   val base_tenv = foldl fillTypeFn S.empty predef_types
 
-  val base_label = Temp.namedlabel "BaseFunctions"
+  val base_label = Temp.newlabel ()
   val predef_funcs = [("print",     FunEntry {level=R.outermost, label=base_label, formals=[T.STRING], result=T.UNIT}),
                       ("flush",     FunEntry {level=R.outermost, label=base_label, formals=[], result=T.UNIT}),
                       ("getchar",   FunEntry {level=R.outermost, label=base_label, formals=[], result=T.STRING}),
