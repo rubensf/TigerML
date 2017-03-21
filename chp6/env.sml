@@ -24,8 +24,10 @@ struct
 
   type ty = T.ty
 
-  datatype enventry = VarEntry of {ty: ty}
-                    | FunEntry of {formals: ty list, result: ty}
+  datatype enventry = VarEntry of {access: Translate.access, ty: ty}
+                    | FunEntry of {level: Translate.level,
+                                   label: Temp.label,
+                                   formals: ty list, result: ty}
 
   val predef_types = [("int", T.INT),
                       ("string", T.STRING)]

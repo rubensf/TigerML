@@ -6,10 +6,10 @@ sig
   type expty
 
   val transProg : Absyn.exp -> unit
-  val transVar  : venv * tenv * Absyn.var -> expty
-  val transExp  : venv * tenv * Absyn.exp -> expty
-  val transDec  : venv * tenv * Absyn.dec -> {venv: venv, tenv: tenv}
-  val transTy   :        tenv * Absyn.ty  -> Types.ty
+  val transVar  : venv * tenv * Translate.level * Absyn.var -> expty
+  val transExp  : venv * tenv * Translate.level * Absyn.exp -> expty
+  val transDec  : venv * tenv * Translate.level * Absyn.dec -> {venv: venv, tenv: tenv}
+  val transTy   :        tenv                   * Absyn.ty  -> Types.ty
 end
 
 structure Semant :> SEMANT =
@@ -65,10 +65,10 @@ struct
               false)
     end
 
-  fun transExp(venv, tenv, exp) =
+  fun transExp(venv, tenv, level, exp) =
     let
       fun trexp (A.VarExp var) =
-            transVar(venv, tenv, var)
+            transVar(venv, tenv, level, var)
         | trexp (A.NilExp) =
             {exp=R.nilExp(), ty=T.NIL}
         | trexp (A.IntExp i) =
@@ -160,7 +160,7 @@ struct
                    end
         | trexp (A.AssignExp{var, exp, pos}) =
             let
-              val var' = transVar(venv, tenv, var)
+              val var' = transVar(venv, tenv, level, var)
               val exp' = trexp exp
             in
               checkTypeMatch(#ty var', #ty exp', tenv, pos, "Assignment");
@@ -197,7 +197,7 @@ struct
               checkInt(trexp(lo), pos, "For loop");
               checkInt(trexp(hi), pos, "For loop");
               nest := !nest + 1;
-              checkUnit(transExp(venv', tenv, body), pos, "For loop");
+              checkUnit(transExp(venv', tenv, level, body), pos, "For loop");
               nest := !nest - 1;
               {exp = R.nilExp(), ty = T.UNIT}
             end
@@ -237,7 +237,7 @@ struct
     in
         trexp exp
     end
-    and transVar(venv, tenv, var) =
+    and transVar(venv, tenv, level, var) =
       let
         fun trvar (A.SimpleVar (id, pos)) =
               (case Symbol.look (venv, id) of
@@ -256,7 +256,7 @@ struct
                | _                                  => (error pos ("Var " ^ Symbol.name id ^ " is not a record.");
                                                         {exp=R.nilExp(), ty=T.UNIT}))
           | trvar (A.SubscriptVar (var, exp, pos)) =
-              (checkInt(transExp (venv, tenv, exp), pos, "Field of var");
+              (checkInt(transExp (venv, tenv, level, exp), pos, "Field of var");
                case (trvar var) of
                  {exp, ty=T.ARRAY (ty, uniqv)} => {exp=R.nilExp(), ty=actual_ty(tenv, ty)}
                | _                             => (error pos ("Var is not an array.");
@@ -264,7 +264,7 @@ struct
       in
         trvar var
       end
-    and transDec (venv, tenv, dec) =
+    and transDec (venv, tenv, level, dec) =
       let
         fun trdec (A.VarDec {name, escape, typ, init, pos}) =
               let
@@ -390,7 +390,6 @@ struct
       in
         trdec dec
       end
-    and transProg (absyn) = (transExp(E.base_venv, E.base_tenv, absyn); ())
     and transTy (tenv, typ) =
       case typ of
         A.NameTy (s, pos) => (case S.look(tenv, s) of
@@ -404,5 +403,5 @@ struct
       | A.ArrayTy (s, pos) => (case S.look(tenv, s) of
                                  SOME ty => T.ARRAY (ty, ref ())
                                | NONE    => ((error pos "Non existent type."); T.UNIT))
-
+    and transProg (absyn) = (transExp(E.base_venv, E.base_tenv, R.outermost, absyn); ())
 end
