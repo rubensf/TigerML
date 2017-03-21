@@ -15,7 +15,7 @@ struct
 		end
 
 	(* TODO all of the below *)
-	fun formals l = []
+	fun formals l = #2 (#2 l) (* get acc list from frame within level? *)
 	fun allocLocal (l: level) = (fn (x: bool) => (l, F.allocLocal(F.newFrame {name=Temp.newlabel (), formals=[]})(true)))
 
   type exp = unit
