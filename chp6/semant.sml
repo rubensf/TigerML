@@ -98,7 +98,7 @@ struct
              end)
         | trexp (A.CallExp {func, args, pos}) =
             (case S.look(venv, func) of
-               SOME (E.FunEntry {formals, result}) =>
+               SOME (E.FunEntry {level, label, formals, result}) =>
                  if (length formals) = (length args)
                    then ((foldl (fn (x, ans) =>
                                    let
@@ -112,10 +112,10 @@ struct
                             {exp=R.nilExp(), ty=result})
                    else (error pos "Function args length differ from defined.";
                          {exp=R.nilExp(), ty=result})
-               | SOME (E.VarEntry {ty})            => (error pos ("Function expected, but variable found.");
-                                                       {exp=R.nilExp(), ty=ty})
-               | NONE                              => (error pos ("Function " ^ S.name func ^ " does not exist.");
-                                                       {exp=R.nilExp(), ty=T.UNIT}))
+               | SOME (E.VarEntry {access, ty}) => (error pos ("Function expected, but variable found.");
+                                                    {exp=R.nilExp(), ty=ty})
+               | NONE                           => (error pos ("Function " ^ S.name func ^ " does not exist.");
+                                                    {exp=R.nilExp(), ty=T.UNIT}))
         | trexp (A.RecordExp{fields, typ, pos}) =
             (let
                val typty =
@@ -192,7 +192,7 @@ struct
              {exp = R.nilExp(), ty = T.UNIT})
         | trexp (A.ForExp{var, escape, lo, hi, body, pos}) =
             let
-              val venv' = S.enter(venv, var, E.VarEntry{ty=T.INT})
+              val venv' = S.enter(venv, var, E.VarEntry{access=R.allocLocal level (!escape), ty=T.INT})
             in
               checkInt(trexp(lo), pos, "For loop");
               checkInt(trexp(hi), pos, "For loop");
@@ -213,11 +213,11 @@ struct
               val depth = !nest
               val _ = (nest := 0)
               val {venv=venv', tenv=tenv'} = foldl (fn (x, ans) =>
-                                                      transDec (#venv ans, #tenv ans, x))
+                                                      transDec (#venv ans, #tenv ans, level, x))
                                                {venv=venv, tenv=tenv} decs
               val _ = (nest := depth)
             in
-              transExp(venv', tenv', body)
+              transExp(venv', tenv', level, body)
             end
         | trexp (A.ArrayExp{typ, size, init, pos}) =
             let
@@ -268,7 +268,7 @@ struct
       let
         fun trdec (A.VarDec {name, escape, typ, init, pos}) =
               let
-                val trValue = transExp(venv, tenv, init)
+                val trValue = transExp(venv, tenv, level, init)
                 val typ' = case typ of
                              SOME (s, p) => (case S.look(tenv, s) of
                                                SOME t => SOME (actual_ty (tenv, t))
@@ -286,8 +286,8 @@ struct
                   | NONE   => ());
                   {tenv=tenv, venv=S.enter(venv, name,
                                            (case typ' of
-                                              SOME t => E.VarEntry {ty=t}
-                                            | NONE   => E.VarEntry {ty=(#ty trValue)}))})
+                                              SOME t => E.VarEntry {access=R.allocLocal level (!escape), ty=t}
+                                            | NONE   => E.VarEntry {access=R.allocLocal level (!escape), ty=(#ty trValue)}))})
               end
           | trdec (A.TypeDec tydecs) =
               let
@@ -357,15 +357,19 @@ struct
                       | NONE   => (error pos ("Type " ^ Symbol.name typ ^ " does not exist.");
                                    T.UNIT)
                     val params' = map transparam params
+
+                    val escList = foldl (fn (x, ans) => !(#escape x)::ans) [] params
+                    val trLevelName = Temp.newlabel ()
+                    val trNewLevel = R.newLevel {parent=level, name=trLevelName, formals=escList}
                   in
-                    S.enter(venv, name, E.FunEntry{formals=params', result=result_ty})
+                    S.enter(venv, name, E.FunEntry{level=trNewLevel, label=trLevelName, formals=params', result=result_ty})
                   end
 
                   val venv' = foldl processDec venv fundecs
 
                   fun checkFunc {name, params, result, body, pos} =
                     let
-                      (*Don't print errors here since was already printed on first pass.*)
+                      (* Don't print errors here since was already printed on first pass. *)
                       val result_ty = case result of
                                         SOME (rt, pos2) => (case S.look(tenv, rt) of
                                                               SOME t => actual_ty (tenv, t)
@@ -374,12 +378,21 @@ struct
 
                       fun transparam ({name, escape, typ, pos} : A.field) =
                         case S.look(tenv, typ) of
-                          SOME t => (name, actual_ty (tenv, t))
-                        | NONE   => (name, T.UNIT)
-
-                      fun enterparam ((name, ty), venv) = S.enter(venv, name, E.VarEntry {ty=ty})
+                          SOME t => (name, escape, actual_ty (tenv, t))
+                        | NONE   => (name, escape, T.UNIT)
+                      (* Arguments for new functions go in the current function frame. *)
+                      fun enterparam ((name, escape, ty), venv) =
+                         S.enter(venv, name, E.VarEntry {access=R.allocLocal level (!escape),
+                                                         ty=ty})
                       val venv'' = foldl enterparam venv' (map transparam params)
-                      val retTypeFound = (#ty (transExp(venv'', tenv, body)))
+
+                      val funcTrLevel =
+                        case S.look(venv, name) of
+                          SOME (E.FunEntry t) => (#level t)
+                        | SOME (E.VarEntry _) => ((error pos "Internal error processing functions."); level)
+                        | NONE                => ((error pos "Internal error processing functions."); level)
+
+                      val retTypeFound = (#ty (transExp(venv'', tenv, funcTrLevel, body)))
                     in
                       checkTypeMatch(result_ty, retTypeFound, tenv, pos, "Function Declaration")
                     end

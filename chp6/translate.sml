@@ -1,6 +1,6 @@
 structure Translate :> TRANSLATE =
 struct
-	structure F = MipsFrame (* TODO: How to choose this at runtime? *)
+	structure F = MipsFrame
 
 	datatype level = Level of {parent: level,
                              name: Temp.label,
