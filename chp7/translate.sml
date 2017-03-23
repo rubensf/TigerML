@@ -6,7 +6,7 @@ struct
   datatype level = Level of {parent: level,
                              name: Temp.label,
                              formals: bool list,
-                             frame: F.frame}
+                             frame: F.frame} * unit ref
                  | Outermost
   datatype access = Access of level * F.access
                   | NilAccess (* Not sure if necessary *)
@@ -15,24 +15,39 @@ struct
                | Cx of Temp.label * Temp.label -> T.stm
 
   val outername = Temp.newlabel ()
-  val outermost = Level {parent=Outermost,
-                         name=outername,
-                         formals=[],
-                         frame=F.newFrame {name=outername, formals=[]}}
+  val outermost = Level ({parent=Outermost,
+                          name=outername,
+                          formals=[],
+                          frame=F.newFrame {name=outername, formals=[]}},
+                         ref ())
 
   fun newLevel {parent: level, name: Temp.label, formals: bool list} =
-    Level {parent=parent, name=name, formals=formals, frame=F.newFrame {name=name, formals=formals}}
+    Level ({parent=parent, name=name, formals=formals, frame=F.newFrame {name=name, formals=formals}}, ref ())
 
   fun formals (lev: level) =
     case lev of
       Level l   => foldl (fn (formal, ans) => (Access (lev, formal))::ans)
-                     [] (F.formals (#frame l))
+                     [] (F.formals (#frame (#1 l)))
     | Outermost => []
 
   fun allocLocal (lev: level) esc =
     case lev of
-      Level l   => Access (lev, F.allocLocal(#frame l) esc)
+      Level l   => Access (lev, F.allocLocal(#frame (#1 l)) esc)
     | Outermost => NilAccess
+
+  fun lvEqual (Level(_, uref1), Level(_, uref2)) = uref1 = uref2
+    | lvEqual (_,_) = false
+
+  fun staticLinking (Level deflevel, Level curlevel) =
+    if lvEqual (Level deflevel, Level curlevel)
+    then T.TEMP F.fp
+    else T.MEM (T.BINOP (T.PLUS,
+                         T.CONST (F.getOffset (#frame (#1 curlevel))),
+                         staticLinking (Level deflevel, (#parent (#1 curlevel)))))
+    | staticLinking (_,_) = T.CONST 0
+
+  fun simpleVar (Access ac, Level l) = Ex (F.expfn (#2 ac) (staticLinking ((#1 ac), Level l)))
+    | simpleVar (_, _) = Ex (T.CONST 0) (* TODO How to report internal error? *)
 
   fun seq (l: T.stm list) =
     case List.length l of
@@ -57,6 +72,5 @@ struct
         end
     | unEx (Nx s) = T.ESEQ(s, T.CONST 0)
 
-  type exp = unit
-  fun nilExp() = ()
+  fun nilExp() = Ex (T.CONST 0)
 end

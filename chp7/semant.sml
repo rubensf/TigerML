@@ -241,7 +241,7 @@ struct
       let
         fun trvar (A.SimpleVar (id, pos)) =
               (case Symbol.look (venv, id) of
-                 SOME (E.VarEntry evrty) => {exp=R.nilExp(), ty=(#ty evrty)}
+                 SOME (E.VarEntry evrty) => {exp=R.simpleVar(#access evrty, level), ty=(#ty evrty)}
                | SOME (E.FunEntry _)     => (error pos (Symbol.name id ^ " is function, not a variable.");
                                              {exp=R.nilExp(), ty=T.NIL})
                | _                       => (error pos ("Undefined variable: " ^ Symbol.name id);

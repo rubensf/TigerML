@@ -9,5 +9,7 @@ sig
 	val formals    : level -> access list
 	val allocLocal : level -> bool -> access
 
-	val nilExp : unit -> unit
+	val simpleVar  : access * level -> exp
+
+	val nilExp : unit -> exp
 end
