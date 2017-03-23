@@ -24,8 +24,8 @@ struct
 
   type ty = T.ty
 
-  datatype enventry = VarEntry of {access: Translate.access, ty: ty}
-                    | FunEntry of {level: Translate.level,
+  datatype enventry = VarEntry of {access: R.access, ty: ty}
+                    | FunEntry of {level: R.level,
                                    label: Temp.label,
                                    formals: ty list, result: ty}
 
