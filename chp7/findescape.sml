@@ -95,4 +95,9 @@ struct
         end
 
     fun findEscape(prog: A.exp): unit = 
+        let
+            val table = S.empty
+        in
+            traverseExp(table,0,prog)
+        end
 end
