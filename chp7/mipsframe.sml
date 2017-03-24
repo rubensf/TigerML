@@ -4,10 +4,16 @@ struct
 
   datatype access = InFrame of int |
                     InReg of Temp.temp
+
   type frame      = Temp.label * access list * int ref
 
-  val fp = Temp.newtemp ()
+  datatype frag = PROC of {body: Tree.stm, frame: frame}
+                | STRING of Temp.label
+
   val wordSize = 4
+
+  val fp = Temp.newtemp ()
+  val rv = Temp.newtemp ()
 
   fun name (f: frame)       = #1 f
   fun formals (f: frame)    = #2 f
@@ -33,4 +39,6 @@ struct
 
   fun expfn (InFrame offset) = (fn fptr => MEM(BINOP(PLUS, fptr, CONST offset)))
     | expfn (InReg reg) = (fn fptr => TEMP reg)
+
+  fun procEntryExit (frame, treeExp) = treeExp (* TODO *)
 end
