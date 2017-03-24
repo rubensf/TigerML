@@ -88,9 +88,9 @@ struct
       val body      = unNx body
       val bodyLabel = Temp.newlabel()
     in 
-      Nx (seq[T.label testLabel,
+      Nx (seq[T.LABEL testLabel,
               test (bodyLabel, done),
-              T.label bodyLabel,
+              T.LABEL bodyLabel,
               body,
               T.JUMP (T.NAME testLabel, [testLabel]),
               T.LABEL done])
@@ -112,8 +112,21 @@ struct
               T.CJUMP(T.LE, var, hi, forLabel, break),
               T.LABEL forLabel,
               T.MOVE(var, T.BINOP(T.PLUS, var, T.CONST 1)),
-              T.JUMP(T.NAME(bodyLabel, [bodyLabel])),
+              T.JUMP(T.NAME bodyLabel, [bodyLabel]),
               T.LABEL break])
     end
   fun nilExp() = Ex (T.CONST 0)
+  fun intExp(i) = Ex (T.CONST i)
+  fun seqExp([]) = Ex (T.CONST 0) 
+    | seqExp([exp]) = exp
+    | seqExp(exp::more) = Ex (T.ESEQ (unNx exp, unEx (seqExp more)))
+  fun assignExp(var, exp) = Nx (T.MOVE (unEx var, unEx exp))
+  fun breakExp(break) = Nx (T.JUMP (T.NAME break, [break]))
+  fun letExp([], body) = body
+    | letExp(decs, body) = 
+        let
+          val d = seq (map unNx decs)
+        in
+          Ex (T.ESEQ (d, unEx body))
+        end
 end
