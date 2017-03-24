@@ -77,24 +77,29 @@ struct
             {exp=R.nilExp(), ty=T.STRING}
         | trexp (A.OpExp {left, oper, right, pos}) =
             (let
-              val real_left = actual_ty(tenv, #ty (trexp left))
-              val real_right = actual_ty(tenv, #ty (trexp right))
+              val left = (trexp left)
+              val right = (trexp right)
+              val real_left = actual_ty(tenv, #ty left)
+              val real_right = actual_ty(tenv, #ty right)
              in
                case oper of
                  (A.PlusOp | A.MinusOp | A.TimesOp | A.DivideOp) =>
                     (case (real_left, real_right) of
-                       (T.INT, T.INT)       => {exp=R.nilExp(), ty=T.INT}
+                       (T.INT, T.INT)       => {exp=R.intOpExp(oper, #exp left, #exp right), ty=T.INT}
                      | _                    => (error pos "Can only operate ints.";
                                                 {exp=R.nilExp(), ty=T.INT}))
                | (A.LtOp | A.LeOp | A.GtOp | A.GeOp) =>
                     (case (real_left, real_right) of
-                       (T.INT, T.INT)       => {exp=R.nilExp(), ty=T.INT}
+                       (T.INT, T.INT)       => {exp=R.intOpExp(oper, #exp left, #exp right), ty=T.INT}
                      | (T.STRING, T.STRING) => {exp=R.nilExp(), ty=T.INT}
                      | _                    => (error pos "Can only compare ints and strings.";
                                                 {exp=R.nilExp(), ty=T.INT}))
-               | (A.EqOp | A.NeqOp) => (checkTypeMatch(real_left, real_right, tenv,
-                                                       pos, "Equal/NEqual Comp");
-                                        {exp=R.nilExp(), ty=T.INT})
+               | (A.EqOp | A.NeqOp) =>
+                    (if checkTypeMatch(real_left, real_right, tenv, pos, "Equal/NEqual Comp")
+                     then case (real_left, real_right) of
+                            (T.STRING, T.STRING) => {exp=R.nilExp(), ty=T.INT}
+                          |  _                   => {exp=R.intOpExp(oper, #exp left, #exp right), ty=T.INT}
+                     else (error pos "Can only compare same types."; {exp=R.nilExp(), ty=T.INT}))
              end)
         | trexp (A.CallExp {func, args, pos}) =
             (case S.look(venv, func) of
