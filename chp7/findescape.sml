@@ -87,7 +87,7 @@ struct
       | f (A.VarDec {name,escape,typ,init,pos},env) = (
         escape:=false;
         traverseExp(env,d,init);
-        S.enter(env,name,(d+1,escape)))
+        S.enter(env,name,(d,escape)))
       | f(A.TypeDec (_), env) = env
     in
       foldl f env s
