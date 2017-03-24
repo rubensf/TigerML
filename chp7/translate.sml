@@ -72,5 +72,40 @@ struct
         end
     | unEx (Nx s) = T.ESEQ(s, T.CONST 0)
 
+  fun whileExp (test, body, done) = 
+    let
+      val test      = unCx test
+      val testLabel = Temp.newlabel()
+      val body      = unNx body
+      val bodyLabel = Temp.newlabel()
+    in 
+      Nx (seq[T.label testLabel,
+              test (bodyLabel, done),
+              T.label bodyLabel,
+              body,
+              T.JUMP (T.NAME testLabel, [testLabel]),
+              T.LABEL done])
+    end
+
+  fun forExp (var, escape, lo, hi, body, break) = 
+    let 
+      val var       = unEx var
+      val lo        = unEx lo
+      val hi        = unEx hi
+      val body      = unNx body
+      val bodyLabel = Temp.newlabel()
+      val forLabel  = Temp.newlabel()
+    in
+      Nx (seq[T.MOVE(var, lo),
+              T.CJUMP(T.LE, var, hi, bodyLabel, break),
+              T.LABEL(bodyLabel),
+              body,
+              T.CJUMP(T.LE, var, hi, forLabel, break),
+              T.LABEL forLabel,
+              T.MOVE(var, T.BINOP(T.PLUS, var, T.CONST 1)),
+              T.JUMP(T.NAME(bodyLabel, [bodyLabel])),
+              T.LABEL break])
+    end
+
   fun nilExp() = Ex (T.CONST 0)
 end
