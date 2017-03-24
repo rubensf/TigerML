@@ -71,6 +71,13 @@ struct
                   T.TEMP r)
         end
     | unEx (Nx s) = T.ESEQ(s, T.CONST 0)
-
+  fun unCx (Ex(T.CONST 0)) = (fn (t, f) => T.JUMP(T.NAME f, [f]))
+    | unCx (Ex(T.CONST _)) = (fn (t, f) => T.JUMP(T.NAME t, [t]))
+    | unCx (Ex e) = (fn (t, f) => T.CJUMP(T.NE, T.CONST 0, e, t, f))
+    | unCx (Cx genstm) = genstm
+    | unCx (Nx _) = (fn (t, f) => T.EXP(T.CONST 0)) (* change to error message if possible *)
+  fun unNx (Ex e) = T.EXP e
+    | unNx (Nx s) = s
+    | unNx (Cx genstm) = let val tf = Temp.newlabel() in T.SEQ(genstm(tf,tf), T.LABEL tf) end
   fun nilExp() = Ex (T.CONST 0)
 end
