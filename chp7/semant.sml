@@ -38,8 +38,8 @@ struct
 
   fun checkInt({exp, ty}, pos, refstring) =
       case ty of
-        T.INT => ()
-      | _     => error pos (refstring ^ ": Integer required.")
+        T.INT => true
+      | _     => (error pos (refstring ^ ": Integer required."); false)
 
   fun checkString({exp, ty}, pos, refstring) =
       case ty of
@@ -241,7 +241,7 @@ struct
       let
         fun trvar (A.SimpleVar (id, pos)) =
               (case Symbol.look (venv, id) of
-                 SOME (E.VarEntry evrty) => {exp=R.simpleVar(#access evrty, level), ty=(#ty evrty)}
+                 SOME (E.VarEntry evrty) => {exp=R.simpleVarAccess(#access evrty, level), ty=(#ty evrty)}
                | SOME (E.FunEntry _)     => (error pos (Symbol.name id ^ " is function, not a variable.");
                                              {exp=R.nilExp(), ty=T.NIL})
                | _                       => (error pos ("Undefined variable: " ^ Symbol.name id);
@@ -256,11 +256,18 @@ struct
                | _                                  => (error pos ("Var " ^ Symbol.name id ^ " is not a record.");
                                                         {exp=R.nilExp(), ty=T.UNIT}))
           | trvar (A.SubscriptVar (var, exp, pos)) =
-              (checkInt(transExp (venv, tenv, level, exp), pos, "Field of var");
-               case (trvar var) of
-                 {exp, ty=T.ARRAY (ty, uniqv)} => {exp=R.nilExp(), ty=actual_ty(tenv, ty)}
-               | _                             => (error pos ("Var is not an array.");
-                                                   {exp=R.nilExp(), ty=T.UNIT}))
+              let
+                val subscrExp = transExp (venv, tenv, level, exp)
+                val subscrExp' =
+                  if checkInt(subscrExp, pos, "Pos of array var")
+                  then (#exp subscrExp)
+                  else R.nilExp()
+              in
+                 case (trvar var) of
+                   {exp, ty=T.ARRAY (ty, uniqv)} => {exp=R.arrayVarAccess(exp, subscrExp'), ty=actual_ty(tenv, ty)}
+                 | _                             => (error pos ("Var is not an array.");
+                                                     {exp=R.nilExp(), ty=T.UNIT})
+              end
       in
         trvar var
       end
@@ -294,7 +301,7 @@ struct
                 val tnames = map #name tydecs
 
                 fun checkNames (x, []) = []
-                  | checkNames (x, ans) =
+                  | checkNames (x, ans : A.symbol list) =
                   (case List.find (fn y => y = x) ans of
                      SOME _ => (error (#pos (hd tydecs)) "Multiple types with same name."; tl ans) (*This may print the error multiple times...*)
                    | NONE   => tl ans)
@@ -336,7 +343,7 @@ struct
                 val fnames = map #name fundecs
 
                 fun checkNames (x, []) = []
-                  | checkNames (x, ans) =
+                  | checkNames (x, ans : A.symbol list) =
                   (case List.find (fn y => y = x) ans of
                      SOME _ => (error (#pos (hd fundecs)) "Multiple functions with same name."; tl ans) (*This may print the error multiple times...*)
                    | NONE   => tl ans)

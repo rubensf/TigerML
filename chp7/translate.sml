@@ -3,6 +3,8 @@ struct
   structure F = MipsFrame
   structure T = Tree
 
+  val error = ErrorMsg.error
+
   datatype level = Level of {parent: level,
                              name: Temp.label,
                              formals: bool list,
@@ -28,7 +30,7 @@ struct
     case lev of
       Level l   => foldl (fn (formal, ans) => (Access (lev, formal))::ans)
                      [] (F.formals (#frame (#1 l)))
-    | Outermost => []
+    | Outermost => (error 0 "Internal Failure: cannot get formals of outermost level."; [])
 
   fun allocLocal (lev: level) esc =
     case lev of
@@ -37,17 +39,6 @@ struct
 
   fun lvEqual (Level(_, uref1), Level(_, uref2)) = uref1 = uref2
     | lvEqual (_,_) = false
-
-  fun staticLinking (Level deflevel, Level curlevel) =
-    if lvEqual (Level deflevel, Level curlevel)
-    then T.TEMP F.fp
-    else T.MEM (T.BINOP (T.PLUS,
-                         T.CONST (F.getOffset (#frame (#1 curlevel))),
-                         staticLinking (Level deflevel, (#parent (#1 curlevel)))))
-    | staticLinking (_,_) = T.CONST 0
-
-  fun simpleVar (Access ac, Level l) = Ex (F.expfn (#2 ac) (staticLinking ((#1 ac), Level l)))
-    | simpleVar (_, _) = Ex (T.CONST 0) (* TODO How to report internal error? *)
 
   fun seq (l: T.stm list) =
     case List.length l of
@@ -71,7 +62,6 @@ struct
                   T.TEMP r)
         end
     | unEx (Nx s) = T.ESEQ(s, T.CONST 0)
-
   fun unCx (Ex(T.CONST 0)) = (fn (t, f) => T.JUMP(T.NAME f, [f]))
     | unCx (Ex(T.CONST _)) = (fn (t, f) => T.JUMP(T.NAME t, [t]))
     | unCx (Ex e) = (fn (t, f) => T.CJUMP(T.NE, T.CONST 0, e, t, f))
@@ -80,24 +70,47 @@ struct
   fun unNx (Ex e) = T.EXP e
     | unNx (Nx s) = s
     | unNx (Cx genstm) = let val tf = Temp.newlabel() in T.SEQ(genstm(tf,tf), T.LABEL tf) end
-  
-  fun whileExp (test, body, done) = 
+
+  fun staticLinking (Level deflevel, Level curlevel) =
+    if lvEqual (Level deflevel, Level curlevel)
+    then T.TEMP F.fp
+    else T.MEM (T.BINOP (T.PLUS,
+                         T.CONST (F.getOffset (#frame (#1 curlevel))),
+                         staticLinking (Level deflevel, (#parent (#1 curlevel)))))
+    | staticLinking (_,_) = T.CONST 0
+
+  fun simpleVarAccess (Access ac, Level l) = Ex (F.expfn (#2 ac) (staticLinking ((#1 ac), Level l)))
+    | simpleVarAccess (_, _) = (error 0 "Internal Failure."; Ex (T.CONST 0))
+
+  fun arrayVarAccess (var, subscr) =
+    let
+       val varEx = unEx var
+       val subscrEx = unEx subscr
+     in
+       Ex (T.MEM (T.BINOP (T.MINUS,
+                           varEx,
+                           T.BINOP (T.MUL,
+                                    subscrEx,
+                                    T.CONST (F.wordSize)))))
+     end
+
+  fun whileExp (test, body, done) =
     let
       val test      = unCx test
       val testLabel = Temp.newlabel()
       val body      = unNx body
       val bodyLabel = Temp.newlabel()
-    in 
-      Nx (seq[T.label testLabel,
+    in
+      Nx (seq[T.LABEL testLabel,
               test (bodyLabel, done),
-              T.label bodyLabel,
+              T.LABEL bodyLabel,
               body,
               T.JUMP (T.NAME testLabel, [testLabel]),
               T.LABEL done])
     end
 
-  fun forExp (var, escape, lo, hi, body, break) = 
-    let 
+  fun forExp (var, escape, lo, hi, body, break) =
+    let
       val var       = unEx var
       val lo        = unEx lo
       val hi        = unEx hi
@@ -112,7 +125,7 @@ struct
               T.CJUMP(T.LE, var, hi, forLabel, break),
               T.LABEL forLabel,
               T.MOVE(var, T.BINOP(T.PLUS, var, T.CONST 1)),
-              T.JUMP(T.NAME(bodyLabel, [bodyLabel])),
+              T.JUMP(T.NAME(bodyLabel), [bodyLabel]),
               T.LABEL break])
     end
   fun nilExp() = Ex (T.CONST 0)
