@@ -9,6 +9,8 @@ sig
 	val formals    : level -> access list
 	val allocLocal : level -> bool -> access
 
+	val intOpExp : Absyn.oper * exp * exp -> exp
+
 	val simpleVarAccess : access * level -> exp
 	val arrayVarAccess  : exp * exp -> exp
 
