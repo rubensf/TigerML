@@ -37,8 +37,11 @@ struct
       true  => (InReg (Temp.newtemp()))
     | false => ((#3 f) := !(#3 f)-4;InFrame (!(#3 f)+4))
 
-  fun expfn (InFrame offset) = (fn fptr => MEM(BINOP(PLUS, fptr, CONST offset)))
-    | expfn (InReg reg) = (fn fptr => TEMP reg)
+  fun expFn (InFrame offset) = (fn fptr => MEM(BINOP(PLUS, fptr, CONST offset)))
+    | expFn (InReg reg) = (fn fptr => TEMP reg)
+
+  fun externCallFn (s, args) =
+    CALL (NAME (Temp.namedlabel s), args)
 
   fun procEntryExit (frame, treeExp) = treeExp (* TODO *)
 end

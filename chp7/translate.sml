@@ -87,8 +87,8 @@ struct
        val varEx = unEx var
        val subscrEx = unEx subscr
      in
-       Ex (T.MEM (T.BINOP (T.MINUS,
-                           varEx,
+       Ex (T.MEM (T.BINOP (T.PLUS,
+                           T.MEM (varEx),
                            T.BINOP (T.MUL,
                                     subscrEx,
                                     T.CONST (F.wordSize)))))

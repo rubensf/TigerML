@@ -18,8 +18,9 @@ sig
 	val fp       : Temp.temp
 	val rv       : Temp.temp
 
-	(* Get's the specific access function. *)
-	val expfn    : access -> Tree.exp -> Tree.exp
+	(* Auxiliar, arch dependent functions *)
+	val expFn        : access -> Tree.exp -> Tree.exp (* Get's the specific access function. *)
+	val externCallFn : string * Tree.exp list -> Tree.exp (* Calls an external function, such as C heap management. *)
 
 	(* Function "decorators" - add prologue and epilogue standard mumbo jumbo *)
 	val procEntryExit : frame * Tree.exp -> Tree.exp
