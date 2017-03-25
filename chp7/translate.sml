@@ -222,7 +222,7 @@ struct
         in
           Ex (T.ESEQ (d, unEx body))
         end
-  fun ifThenElseExp(test, then', else') =
+  fun ifThenElseExp(test, then', else') = (* TODO fix *)
     let
       val tlabel = Temp.newlabel()
       val flabel = Temp.newlabel()
@@ -271,7 +271,7 @@ struct
                             unNx then',
                             T.LABEL done])
     end
-  fun callExp(label, exps) = Ex (T.CALL (T.NAME label, map unEx exps))
+  fun callExp(label, exps) = Ex (T.CALL (T.NAME label, map unEx exps)) (* TODO add static links *)
 
   fun packExps(exps, mainexp) = Ex (T.ESEQ ((seq (map unNx exps)), (unEx mainexp)))
 
