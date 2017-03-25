@@ -6,9 +6,9 @@ sig
   type expty
 
   val transProg : Absyn.exp -> unit
-  val transVar  : venv * tenv * Translate.level * Absyn.var -> expty
-  val transExp  : venv * tenv * Translate.level * Absyn.exp -> expty
-  val transDec  : venv * tenv * Translate.level * Absyn.dec -> {venv: venv, tenv: tenv}
+  val transVar  : venv * tenv * Translate.level * Absyn.var * Tree.label-> expty
+  val transExp  : venv * tenv * Translate.level * Absyn.exp * Tree.label -> expty
+  val transDec  : venv * tenv * Translate.level * Absyn.dec * Tree.label -> {venv: venv, tenv: tenv}
   val transTy   :        tenv                   * Absyn.ty  -> Types.ty
 end
 
@@ -65,7 +65,7 @@ struct
               false)
     end
 
-  fun transExp(venv, tenv, level, exp) =
+  fun transExp(venv, tenv, level, exp, break) =
     let
       fun trexp (A.VarExp var) =
             transVar(venv, tenv, level, var)
@@ -198,7 +198,7 @@ struct
             in
               checkInt(trexp(test), pos, "While loop");
               checkUnit(trexp(body), pos, "While loop");
-              {exp = R.whileExp(#exp test', #exp body', Temp.newlabel()), ty=T.UNIT}
+              {exp = R.whileExp(#exp test', #exp body', break), ty=T.UNIT}
             end
         | trexp (A.ForExp{var, escape, lo, hi, body, pos}) =
             let
@@ -207,7 +207,7 @@ struct
               val _ = (nest := !nest + 1);
               val lo' = trexp(lo)
               val hi' = trexp(hi)
-              val body' = transExp(venv', tenv, level, body)
+              val body' = transExp(venv', tenv, level, body, break)
               val _ = (nest := !nest - 1);
             in
               checkInt(lo', pos, "For loop");
@@ -218,7 +218,7 @@ struct
         | trexp (A.BreakExp pos) =
             let in
             case !nest > 0 of
-              true  => {exp = R.errExp(), ty = T.UNIT}
+              true  => {exp = R.breakExp(break), ty = T.UNIT}
             | false => (error pos "Break must be inside a loop";
                         {exp = R.errExp(), ty = T.UNIT})
             end
@@ -227,11 +227,11 @@ struct
               val depth = !nest
               val _ = (nest := 0)
               val {venv=venv', tenv=tenv'} = foldl (fn (x, ans) =>
-                                                      transDec (#venv ans, #tenv ans, level, x))
+                                                      transDec (#venv ans, #tenv ans, level, x, break))
                                                {venv=venv, tenv=tenv} decs
               val _ = (nest := depth)
             in
-              transExp(venv', tenv', level, body)
+              transExp(venv', tenv', level, body, break)
             end
         | trexp (A.ArrayExp{typ, size, init, pos}) =
             let
@@ -253,7 +253,7 @@ struct
     in
         trexp exp
     end
-    and transVar(venv, tenv, level, var) =
+    and transVar(venv, tenv, level, var, break) =
       let
         fun trvar (A.SimpleVar (id, pos)) =
               (case Symbol.look (venv, id) of
@@ -273,7 +273,7 @@ struct
                                                         {exp=R.errExp(), ty=T.UNIT}))
           | trvar (A.SubscriptVar (var, exp, pos)) =
               let
-                val subscrExp = transExp (venv, tenv, level, exp)
+                val subscrExp = transExp (venv, tenv, level, exp, break)
                 val subscrExp' =
                   if checkInt(subscrExp, pos, "Pos of array var")
                   then (#exp subscrExp)
@@ -287,11 +287,11 @@ struct
       in
         trvar var
       end
-    and transDec (venv, tenv, level, dec) =
+    and transDec (venv, tenv, level, dec, break) =
       let
         fun trdec (A.VarDec {name, escape, typ, init, pos}) =
               let
-                val trValue = transExp(venv, tenv, level, init)
+                val trValue = transExp(venv, tenv, level, init, break)
                 val typ' = case typ of
                              SOME (s, p) => (case S.look(tenv, s) of
                                                SOME t => SOME (actual_ty (tenv, t))
@@ -415,7 +415,7 @@ struct
                         | SOME (E.VarEntry _) => ((error pos "Internal error processing functions."); level)
                         | NONE                => ((error pos "Internal error processing functions."); level)
 
-                      val retTypeFound = (#ty (transExp(venv'', tenv, funcTrLevel, body)))
+                      val retTypeFound = (#ty (transExp(venv'', tenv, funcTrLevel, body, break)))
                     in
                       checkTypeMatch(result_ty, retTypeFound, tenv, pos, "Function Declaration")
                     end
@@ -439,5 +439,5 @@ struct
       | A.ArrayTy (s, pos) => (case S.look(tenv, s) of
                                  SOME ty => T.ARRAY (ty, ref ())
                                | NONE    => ((error pos "Non existent type."); T.UNIT))
-    and transProg (absyn) = (transExp(E.base_venv, E.base_tenv, R.outermost, absyn); ())
+    and transProg (absyn) = (transExp(E.base_venv, E.base_tenv, R.outermost, absyn, Temp.newlabel); ())
 end
