@@ -223,7 +223,12 @@ struct
               val depth = !nest
               val _ = (nest := 0)
               val {venv=venv', tenv=tenv', exps=exps'} =
-                    foldl (fn (x, ans) => transDec (#venv ans, #tenv ans, level, x, break))
+                    foldl (fn (x, ans) =>
+                             let
+                               val result = transDec (#venv ans, #tenv ans, level, x, break)
+                             in
+                               {venv=(#venv result), tenv=(#tenv result), exps=((#exps result) @ (#exps ans))}
+                             end)
                           {venv=venv, tenv=tenv, exps=[]} decs
               val _ = (nest := depth)
               val letRet = transExp(venv', tenv', level, body, break)
@@ -262,15 +267,16 @@ struct
           | trvar (A.FieldVar (var, id, pos)) =
               let
                 val var = trvar var
+                val varty = actual_ty(tenv, (#ty var))
               in
-                (case var of
-                   {exp, ty=T.RECORD (fieldlist, uniqv)} =>
+                (case varty of
+                   T.RECORD (fieldlist, uniqv) =>
                      let
                        val posList = foldl (fn ((s, t), ans) => ans @ [(s, t, length ans)]) [] fieldlist
                        val findPos = foldl (fn ((s, t, p), ans) => if s = id then (p, t) else ans) ((0-1), T.INT) posList
                      in
                        if (#1 findPos) <> (0-1)
-                       then {exp=R.fieldVarAccess(exp, R.intExp (#1 findPos)), ty=(#2 findPos)}
+                       then {exp=R.fieldVarAccess((#exp var), R.intExp (#1 findPos)), ty=(#2 findPos)}
                        else (error pos ("Field \"" ^ Symbol.name id ^ "\" does not belong to record.");
                              {exp=R.errExp(), ty=T.UNIT})
                     end
@@ -284,11 +290,13 @@ struct
                   if checkInt(subscrExp, pos, "Pos of array var")
                   then (#exp subscrExp)
                   else R.errExp()
+                val varty = (trvar var)
+                val varty' = actual_ty (tenv, (#ty varty))
               in
-                 case (trvar var) of
-                   {exp, ty=T.ARRAY (ty, uniqv)} => {exp=R.arrayVarAccess(exp, subscrExp'), ty=actual_ty(tenv, ty)}
-                 | _                             => (error pos ("Var is not an array.");
-                                                     {exp=R.errExp(), ty=T.UNIT})
+                 case varty' of
+                   T.ARRAY (ty, uniqv) => {exp=R.arrayVarAccess((#exp varty), subscrExp'), ty=ty}
+                 | _                   => (error pos ("Var is not an array.");
+                                           {exp=R.errExp(), ty=T.UNIT})
               end
       in
         trvar var

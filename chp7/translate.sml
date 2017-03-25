@@ -43,9 +43,9 @@ struct
   fun seq (l: T.stm list) =
     case List.length l of
       0 => T.EXP (T.CONST 0)
-    | 1 => hd l
-    | 2 => T.SEQ((hd l), (hd (tl l)))
-    | _ => T.SEQ((hd l), seq (tl l))
+    | 1 => (hd l)
+    | 2 => T.SEQ ((hd l), (hd (tl l)))
+    | _ => T.SEQ ((hd l), seq (tl l))
 
   fun unEx (Ex e) = e
     | unEx (Cx genstm) =
