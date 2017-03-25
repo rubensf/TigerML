@@ -100,7 +100,7 @@ control
 : IF exp THEN exp ELSE exp        (A.IfExp {test=exp1, then'=exp2, else'=SOME(exp3), pos=IFleft})
 | IF exp THEN exp                 (A.IfExp {test=exp1, then'=exp2, else'=NONE,       pos=IFleft})
 | WHILE exp DO exp                (A.WhileExp {test=exp1, body=exp2, pos=WHILEleft})
-| FOR ID ASSIGN exp TO exp DO exp (A.ForExp {var=symbol ID, escape=ref true, lo=exp1, hi=exp2, body=exp3, pos=FORleft})
+| FOR ID ASSIGN exp TO exp DO exp (A.ForExp {var=symbol ID, escape=ref false, lo=exp1, hi=exp2, body=exp3, pos=FORleft})
 | BREAK                           (A.BreakExp BREAKleft)
 | LET decs IN expseq END          (A.LetExp {decs=decs, body=A.SeqExp expseq, pos=LETleft})
 
@@ -149,8 +149,8 @@ tyfields
 | tyfields_some (tyfields_some)
 
 tyfields_some
-: ID COLON ID                     ({name=symbol ID1, escape=ref true, typ=symbol ID2, pos=COLONleft} :: nil)
-| ID COLON ID COMMA tyfields_some ({name=symbol ID1, escape=ref true, typ=symbol ID2, pos=COLONleft} :: tyfields_some)
+: ID COLON ID                     ({name=symbol ID1, escape=ref false, typ=symbol ID2, pos=COLONleft} :: nil)
+| ID COLON ID COMMA tyfields_some ({name=symbol ID1, escape=ref false, typ=symbol ID2, pos=COLONleft} :: tyfields_some)
 
 decs
 :          ([])
@@ -166,9 +166,9 @@ tydeclist
 | TYPE ID EQ ty tydeclist (({name=symbol ID, ty=ty, pos=TYPEleft}) :: tydeclist)
 
 vardec
-: VAR ID ASSIGN exp          (A.VarDec {name=symbol ID, escape=ref true, typ=NONE, init=exp, pos=VARleft})
+: VAR ID ASSIGN exp          (A.VarDec {name=symbol ID, escape=ref false, typ=NONE, init=exp, pos=VARleft})
 | VAR ID COLON ID ASSIGN exp (A.VarDec {name=symbol ID1, 
-                                        escape=ref true, 
+                                        escape=ref false, 
                                         typ=SOME(symbol ID2, ID2left), 
                                         init=exp,
                                         pos=VARleft})
