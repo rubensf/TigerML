@@ -14,9 +14,10 @@ sig
 
 	val intExp : int -> exp
 	val strExp : string -> exp
+	val nilExp : unit -> exp
 
 	val simpleVarAccess : access * level -> exp
 	val arrayVarAccess  : exp * exp -> exp
 
-	val nilExp : unit -> exp
+	val errExp : unit -> exp
 end

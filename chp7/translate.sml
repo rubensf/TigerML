@@ -229,4 +229,6 @@ struct
                             unNx then',
                             T.LABEL done])
     end
+
+  fun errExp() = Ex (T.CONST 0)
 end
