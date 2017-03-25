@@ -10,7 +10,6 @@ sig
 
   val base_tenv : ty Symbol.table
   val base_venv : enventry Symbol.table
-  val size_arrs : enventry Symbol.table
 end
 
 structure Env :> ENV =
@@ -49,6 +48,4 @@ struct
 
   fun fillFuncFn ((name, entry), ans) = S.enter(ans, S.symbol name, entry)
   val base_venv = foldl fillFuncFn S.empty predef_funcs
-
-  val size_arrs = S.empty
 end
