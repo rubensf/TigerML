@@ -91,7 +91,7 @@ struct
              end)
         | trexp (A.CallExp {func, args, pos}) =
             (case S.look(venv, func) of
-               SOME (E.FunEntry {level, label, formals, result}) =>
+               SOME (E.FunEntry {level=declevel, label, formals, result}) =>
                  if (length formals) = (length args)
                    then ((foldl (fn (x, ans) =>
                                    let
@@ -102,7 +102,7 @@ struct
                                      tl ans
                                    end)
                               formals args);
-                            {exp=R.callExp(label, map #exp (map trexp args)), ty=result})
+                            {exp=R.callExp(declevel, level, label, map #exp (map trexp args)), ty=result})
                    else (error pos "Function args length differ from defined.";
                          {exp=R.errExp(), ty=result})
                | SOME (E.VarEntry {access, ty}) => (error pos ("Function expected, but variable found.");

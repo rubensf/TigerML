@@ -209,7 +209,7 @@ struct
     case List.length exps of
       0 => Ex (T.CONST 0)
     | 1 => Ex (unEx (hd exps))
-    | _ => (print "what seq"; Ex (T.ESEQ (seq (map unNx (List.take (exps, ((List.length exps) - 1)))), unEx (List.last exps))))
+    | _ => Ex (T.ESEQ (seq (map unNx (List.take (exps, ((List.length exps) - 1)))), unEx (List.last exps)))
 
   fun assignExp(var, exp) = Nx (T.MOVE (unEx var, unEx exp))
 
@@ -271,8 +271,14 @@ struct
                             unNx then',
                             T.LABEL done])
     end
-  fun callExp(label, exps) = Ex (T.CALL (T.NAME label, map unEx exps)) (* TODO add static links *)
-
+  fun callExp(deflevel as Level ({parent=parent,...}, uniqref), curlevel, label, exps) =
+    let
+      val link = staticLinking (parent, curlevel)
+      val expCalls = map unEx exps
+    in
+      Ex (T.CALL (T.NAME label, link::expCalls))
+    end
+    | callExp _ = (error 0 "Top Level Exception"; Ex (T.CONST 0))
   fun packExps(exps, mainexp) = Ex (T.ESEQ ((seq (map unNx exps)), (unEx mainexp)))
 
   fun procEntryExit({level = level, body = body}) =
