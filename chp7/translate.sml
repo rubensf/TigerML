@@ -157,7 +157,7 @@ struct
               T.LABEL done])
     end
 
-  fun forExp (var, escape, lo, hi, body) =
+  fun forExp (var, escape, lo, hi, body, break) =
     let
       val var       = unEx var
       val lo        = unEx lo
@@ -167,14 +167,14 @@ struct
       val incLabel  = Temp.newlabel()
     in
       Nx (seq[T.MOVE(var, lo),
-              T.CJUMP(T.LE, var, hi, bodyLabel, escape),
+              T.CJUMP(T.LE, var, hi, bodyLabel, break),
               T.LABEL bodyLabel,
               body,
-              T.CJUMP(T.LT, var, hi, incLabel, escape),
+              T.CJUMP(T.LT, var, hi, incLabel, break),
               T.LABEL incLabel,
               T.MOVE(var, T.BINOP(T.PLUS, var, T.CONST 1)),
               T.JUMP(T.NAME bodyLabel, [bodyLabel]),
-              T.LABEL escape])
+              T.LABEL break])
     end
 
   fun nilExp() = Ex (T.CONST 0)

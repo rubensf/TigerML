@@ -198,7 +198,7 @@ struct
             in
               checkInt(trexp(test), pos, "While loop");
               checkUnit(trexp(body), pos, "While loop");
-              {exp = R.whileExp(#exp test', #exp body', break), ty=T.UNIT}
+              {exp = R.whileExp(#exp test', #exp body', Temp.newlabel), ty=T.UNIT}
             end
         | trexp (A.ForExp{var, escape, lo, hi, body, pos}) =
             let
@@ -213,7 +213,7 @@ struct
               checkInt(lo', pos, "For loop");
               checkInt(hi', pos, "For loop");
               checkUnit(body', pos, "For loop");
-              {exp = R.forExp(R.simpleVarAccess (access, level), Temp.newlabel (), #exp lo', #exp hi', #exp body'), ty = T.UNIT}
+              {exp = R.forExp(R.simpleVarAccess (access, level), escape, #exp lo', #exp hi', #exp body', Temp.newlabel), ty = T.UNIT}
             end
         | trexp (A.BreakExp pos) =
             let in
