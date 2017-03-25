@@ -426,8 +426,10 @@ struct
                         | SOME (E.VarEntry _) => ((error pos "Internal error processing functions var."); level)
                         | NONE                => ((error pos "Internal error processing functions none."); level)
 
-                      val retTypeFound = (#ty (transExp(venv'', tenv, funcTrLevel, body, break)))
+                      val funcExp = transExp(venv'', tenv, funcTrLevel, body, break)
+                      val retTypeFound = (#ty funcExp)
                     in
+                      R.procEntryExit {level=funcTrLevel, body=(#exp funcExp)};
                       checkTypeMatch(result_ty, retTypeFound, tenv, pos, "Function Declaration")
                     end
               in
