@@ -156,12 +156,12 @@ struct
              end)
         | trexp (A.SeqExp exps) =
             if List.null exps
-              then {exp=R.errExp(), ty=T.UNIT}
+              then {exp=R.seqExp([]), ty=T.UNIT}
               else let
                      val exps' = map trexp (map #1 exps)
                      val list_ty = List.last exps'
                    in
-                     {exp=R.errExp(), ty=(#ty list_ty)}
+                     {exp=R.seqExp(map #exp exps'), ty=(#ty list_ty)}
                    end
         | trexp (A.AssignExp{var, exp, pos}) =
             let
