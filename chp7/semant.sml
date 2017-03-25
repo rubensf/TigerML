@@ -91,7 +91,7 @@ struct
                | (A.LtOp | A.LeOp | A.GtOp | A.GeOp) =>
                     (case (real_left, real_right) of
                        (T.INT, T.INT)       => {exp=R.intOpExp(oper, #exp left, #exp right), ty=T.INT}
-                     | (T.STRING, T.STRING) => {exp=R.nilExp(), ty=T.INT}
+                     | (T.STRING, T.STRING) => {exp=R.strOpExp(oper, #exp left, #exp right), ty=T.INT}
                      | _                    => (error pos "Can only compare ints and strings.";
                                                 {exp=R.nilExp(), ty=T.INT}))
                | (A.EqOp | A.NeqOp) =>
