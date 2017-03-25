@@ -37,6 +37,8 @@ struct
       true  => (InReg (Temp.newtemp()))
     | false => ((#3 f) := !(#3 f)-wordSize;InFrame (!(#3 f)+wordSize))
 
+  fun resetFrame (f: frame) = (#3 f) := 0
+
   fun expFn (InFrame offset) = (fn fptr => MEM(BINOP(PLUS, fptr, CONST offset)))
     | expFn (InReg reg) = (fn fptr => TEMP reg)
 

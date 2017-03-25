@@ -35,6 +35,11 @@ struct
                      [] (F.formals (#frame (#1 l)))
     | Outermost => (error 0 "Internal Failure: cannot get formals of outermost level."; [])
 
+  fun frame (lev: level) =
+    case lev of
+      Level l   => (#frame (#1 l))
+    | Outermost => (error 0 "Internal Failure: cannot get frame of outermost level."; F.newFrame {name=outername, formals=[]})
+
   fun seq (l: T.stm list) =
     case List.length l of
       0 => T.EXP (T.CONST 0)
@@ -261,7 +266,7 @@ struct
       frags := frag'::(!frags)
     end
 
-  fun resetFrags () = frags := []
+  fun resetFrags () = (F.resetFrame (frame outermost); frags := [])
   fun getResult () = !frags
 
   fun errExp () = Ex (T.CONST 0)

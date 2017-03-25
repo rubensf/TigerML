@@ -12,6 +12,8 @@ sig
 	val formals    : frame -> access list
 	val allocLocal : frame -> bool -> access
 
+	val resetFrame : frame -> unit
+
 	val wordSize : int
 
 	(* Special registers *)
