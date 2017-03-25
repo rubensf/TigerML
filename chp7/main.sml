@@ -4,8 +4,8 @@ struct
 		let
 			val ast = Parse.parse file
 
-			fun doAll (MipsFrame.PROC {body, frame}) = Printtree.printtree (TextIO.stdOut, body)
-				| doAll (MipsFrame.STRING lbl) = print (Temp.getlabeltxt lbl)
+			fun printFrag (MipsFrame.PROC {body, frame}) = Printtree.printtree (TextIO.stdOut, body)
+				| printFrag (MipsFrame.STRING lbl) = print ((Temp.getlabeltxt lbl) ^ "\n")
 		in
 			if !ErrorMsg.anyErrors
 			  then print "Errors with file syntax. Stopping compilation.\n"
@@ -14,7 +14,13 @@ struct
 			        print "Semanting Analysis: \n";
 			        FindEscape.findEscape ast;
 			        Translate.resetFrags ();
-			        List.app doAll (Semant.transProg ast);
+			        let
+			          val frags = Semant.transProg ast;
+			        in
+			        	if !ErrorMsg.anyErrors
+			        	then print "Errors with Semantic analysis. Stopping compilation.\n"
+			        	else List.app printFrag frags
+			        end;
 			        ())
 		end
 end
