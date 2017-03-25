@@ -219,17 +219,4 @@ struct
                             unNx then',
                             T.LABEL done])
     end
-    fun binopExp(oper, left, right) = Ex (T.BINOP (oper, unEx left, unEx right))
-    fun relopExp(oper, left, right) = Cx (fn (t, f) => T.CJUMP(oper, unEx left, unEx right, t, f))
-    fun intOpExp(A.PlusOp, left, right)   = binopExp(T.PLUS, left , right)
-      | intOpExp(A.MinusOp, left, right)  = binopExp(T.MINUS, left, right)
-      | intOpExp(A.TimesOp, left, right)  = binopExp(T.MUL, left, right)
-      | intOpExp(A.DivideOp, left, right) = binopExp(T.DIV, left, right)
-      | intOpExp(A.EqOp, left, right)     = relopExp(T.EQ, left, right)
-      | intOpExp (A.NeqOp, left, right)   = relopExp (T.NE, left, right)
-      | intOpExp (A.LtOp, left, right)    = relopExp (T.LT, left, right)
-      | intOpExp (A.LeOp, left, right)    = relopExp (T.LE, left, right)
-      | intOpExp (A.GtOp, left, right)    = relopExp (T.GT, left, right)
-      | intOpExp (A.GeOp, left, right)    = relopExp (T.GE, left, right)
-
 end
