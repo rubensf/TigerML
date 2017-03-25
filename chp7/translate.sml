@@ -160,10 +160,10 @@ struct
               T.CJUMP(T.LE, var, hi, bodyLabel, break),
               T.LABEL(bodyLabel),
               body,
-              T.CJUMP(T.LE, var, hi, forLabel, break),
+              T.CJUMP(T.LT, var, hi, forLabel, break),
               T.LABEL forLabel,
               T.MOVE(var, T.BINOP(T.PLUS, var, T.CONST 1)),
-              T.JUMP(T.NAME bodyLabel, [bodyLabel]),
+              T.JUMP(T.NAME(bodyLabel), [bodyLabel]),
               T.LABEL break])
     end
   fun nilExp() = Ex (T.CONST 0)
@@ -231,4 +231,16 @@ struct
     end
 
   fun errExp() = Ex (T.CONST 0)
+
+  fun procEntryExit({level = level, body = body}) = 
+    let
+      val frame' = case level of
+        Outermost => (error 0 "Top Level Exception";
+                      F.newFrame {name = Temp.newlabel(), formals = []})
+        | Level l => (#frame (#1 l))
+      val body' = unNx body
+      val frag' = F.PROC({body = body', frame = frame'})
+    in
+      frags := frag'::(!frags)
+    end
 end
