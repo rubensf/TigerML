@@ -97,7 +97,7 @@ struct
                | (A.EqOp | A.NeqOp) =>
                     (if checkTypeMatch(real_left, real_right, tenv, pos, "Equal/NEqual Comp")
                      then case (real_left, real_right) of
-                            (T.STRING, T.STRING) => {exp=R.errExp(), ty=T.INT}
+                            (T.STRING, T.STRING) => {exp=R.strOpExp(oper, #exp left, #exp right), ty=T.INT}
                           |  _                   => {exp=R.intOpExp(oper, #exp left, #exp right), ty=T.INT}
                      else (error pos "Can only compare same types."; {exp=R.errExp(), ty=T.INT}))
              end)
@@ -213,7 +213,7 @@ struct
               checkInt(lo', pos, "For loop");
               checkInt(hi', pos, "For loop");
               checkUnit(body', pos, "For loop");
-              {exp = R.forExp(R.simpleVarAccess (access, level), Temp.newlabel, #exp lo', #exp hi', #exp body'), ty = T.UNIT}
+              {exp = R.forExp(R.simpleVarAccess (access, level), Temp.newlabel (), #exp lo', #exp hi', #exp body'), ty = T.UNIT}
             end
         | trexp (A.BreakExp pos) =
             let in
@@ -263,14 +263,23 @@ struct
                | _                       => (error pos ("Undefined variable: " ^ Symbol.name id);
                                              {exp=R.errExp(), ty=T.NIL}))
           | trvar (A.FieldVar (var, id, pos)) =
-              (case (trvar var) of
-                 {exp, ty=T.RECORD (fieldlist, uniqv)} =>
-                   (case List.find (fn (s, ty) => s = id) fieldlist of
-                      SOME ty => {exp=R.errExp(), ty=actual_ty(tenv, #2 ty)}
-                    | _            => (error pos ("Field \"" ^ Symbol.name id ^ "\" does not belong to record.");
-                                       {exp=R.errExp(), ty=T.UNIT}))
-               | _                                  => (error pos ("Var " ^ Symbol.name id ^ " is not a record.");
-                                                        {exp=R.errExp(), ty=T.UNIT}))
+              let
+                val var = trvar var
+              in
+                (case var of
+                   {exp, ty=T.RECORD (fieldlist, uniqv)} =>
+                     let
+                       val posList = foldl (fn ((s, t), ans) => ans @ [(s, t, length ans)]) [] fieldlist
+                       val findPos = foldl (fn ((s, t, p), ans) => if s = id then (p, t) else ans) ((0-1), T.INT) posList
+                     in
+                       if (#1 findPos) <> (0-1)
+                       then {exp=R.fieldVarAccess(exp, R.intExp (#1 findPos)), ty=(#2 findPos)}
+                       else (error pos ("Field \"" ^ Symbol.name id ^ "\" does not belong to record.");
+                             {exp=R.errExp(), ty=T.UNIT})
+                    end
+                 | _                                  => (error pos ("Var " ^ Symbol.name id ^ " is not a record.");
+                                                          {exp=R.errExp(), ty=T.UNIT}))
+              end
           | trvar (A.SubscriptVar (var, exp, pos)) =
               let
                 val subscrExp = transExp (venv, tenv, level, exp, break)
