@@ -119,24 +119,30 @@ struct
                case typty of
                  T.RECORD (stlist, uniqv) =>
                    if (length stlist) = (length fields)
-                     then ((foldl (fn (x, ans) =>
-                                     let
-                                       val defname = (#1 x)
-                                       val defty = (#2 x)
-                                       val lhead = (hd ans)
-                                       val givenname = (#1 lhead)
-                                       val giventy   = (#ty (trexp (#2 lhead)))
-                                       val givenpos  = (#3 lhead)
-                                     in
-                                       if defname = givenname
-                                         then ()
-                                         else (error givenpos ("Incorrect record type. Expected field " ^ Symbol.name defname ^
-                                                               ". Given field " ^ Symbol.name givenname ^ "."); ());
-                                       checkTypeMatch(defty, giventy, tenv, givenpos, "Record Expression");
-                                       tl ans
-                                     end)
-                              fields stlist);
-                            {exp=R.recCreation(R.intExp (length stlist)), ty=typty})
+                     then let
+                            val exps = ref []
+                          in
+                            ((foldl (fn (x, ans) =>
+                                       let
+                                         val defname = (#1 x)
+                                         val defty = (#2 x)
+                                         val lhead = (hd ans)
+                                         val resolve   = (trexp (#2 lhead))
+                                         val givenname = (#1 lhead)
+                                         val giventy   = (#ty resolve)
+                                         val givenpos  = (#3 lhead)
+                                       in
+                                         exps := (#exp resolve)::(!exps);
+                                         if defname = givenname
+                                           then ()
+                                           else (error givenpos ("Incorrect record type. Expected field " ^ Symbol.name defname ^
+                                                                 ". Given field " ^ Symbol.name givenname ^ "."); ());
+                                         checkTypeMatch(defty, giventy, tenv, givenpos, "Record Expression");
+                                         tl ans
+                                       end)
+                                fields stlist);
+                              {exp=R.recCreation(!exps), ty=typty})
+                          end
                       else (error pos "Record fields length differ from defined.";
                             {exp=R.errExp(), ty=T.UNIT})
                | _ => (error pos (S.name typ ^ " isn't a type.");

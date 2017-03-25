@@ -145,8 +145,25 @@ struct
 
   fun arrCreation (size, init) =
     Ex (F.externCallFn ("initArray", [unEx size] @ [unEx init]))
-  fun recCreation (size) =
-    Ex (F.externCallFn ("allocRecord", [unEx size]))
+  fun recCreation (args) =
+    let
+      val argsSize = List.length args
+
+      val r = Temp.newtemp ()
+      val alloc = T.MOVE (T.TEMP r, F.externCallFn ("allocRecord", [T.CONST argsSize]))
+
+      val posArgs = foldl (fn (arg, ans) => ans @ [(arg, length ans)]) [] args
+      fun pushArg ((arg, off), res) =
+        res @ [T.MOVE (T.MEM (T.BINOP (T.PLUS,
+                                       T.TEMP r,
+                                       T.CONST (off * F.wordSize))),
+                      (unEx arg))]
+      val argsCmnds = foldl pushArg [] posArgs
+      val argsCmndsSeq = seq ([alloc] @ argsCmnds)
+    in
+      Ex (T.ESEQ (argsCmndsSeq, T.TEMP r))
+    end
+
 
   fun whileExp (test, body, done) =
     let

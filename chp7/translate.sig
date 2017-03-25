@@ -22,7 +22,7 @@ sig
   val fieldVarAccess  : exp * exp -> exp
 
   val arrCreation     : exp * exp -> exp
-  val recCreation     : exp -> exp
+  val recCreation     : exp list -> exp
 
   val letExp          : exp list * exp -> exp
   val whileExp        : exp * exp * Tree.label -> exp
