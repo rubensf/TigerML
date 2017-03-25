@@ -5,7 +5,7 @@ sig
 
   type expty
 
-  val transProg : Absyn.exp -> unit
+  val transProg : Absyn.exp -> Translate.frag list
   val transVar  : venv * tenv * Translate.level * Absyn.var * Tree.label-> expty
   val transExp  : venv * tenv * Translate.level * Absyn.exp * Tree.label -> expty
   val transDec  : venv * tenv * Translate.level * Absyn.dec * Tree.label -> {venv: venv, tenv: tenv}
@@ -68,7 +68,7 @@ struct
   fun transExp(venv, tenv, level, exp, break) =
     let
       fun trexp (A.VarExp var) =
-            transVar(venv, tenv, level, var)
+            transVar(venv, tenv, level, var, break)
         | trexp (A.NilExp) =
             {exp=R.nilExp(), ty=T.NIL}
         | trexp (A.IntExp i) =
@@ -165,7 +165,7 @@ struct
                    end
         | trexp (A.AssignExp{var, exp, pos}) =
             let
-              val var' = transVar(venv, tenv, level, var)
+              val var' = transVar(venv, tenv, level, var, break)
               val exp' = trexp exp
             in
               checkTypeMatch(#ty var', #ty exp', tenv, pos, "Assignment");
@@ -192,13 +192,14 @@ struct
         | trexp (A.WhileExp{test, body, pos}) =
             let
               val _ = (nest := !nest + 1);
-              val body' = trexp(body)
+              val breaklabel = Temp.newlabel ()
+              val body' = transExp(venv, tenv, level, body, breaklabel)
               val test' = trexp(test)
               val _ = (nest := !nest - 1);
             in
               checkInt(trexp(test), pos, "While loop");
               checkUnit(trexp(body), pos, "While loop");
-              {exp = R.whileExp(#exp test', #exp body', Temp.newlabel), ty=T.UNIT}
+              {exp=R.whileExp(#exp test', #exp body', breaklabel), ty=T.UNIT}
             end
         | trexp (A.ForExp{var, escape, lo, hi, body, pos}) =
             let
@@ -207,13 +208,14 @@ struct
               val _ = (nest := !nest + 1);
               val lo' = trexp(lo)
               val hi' = trexp(hi)
-              val body' = transExp(venv', tenv, level, body, break)
+              val breaklabel = Temp.newlabel ()
+              val body' = transExp(venv', tenv, level, body, breaklabel)
               val _ = (nest := !nest - 1);
             in
               checkInt(lo', pos, "For loop");
               checkInt(hi', pos, "For loop");
               checkUnit(body', pos, "For loop");
-              {exp = R.forExp(R.simpleVarAccess (access, level), escape, #exp lo', #exp hi', #exp body', Temp.newlabel), ty = T.UNIT}
+              {exp=R.forExp(R.simpleVarAccess (access, level), breaklabel, #exp lo', #exp hi', #exp body'), ty = T.UNIT}
             end
         | trexp (A.BreakExp pos) =
             let in
@@ -448,5 +450,15 @@ struct
       | A.ArrayTy (s, pos) => (case S.look(tenv, s) of
                                  SOME ty => T.ARRAY (ty, ref ())
                                | NONE    => ((error pos "Non existent type."); T.UNIT))
-    and transProg (absyn) = (transExp(E.base_venv, E.base_tenv, R.outermost, absyn, Temp.newlabel); ())
+    and transProg (absyn) =
+      let
+        val ir = #exp (transExp(E.base_venv,
+                                E.base_tenv,
+                                R.outermost,
+                                absyn,
+                                Temp.newlabel ()))
+      in
+        R.procEntryExit {level=R.outermost, body=ir};
+        R.getResult ()
+      end
 end

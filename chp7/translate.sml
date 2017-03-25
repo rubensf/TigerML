@@ -16,6 +16,7 @@ struct
   datatype exp = Ex of T.exp
                | Nx of T.stm
                | Cx of Temp.label * Temp.label -> T.stm
+  type frag = F.frag
 
   val outername = Temp.newlabel ()
   val outermost = Level ({parent=Outermost,
@@ -157,8 +158,9 @@ struct
               T.LABEL done])
     end
 
-  fun forExp (var, escape, lo, hi, body, break) =
+  fun forExp (var, break, lo, hi, body) =
     let
+      val _         = allocLocal
       val var       = unEx var
       val lo        = unEx lo
       val hi        = unEx hi
@@ -259,5 +261,7 @@ struct
       frags := frag'::(!frags)
     end
 
-  fun errExp() = Ex (T.CONST 0)
+  fun getResult () = !frags
+
+  fun errExp () = Ex (T.CONST 0)
 end
