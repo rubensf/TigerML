@@ -22,7 +22,7 @@ sig
 
 	val letExp        : exp list * exp -> exp
 	val whileExp      : exp * exp * Tree.label -> exp
-	val forExp        : exp * 'a * exp * exp * exp * Tree.label -> exp
+	val forExp        : exp * Tree.label * exp * exp * exp -> exp
 	val breakExp      : Tree.label -> exp
 	val ifThenExp     : exp * exp -> exp
 	val ifThenElseExp : exp * exp * exp -> exp

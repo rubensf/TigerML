@@ -190,21 +190,30 @@ struct
                  {exp=R.errExp(), ty=T.UNIT})
             )
         | trexp (A.WhileExp{test, body, pos}) =
-            (checkInt(trexp(test), pos, "While loop");
-             nest := !nest + 1;
-             checkUnit(trexp(body), pos, "While loop");
-             nest := !nest - 1;
-             {exp = R.errExp(), ty = T.UNIT})
+            let
+              val _ = (nest := !nest + 1);
+              val body' = trexp(body)
+              val test' = trexp(test)
+              val _ = (nest := !nest - 1);
+            in
+              checkInt(trexp(test), pos, "While loop");
+              checkUnit(trexp(body), pos, "While loop");
+              {exp = R.whileExp(#exp test', #exp body', Temp.newlabel()), ty=T.UNIT}
+            end
         | trexp (A.ForExp{var, escape, lo, hi, body, pos}) =
             let
-              val venv' = S.enter(venv, var, E.VarEntry{access=R.allocLocal level (!escape), ty=T.INT})
+              val access = R.allocLocal level (!escape)
+              val venv' = S.enter(venv, var, E.VarEntry{access=access, ty=T.INT})
+              val _ = (nest := !nest + 1);
+              val lo' = trexp(lo)
+              val hi' = trexp(hi)
+              val body' = transExp(venv', tenv, level, body)
+              val _ = (nest := !nest - 1);
             in
-              checkInt(trexp(lo), pos, "For loop");
-              checkInt(trexp(hi), pos, "For loop");
-              nest := !nest + 1;
-              checkUnit(transExp(venv', tenv, level, body), pos, "For loop");
-              nest := !nest - 1;
-              {exp = R.errExp(), ty = T.UNIT}
+              checkInt(lo', pos, "For loop");
+              checkInt(hi', pos, "For loop");
+              checkUnit(body', pos, "For loop");
+              {exp = R.forExp(R.simpleVarAccess (access, level), Temp.newlabel, #exp lo', #exp hi', #exp body'), ty = T.UNIT}
             end
         | trexp (A.BreakExp pos) =
             let in
