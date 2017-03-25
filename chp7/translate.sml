@@ -88,12 +88,14 @@ struct
     | intOpExp (oper as (A.EqOp | A.NeqOp | A.LtOp | A.LeOp | A.GtOp | A.GeOp), l, r) =
         Cx (fn (t, f) => T.CJUMP((convertAopTrelop oper), unEx l, unEx r, t, f))
 
-(*  fun relopExp (oper, left, right) =
-    Cx(fn(t, f) => T.CJUMP(oper, unEx left , unEx right , t, f))
-*)
-(*  fun relopStrExp (oper, left, right, str) =
-    Ex (F.externCallFn (str, unEx left, unEx right))
-*)
+  fun strOpExp (A.EqOp,  l, r) = Ex (F.externCallFn("mystrcmp", [unEx l] @ [unEx r] @ [T.CONST 0]))
+    | strOpExp (A.NeqOp, l, r) = Ex (F.externCallFn("mystrcmp", [unEx l] @ [unEx r] @ [T.CONST 1]))
+    | strOpExp (A.LtOp,  l, r) = Ex (F.externCallFn("mystrcmp", [unEx l] @ [unEx r] @ [T.CONST 2]))
+    | strOpExp (A.LeOp,  l, r) = Ex (F.externCallFn("mystrcmp", [unEx l] @ [unEx r] @ [T.CONST 3]))
+    | strOpExp (A.GtOp,  l, r) = Ex (F.externCallFn("mystrcmp", [unEx l] @ [unEx r] @ [T.CONST 4]))
+    | strOpExp (A.GeOp,  l, r) = Ex (F.externCallFn("mystrcmp", [unEx l] @ [unEx r] @ [T.CONST 5]))
+    | strOpExp _               = (error 0 "Internal Failure."; Ex (T.CONST 0))
+
   fun lvEqual (Level(_, uref1), Level(_, uref2)) = uref1 = uref2
     | lvEqual (_,_) = false
 
@@ -168,14 +170,14 @@ struct
         in
           Ex (T.ESEQ (d, unEx body))
         end
-  fun ifThenElseExp(test, then', else') = 
+  fun ifThenElseExp(test, then', else') =
     let
       val tlabel = Temp.newlabel()
       val flabel = Temp.newlabel()
       val done   = Temp.newlabel()
       val r      = Temp.newtemp()
     in
-      case (then', else') of 
+      case (then', else') of
         (Cx _, Cx _) => Cx (fn (t,f) => seq [(unCx test) (tlabel, flabel),
                             T.LABEL tlabel,
                             (unCx then') (t, f),
@@ -197,13 +199,13 @@ struct
                                   T.LABEL done])
       | (_, _)       => Ex (T.CONST 0) (*should never get here*)
     end
-  fun ifThenExp(test, then') = 
+  fun ifThenExp(test, then') =
     let
       val done = Temp.newlabel()
       val tlabel = Temp.newlabel()
       val r = Temp.newtemp()
     in
-      case then' of 
+      case then' of
         (Cx _) => Cx (fn (t, f) => seq [(unCx test) (tlabel, done),
                                         T.LABEL tlabel,
                                         (unCx then') (t, f),
