@@ -56,11 +56,13 @@ struct
                   T.TEMP r)
         end
     | unEx (Nx s) = T.ESEQ(s, T.CONST 0)
+
   fun unCx (Ex (T.CONST 0)) = (fn (t, f) => T.JUMP(T.NAME f, [f]))
     | unCx (Ex (T.CONST _)) = (fn (t, f) => T.JUMP(T.NAME t, [t]))
     | unCx (Ex e) = (fn (t, f) => T.CJUMP(T.NE, T.CONST 0, e, t, f))
     | unCx (Cx genstm) = genstm
     | unCx (Nx _) = (fn (t, f) => T.EXP(T.CONST 0)) (* change to error message if possible *)
+
   fun unNx (Ex e) = T.EXP e
     | unNx (Nx s) = s
     | unNx (Cx genstm) = let val tf = Temp.newlabel() in T.SEQ(genstm(tf,tf), T.LABEL tf) end
@@ -93,6 +95,7 @@ struct
     | strOpExp _               = (error 0 "Internal Failure."; Ex (T.CONST 0))
 
   fun intExp i = Ex (T.CONST i)
+
   fun strExp str =
     let
       val lab = Temp.newlabel ()
@@ -173,13 +176,19 @@ struct
               T.JUMP(T.NAME(bodyLabel), [bodyLabel]),
               T.LABEL break])
     end
+
   fun nilExp() = Ex (T.CONST 0)
+
   fun intExp(i) = Ex (T.CONST i)
+
   fun seqExp([]) = Ex (T.CONST 0)
     | seqExp([exp]) = exp
     | seqExp(exp::more) = Ex (T.ESEQ (unNx exp, unEx (seqExp more)))
+
   fun assignExp(var, exp) = Nx (T.MOVE (unEx var, unEx exp))
+
   fun breakExp(break) = Nx (T.JUMP (T.NAME break, [break]))
+
   fun letExp([], body) = body
     | letExp(decs, body) =
         let
@@ -236,8 +245,7 @@ struct
                             unNx then',
                             T.LABEL done])
     end
-
-  fun errExp() = Ex (T.CONST 0)
+  fun callExp(label, exps) = Ex (T.CALL (T.NAME label, map unEx exps))
 
   fun procEntryExit({level = level, body = body}) =
     let
@@ -250,4 +258,6 @@ struct
     in
       frags := frag'::(!frags)
     end
+
+  fun errExp() = Ex (T.CONST 0)
 end

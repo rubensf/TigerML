@@ -114,7 +114,7 @@ struct
                                      tl ans
                                    end)
                               formals args);
-                            {exp=R.errExp(), ty=result})
+                            {exp=R.callExp(label, map #exp (map trexp args)), ty=result})
                    else (error pos "Function args length differ from defined.";
                          {exp=R.errExp(), ty=result})
                | SOME (E.VarEntry {access, ty}) => (error pos ("Function expected, but variable found.");
