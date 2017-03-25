@@ -16,4 +16,13 @@ sig
 	val arrayVarAccess  : exp * exp -> exp
 
 	val nilExp : unit -> exp
+	val whileExp : exp * exp * Tree.label -> exp
+	val forExp : exp * 'a * exp * exp * exp * Tree.label -> exp
+	val intExp : int -> exp
+	val seqExp : exp list -> exp
+	val assignExp : exp * exp -> exp
+	val breakExp : Tree.label -> exp
+	val letExp : exp list * exp -> exp
+	val ifThenElseExp : exp * exp * exp -> exp
+	val ifThenExp : exp * exp -> exp
 end
