@@ -156,12 +156,12 @@ struct
              end)
         | trexp (A.SeqExp exps) =
             if List.null exps
-              then {exp=R.errExp(), ty=T.UNIT}
+              then {exp=R.seqExp([]), ty=T.UNIT}
               else let
                      val exps' = map trexp (map #1 exps)
                      val list_ty = List.last exps'
                    in
-                     {exp=R.errExp(), ty=(#ty list_ty)}
+                     {exp=R.seqExp(map #exp exps'), ty=(#ty list_ty)}
                    end
         | trexp (A.AssignExp{var, exp, pos}) =
             let
@@ -169,7 +169,7 @@ struct
               val exp' = trexp exp
             in
               checkTypeMatch(#ty var', #ty exp', tenv, pos, "Assignment");
-              {exp=R.errExp(), ty=T.UNIT}
+              {exp=R.assignExp(#exp var', #exp exp'), ty=T.UNIT}
             end
         | trexp (A.IfExp {test, then', else', pos}) =
             (case else' of
@@ -182,12 +182,12 @@ struct
                 in
                   checkInt(test', pos, "If statement");
                   checkTypeMatch(#ty then'', #ty else'', tenv, pos, "If statement");
-                  {exp=R.errExp(), ty=if_ty}
+                  {exp=R.ifThenElseExp(#exp test', #exp then'', #exp else''), ty=if_ty}
                 end
               | NONE =>
                 (checkInt(trexp(test), pos, "If statement");
                  checkUnit(trexp(then'), pos, "If statement");
-                 {exp=R.errExp(), ty=T.UNIT})
+                 {exp=R.ifThenExp(#exp (trexp test), #exp (trexp then')), ty=T.UNIT})
             )
         | trexp (A.WhileExp{test, body, pos}) =
             (checkInt(trexp(test), pos, "While loop");
