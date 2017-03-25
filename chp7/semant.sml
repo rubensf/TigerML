@@ -43,13 +43,13 @@ struct
 
   fun checkString({exp, ty}, pos, refstring) =
       case ty of
-        T.STRING => ()
-      | _        => error pos (refstring ^ ": String required.")
+        T.STRING => true
+      | _        => (error pos (refstring ^ ": String required."); false)
 
   fun checkUnit({exp, ty}, pos, refstring) =
       case ty of
-        T.UNIT => ()
-      | _      => error pos (refstring ^ ": Unit required.")
+        T.UNIT => true
+      | _      => (error pos (refstring ^ ": Unit required."); false)
 
   fun checkTypeMatch(t1, t2, tenv, pos, refstring) =
     let
@@ -72,9 +72,9 @@ struct
         | trexp (A.NilExp) =
             {exp=R.nilExp(), ty=T.NIL}
         | trexp (A.IntExp i) =
-            {exp=R.nilExp(), ty=T.INT}
+            {exp=R.intExp(i), ty=T.INT}
         | trexp (A.StringExp (str,pos)) =
-            {exp=R.nilExp(), ty=T.STRING}
+            {exp=R.strExp(str), ty=T.STRING}
         | trexp (A.OpExp {left, oper, right, pos}) =
             (let
               val left = (trexp left)

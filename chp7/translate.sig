@@ -12,6 +12,9 @@ sig
 	val intOpExp : Absyn.oper * exp * exp -> exp
 	val strOpExp : Absyn.oper * exp * exp -> exp
 
+	val intExp : int -> exp
+	val strExp : string -> exp
+
 	val simpleVarAccess : access * level -> exp
 	val arrayVarAccess  : exp * exp -> exp
 
