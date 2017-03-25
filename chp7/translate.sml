@@ -176,7 +176,7 @@ struct
         in
           Ex (T.ESEQ (d, unEx body))
         end
-  fun ifExp(test, then', else') =
+  fun ifThenElseExp(test, then', else') =
     let
       val tlabel = Temp.newlabel()
       val flabel = Temp.newlabel()
@@ -204,5 +204,25 @@ struct
                                   unNx else',
                                   T.LABEL done])
       | (_, _)       => Ex (T.CONST 0) (*should never get here*)
+    end
+  fun ifThenExp(test, then') =
+    let
+      val done = Temp.newlabel()
+      val tlabel = Temp.newlabel()
+      val r = Temp.newtemp()
+    in
+      case then' of
+        (Cx _) => Cx (fn (t, f) => seq [(unCx test) (tlabel, done),
+                                        T.LABEL tlabel,
+                                        (unCx then') (t, f),
+                                        T.LABEL done])
+      | (Ex _) => Ex (T.ESEQ (seq [(unCx test) (tlabel, done),
+                                    T.LABEL tlabel,
+                                    T.MOVE (T.TEMP r, unEx then'),
+                                    T.LABEL done], T.TEMP r))
+      | (Nx _) => Nx (seq [(unCx test) (tlabel, done),
+                            T.LABEL tlabel,
+                            unNx then',
+                            T.LABEL done])
     end
 end
