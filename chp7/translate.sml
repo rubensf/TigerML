@@ -23,6 +23,7 @@ struct
                           formals=[],
                           frame=F.newFrame {name=outername, formals=[]}},
                          ref ())
+  val frags = ref ([] : F.frag list)
 
   fun newLevel {parent: level, name: Temp.label, formals: bool list} =
     Level ({parent=parent, name=name, formals=formals, frame=F.newFrame {name=name, formals=formals}}, ref ())
@@ -95,6 +96,15 @@ struct
     | strOpExp (A.GtOp,  l, r) = Ex (F.externCallFn("mystrcmp", [unEx l] @ [unEx r] @ [T.CONST 4]))
     | strOpExp (A.GeOp,  l, r) = Ex (F.externCallFn("mystrcmp", [unEx l] @ [unEx r] @ [T.CONST 5]))
     | strOpExp _               = (error 0 "Internal Failure."; Ex (T.CONST 0))
+
+  fun intExp i = Ex (T.CONST i)
+  fun strExp str =
+    let
+      val lab = Temp.newlabel ()
+    in
+      frags := (F.STRING lab) :: !frags;
+      Ex (T.NAME lab)
+    end
 
   fun lvEqual (Level(_, uref1), Level(_, uref2)) = uref1 = uref2
     | lvEqual (_,_) = false
@@ -219,4 +229,6 @@ struct
                             unNx then',
                             T.LABEL done])
     end
+
+  fun errExp() = Ex (T.CONST 0)
 end

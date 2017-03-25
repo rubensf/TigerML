@@ -12,6 +12,10 @@ sig
 	val intOpExp : Absyn.oper * exp * exp -> exp
 	val strOpExp : Absyn.oper * exp * exp -> exp
 
+	val intExp : int -> exp
+	val strExp : string -> exp
+	val nilExp : unit -> exp
+
 	val simpleVarAccess : access * level -> exp
 	val arrayVarAccess  : exp * exp -> exp
 
@@ -25,4 +29,5 @@ sig
 	val letExp : exp list * exp -> exp
 	val ifThenElseExp : exp * exp * exp -> exp
 	val ifThenExp : exp * exp -> exp
+	val errExp : unit -> exp
 end
