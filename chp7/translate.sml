@@ -1,5 +1,6 @@
 structure Translate :> TRANSLATE =
 struct
+  structure A = Absyn
   structure F = MipsFrame
   structure T = Tree
 
@@ -37,9 +38,6 @@ struct
       Level l   => Access (lev, F.allocLocal(#frame (#1 l)) esc)
     | Outermost => NilAccess
 
-  fun lvEqual (Level(_, uref1), Level(_, uref2)) = uref1 = uref2
-    | lvEqual (_,_) = false
-
   fun seq (l: T.stm list) =
     case List.length l of
       0 => T.EXP (T.CONST 0)
@@ -62,14 +60,42 @@ struct
                   T.TEMP r)
         end
     | unEx (Nx s) = T.ESEQ(s, T.CONST 0)
-  fun unCx (Ex(T.CONST 0)) = (fn (t, f) => T.JUMP(T.NAME f, [f]))
-    | unCx (Ex(T.CONST _)) = (fn (t, f) => T.JUMP(T.NAME t, [t]))
+  fun unCx (Ex (T.CONST 0)) = (fn (t, f) => T.JUMP(T.NAME f, [f]))
+    | unCx (Ex (T.CONST _)) = (fn (t, f) => T.JUMP(T.NAME t, [t]))
     | unCx (Ex e) = (fn (t, f) => T.CJUMP(T.NE, T.CONST 0, e, t, f))
     | unCx (Cx genstm) = genstm
     | unCx (Nx _) = (fn (t, f) => T.EXP(T.CONST 0)) (* change to error message if possible *)
   fun unNx (Ex e) = T.EXP e
     | unNx (Nx s) = s
     | unNx (Cx genstm) = let val tf = Temp.newlabel() in T.SEQ(genstm(tf,tf), T.LABEL tf) end
+
+  fun convertAopTop (A.PlusOp)   = T.PLUS
+    | convertAopTop (A.MinusOp)  = T.MINUS
+    | convertAopTop (A.TimesOp)  = T.MUL
+    | convertAopTop (A.DivideOp) = T.DIV
+    | convertAopTop _            = (error 0 "Internal Failure."; T.PLUS)
+
+  fun convertAopTrelop (A.EqOp)  = T.EQ
+    | convertAopTrelop (A.NeqOp) = T.NE
+    | convertAopTrelop (A.LtOp)  = T.LT
+    | convertAopTrelop (A.LeOp)  = T.LE
+    | convertAopTrelop (A.GtOp)  = T.GT
+    | convertAopTrelop (A.GeOp)  = T.GE
+    | convertAopTrelop _         = (error 0 "Internal Failure."; T.EQ)
+
+  fun intOpExp (oper as (A.PlusOp | A.MinusOp | A.TimesOp | A.DivideOp), l, r) =
+        Ex (T.BINOP((convertAopTop oper), unEx l, unEx r))
+    | intOpExp (oper as (A.EqOp | A.NeqOp | A.LtOp | A.LeOp | A.GtOp | A.GeOp), l, r) =
+        Cx (fn (t, f) => T.CJUMP((convertAopTrelop oper), unEx l, unEx r, t, f))
+
+(*  fun relopExp (oper, left, right) =
+    Cx(fn(t, f) => T.CJUMP(oper, unEx left , unEx right , t, f))
+*)
+(*  fun relopStrExp (oper, left, right, str) =
+    Ex (F.externCallFn (str, unEx left, unEx right))
+*)
+  fun lvEqual (Level(_, uref1), Level(_, uref2)) = uref1 = uref2
+    | lvEqual (_,_) = false
 
   fun staticLinking (Level deflevel, Level curlevel) =
     if lvEqual (Level deflevel, Level curlevel)
@@ -130,13 +156,13 @@ struct
     end
   fun nilExp() = Ex (T.CONST 0)
   fun intExp(i) = Ex (T.CONST i)
-  fun seqExp([]) = Ex (T.CONST 0) 
+  fun seqExp([]) = Ex (T.CONST 0)
     | seqExp([exp]) = exp
     | seqExp(exp::more) = Ex (T.ESEQ (unNx exp, unEx (seqExp more)))
   fun assignExp(var, exp) = Nx (T.MOVE (unEx var, unEx exp))
   fun breakExp(break) = Nx (T.JUMP (T.NAME break, [break]))
   fun letExp([], body) = body
-    | letExp(decs, body) = 
+    | letExp(decs, body) =
         let
           val d = seq (map unNx decs)
         in
