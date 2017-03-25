@@ -35,6 +35,7 @@ sig
   val callExp         : Tree.label * exp list -> exp
 
   val procEntryExit   : {level: level, body: exp} -> unit
+  val resetFrags      : unit -> unit
   val getResult       : unit -> frag list
 
   val errExp          : unit -> exp

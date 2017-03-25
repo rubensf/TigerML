@@ -13,6 +13,7 @@ struct
 			        PrintAbsyn.print (TextIO.stdOut, ast);
 			        print "Semanting Analysis: \n";
 			        FindEscape.findEscape ast;
+			        Translate.resetFrags ();
 			        List.app doAll (Semant.transProg ast);
 			        ())
 		end

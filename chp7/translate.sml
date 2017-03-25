@@ -261,6 +261,7 @@ struct
       frags := frag'::(!frags)
     end
 
+  fun resetFrags () = frags := []
   fun getResult () = !frags
 
   fun errExp () = Ex (T.CONST 0)
