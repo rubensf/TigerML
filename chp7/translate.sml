@@ -34,11 +34,6 @@ struct
                      [] (F.formals (#frame (#1 l)))
     | Outermost => (error 0 "Internal Failure: cannot get formals of outermost level."; [])
 
-  fun allocLocal (lev: level) esc =
-    case lev of
-      Level l   => Access (lev, F.allocLocal(#frame (#1 l)) esc)
-    | Outermost => NilAccess
-
   fun seq (l: T.stm list) =
     case List.length l of
       0 => T.EXP (T.CONST 0)
@@ -61,11 +56,13 @@ struct
                   T.TEMP r)
         end
     | unEx (Nx s) = T.ESEQ(s, T.CONST 0)
+
   fun unCx (Ex (T.CONST 0)) = (fn (t, f) => T.JUMP(T.NAME f, [f]))
     | unCx (Ex (T.CONST _)) = (fn (t, f) => T.JUMP(T.NAME t, [t]))
     | unCx (Ex e) = (fn (t, f) => T.CJUMP(T.NE, T.CONST 0, e, t, f))
     | unCx (Cx genstm) = genstm
     | unCx (Nx _) = (fn (t, f) => T.EXP(T.CONST 0)) (* change to error message if possible *)
+
   fun unNx (Ex e) = T.EXP e
     | unNx (Nx s) = s
     | unNx (Cx genstm) = let val tf = Temp.newlabel() in T.SEQ(genstm(tf,tf), T.LABEL tf) end
@@ -98,6 +95,7 @@ struct
     | strOpExp _               = (error 0 "Internal Failure."; Ex (T.CONST 0))
 
   fun intExp i = Ex (T.CONST i)
+
   fun strExp str =
     let
       val lab = Temp.newlabel ()
@@ -121,16 +119,28 @@ struct
     | simpleVarAccess (_, _) = (error 0 "Internal Failure."; Ex (T.CONST 0))
 
   fun arrayVarAccess (var, subscr) =
-    let
-       val varEx = unEx var
-       val subscrEx = unEx subscr
-     in
-       Ex (T.MEM (T.BINOP (T.PLUS,
-                           T.MEM (varEx),
-                           T.BINOP (T.MUL,
-                                    subscrEx,
-                                    T.CONST (F.wordSize)))))
-     end
+        Ex (T.MEM (T.BINOP (T.PLUS,
+                            T.MEM (unEx var),
+                            T.BINOP (T.MUL,
+                                     unEx subscr,
+                                     T.CONST (F.wordSize)))))
+
+  fun fieldVarAccess(v, off) =
+        Ex (T.MEM (T.BINOP (T.PLUS,
+                            T.MEM (unEx v),
+                            T.BINOP (T.MUL,
+                                     unEx off,
+                                     T.CONST F.wordSize))))
+
+  fun allocLocal (lev: level) esc =
+    case lev of
+      Level l   => Access (lev, F.allocLocal(#frame (#1 l)) esc)
+    | Outermost => NilAccess
+
+  fun arrCreation (size, init) =
+    Ex (F.externCallFn ("initArray", [unEx size] @ [unEx init]))
+  fun recCreation (size) =
+    Ex (F.externCallFn ("allocRecord", [unEx size]))
 
   fun whileExp (test, body, done) =
     let
@@ -166,13 +176,19 @@ struct
               T.JUMP(T.NAME bodyLabel, [bodyLabel]),
               T.LABEL escape])
     end
+
   fun nilExp() = Ex (T.CONST 0)
+
   fun intExp(i) = Ex (T.CONST i)
+
   fun seqExp([]) = Ex (T.CONST 0)
     | seqExp([exp]) = exp
     | seqExp(exp::more) = Ex (T.ESEQ (unNx exp, unEx (seqExp more)))
+
   fun assignExp(var, exp) = Nx (T.MOVE (unEx var, unEx exp))
+
   fun breakExp(break) = Nx (T.JUMP (T.NAME break, [break]))
+
   fun letExp([], body) = body
     | letExp(decs, body) =
         let
@@ -229,12 +245,9 @@ struct
                             unNx then',
                             T.LABEL done])
     end
+  fun callExp(label, exps) = Ex (T.CALL (T.NAME label, map unEx exps))
 
-  fun errExp() = Ex (T.CONST 0)
-  fun fieldVarAccess(v, off) = Ex (T.MEM (T.BINOP (T.PLUS, unEx v, T.BINOP (T.MUL, unEx off, T.CONST F.wordSize))))
-
-
-  fun procEntryExit({level = level, body = body}) = 
+  fun procEntryExit({level = level, body = body}) =
     let
       val frame' = case level of
         Outermost => (error 0 "Top Level Exception";
@@ -245,4 +258,6 @@ struct
     in
       frags := frag'::(!frags)
     end
+
+  fun errExp() = Ex (T.CONST 0)
 end

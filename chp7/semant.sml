@@ -114,7 +114,7 @@ struct
                                      tl ans
                                    end)
                               formals args);
-                            {exp=R.errExp(), ty=result})
+                            {exp=R.callExp(label, map #exp (map trexp args)), ty=result})
                    else (error pos "Function args length differ from defined.";
                          {exp=R.errExp(), ty=result})
                | SOME (E.VarEntry {access, ty}) => (error pos ("Function expected, but variable found.");
@@ -148,7 +148,7 @@ struct
                                        tl ans
                                      end)
                               fields stlist);
-                            {exp=R.errExp(), ty=typty})
+                            {exp=R.recCreation(R.intExp (length stlist)), ty=typty})
                       else (error pos "Record fields length differ from defined.";
                             {exp=R.errExp(), ty=T.UNIT})
                | _ => (error pos (S.name typ ^ " isn't a type.");
@@ -156,12 +156,12 @@ struct
              end)
         | trexp (A.SeqExp exps) =
             if List.null exps
-              then {exp=R.errExp(), ty=T.UNIT}
+              then {exp=R.seqExp([]), ty=T.UNIT}
               else let
                      val exps' = map trexp (map #1 exps)
                      val list_ty = List.last exps'
                    in
-                     {exp=R.errExp(), ty=(#ty list_ty)}
+                     {exp=R.seqExp(map #exp exps'), ty=(#ty list_ty)}
                    end
         | trexp (A.AssignExp{var, exp, pos}) =
             let
@@ -169,7 +169,7 @@ struct
               val exp' = trexp exp
             in
               checkTypeMatch(#ty var', #ty exp', tenv, pos, "Assignment");
-              {exp=R.errExp(), ty=T.UNIT}
+              {exp=R.assignExp(#exp var', #exp exp'), ty=T.UNIT}
             end
         | trexp (A.IfExp {test, then', else', pos}) =
             (case else' of
@@ -182,12 +182,12 @@ struct
                 in
                   checkInt(test', pos, "If statement");
                   checkTypeMatch(#ty then'', #ty else'', tenv, pos, "If statement");
-                  {exp=R.errExp(), ty=if_ty}
+                  {exp=R.ifThenElseExp(#exp test', #exp then'', #exp else''), ty=if_ty}
                 end
               | NONE =>
                 (checkInt(trexp(test), pos, "If statement");
                  checkUnit(trexp(then'), pos, "If statement");
-                 {exp=R.errExp(), ty=T.UNIT})
+                 {exp=R.ifThenExp(#exp (trexp test), #exp (trexp then')), ty=T.UNIT})
             )
         | trexp (A.WhileExp{test, body, pos}) =
             let
@@ -235,17 +235,19 @@ struct
             end
         | trexp (A.ArrayExp{typ, size, init, pos}) =
             let
-              val init_ty = (#ty (trexp init))
+              val size = trexp size
+              val init = trexp init
+              val init_ty = (#ty init)
               val array_ty = case S.look(tenv, typ) of
                                SOME typ' => actual_ty(tenv, typ')
                              | NONE      => (error pos "This type doesn't exist.";
                                              T.ARRAY (T.UNIT, ref ()))
             in
-              checkInt(trexp(size), pos, "Array Expr");
+              checkInt(size, pos, "Array Expr");
               case array_ty of
                 T.ARRAY (ty, u) =>
-                  (checkTypeMatch(ty, #ty (trexp init), tenv, pos, "Array Expr");
-                   {exp=R.errExp(), ty=array_ty})
+                  (checkTypeMatch(ty, #ty init, tenv, pos, "Array Expr");
+                   {exp=R.arrCreation(#exp size, #exp init), ty=array_ty})
               | _ => (error pos "Array expected"; {exp = R.errExp(), ty = T.UNIT})
             end
     in

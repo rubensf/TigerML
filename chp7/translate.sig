@@ -20,6 +20,9 @@ sig
 	val arrayVarAccess  : exp * exp -> exp
 	val fieldVarAccess : exp * exp -> exp
 
+	val arrCreation : exp * exp -> exp
+	val recCreation : exp -> exp
+
 	val letExp        : exp list * exp -> exp
 	val whileExp      : exp * exp * Tree.label -> exp
 	val forExp        : exp * Tree.label * exp * exp * exp -> exp
@@ -28,6 +31,7 @@ sig
 	val ifThenElseExp : exp * exp * exp -> exp
 	val seqExp        : exp list -> exp
 	val assignExp     : exp * exp -> exp
+	val callExp				: Tree.label * exp list -> exp
 
 	val errExp : unit -> exp
 end
