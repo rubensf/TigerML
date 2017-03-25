@@ -148,7 +148,7 @@ struct
                                        tl ans
                                      end)
                               fields stlist);
-                            {exp=R.errExp(), ty=typty})
+                            {exp=R.recCreation(R.intExp (length stlist)), ty=typty})
                       else (error pos "Record fields length differ from defined.";
                             {exp=R.errExp(), ty=T.UNIT})
                | _ => (error pos (S.name typ ^ " isn't a type.");
@@ -226,17 +226,19 @@ struct
             end
         | trexp (A.ArrayExp{typ, size, init, pos}) =
             let
-              val init_ty = (#ty (trexp init))
+              val size = trexp size
+              val init = trexp init
+              val init_ty = (#ty init)
               val array_ty = case S.look(tenv, typ) of
                                SOME typ' => actual_ty(tenv, typ')
                              | NONE      => (error pos "This type doesn't exist.";
                                              T.ARRAY (T.UNIT, ref ()))
             in
-              checkInt(trexp(size), pos, "Array Expr");
+              checkInt(size, pos, "Array Expr");
               case array_ty of
                 T.ARRAY (ty, u) =>
-                  (checkTypeMatch(ty, #ty (trexp init), tenv, pos, "Array Expr");
-                   {exp=R.errExp(), ty=array_ty})
+                  (checkTypeMatch(ty, #ty init, tenv, pos, "Array Expr");
+                   {exp=R.arrCreation(#exp size, #exp init), ty=array_ty})
               | _ => (error pos "Array expected"; {exp = R.errExp(), ty = T.UNIT})
             end
     in

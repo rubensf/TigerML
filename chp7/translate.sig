@@ -20,6 +20,9 @@ sig
 	val arrayVarAccess  : exp * exp -> exp
 	val fieldVarAccess : exp * exp -> exp
 
+	val arrCreation : exp * exp -> exp
+	val recCreation : exp -> exp
+
 	val letExp        : exp list * exp -> exp
 	val whileExp      : exp * exp * Tree.label -> exp
 	val forExp        : exp * 'a * exp * exp * exp * Tree.label -> exp

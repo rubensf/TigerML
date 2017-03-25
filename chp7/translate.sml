@@ -34,11 +34,6 @@ struct
                      [] (F.formals (#frame (#1 l)))
     | Outermost => (error 0 "Internal Failure: cannot get formals of outermost level."; [])
 
-  fun allocLocal (lev: level) esc =
-    case lev of
-      Level l   => Access (lev, F.allocLocal(#frame (#1 l)) esc)
-    | Outermost => NilAccess
-
   fun seq (l: T.stm list) =
     case List.length l of
       0 => T.EXP (T.CONST 0)
@@ -121,16 +116,28 @@ struct
     | simpleVarAccess (_, _) = (error 0 "Internal Failure."; Ex (T.CONST 0))
 
   fun arrayVarAccess (var, subscr) =
-    let
-       val varEx = unEx var
-       val subscrEx = unEx subscr
-     in
-       Ex (T.MEM (T.BINOP (T.PLUS,
-                           T.MEM (varEx),
-                           T.BINOP (T.MUL,
-                                    subscrEx,
-                                    T.CONST (F.wordSize)))))
-     end
+        Ex (T.MEM (T.BINOP (T.PLUS,
+                            T.MEM (unEx var),
+                            T.BINOP (T.MUL,
+                                     unEx subscr,
+                                     T.CONST (F.wordSize)))))
+
+  fun fieldVarAccess(v, off) =
+        Ex (T.MEM (T.BINOP (T.PLUS,
+                            T.MEM (unEx v),
+                            T.BINOP (T.MUL,
+                                     unEx off,
+                                     T.CONST F.wordSize))))
+
+  fun allocLocal (lev: level) esc =
+    case lev of
+      Level l   => Access (lev, F.allocLocal(#frame (#1 l)) esc)
+    | Outermost => NilAccess
+
+  fun arrCreation (size, init) =
+    Ex (F.externCallFn ("initArray", [unEx size] @ [unEx init]))
+  fun recCreation (size) =
+    Ex (F.externCallFn ("allocRecord", [unEx size]))
 
   fun whileExp (test, body, done) =
     let
@@ -231,10 +238,8 @@ struct
     end
 
   fun errExp() = Ex (T.CONST 0)
-  fun fieldVarAccess(v, off) = Ex (T.MEM (T.BINOP (T.PLUS, unEx v, T.BINOP (T.MUL, unEx off, T.CONST F.wordSize))))
 
-
-  fun procEntryExit({level = level, body = body}) = 
+  fun procEntryExit({level = level, body = body}) =
     let
       val frame' = case level of
         Outermost => (error 0 "Top Level Exception";
