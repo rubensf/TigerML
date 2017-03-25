@@ -18,6 +18,7 @@ sig
 
 	val simpleVarAccess : access * level -> exp
 	val arrayVarAccess  : exp * exp -> exp
+	val fieldVarAccess : exp * exp -> exp
 
 	val whileExp : exp * exp * Tree.label -> exp
 	val forExp : exp * 'a * exp * exp * exp * Tree.label -> exp

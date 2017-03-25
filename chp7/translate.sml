@@ -231,4 +231,5 @@ struct
     end
 
   fun errExp() = Ex (T.CONST 0)
+  fun fieldVarAccess(v, off) = Ex (T.MEM (T.BINOP (T.PLUS, unEx v, T.BINOP (T.MUL, unEx off, T.CONST F.wordSize))))
 end
