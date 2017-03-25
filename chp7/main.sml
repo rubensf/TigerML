@@ -13,8 +13,7 @@ struct
 			        PrintAbsyn.print (TextIO.stdOut, ast);
 			        print "Semanting Analysis: \n";
 			        FindEscape.findEscape ast;
-			        Semant.transProg ast;
-
+			        List.app doAll (Semant.transProg ast);
 			        ())
 		end
 end

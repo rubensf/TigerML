@@ -3,7 +3,7 @@ sig
   type level
   type access
   type exp
-  type frag
+  type frag = MipsFrame.frag (* TODO fix this *)
 
   val newLevel   : {parent: level, name: Temp.label, formals: bool list} -> level
   val outermost  : level
