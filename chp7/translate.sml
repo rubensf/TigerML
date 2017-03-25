@@ -67,7 +67,7 @@ struct
     | unCx (Ex (T.CONST _)) = (fn (t, f) => T.JUMP(T.NAME t, [t]))
     | unCx (Ex e) = (fn (t, f) => T.CJUMP(T.NE, T.CONST 0, e, t, f))
     | unCx (Cx genstm) = genstm
-    | unCx (Nx _) = (fn (t, f) => T.EXP(T.CONST 0)) (* change to error message if possible *)
+    | unCx (Nx _) = (fn (t, f) => (error 0 "Internal Failure."; T.EXP (T.CONST 0))) (* change to error message if possible *)
 
   fun unNx (Ex e) = T.EXP e
     | unNx (Nx s) = s
@@ -155,12 +155,12 @@ struct
       val body      = unNx body
       val bodyLabel = Temp.newlabel()
     in
-      Nx (seq[T.LABEL testLabel,
-              test (bodyLabel, done),
-              T.LABEL bodyLabel,
-              body,
-              T.JUMP (T.NAME testLabel, [testLabel]),
-              T.LABEL done])
+      Nx (seq [T.LABEL testLabel,
+               test (bodyLabel, done),
+               T.LABEL bodyLabel,
+               body,
+               T.JUMP (T.NAME testLabel, [testLabel]),
+               T.LABEL done])
     end
 
   fun forExp (var, break, lo, hi, body) =
@@ -173,24 +173,26 @@ struct
       val bodyLabel = Temp.newlabel()
       val incLabel  = Temp.newlabel()
     in
-      Nx (seq[T.MOVE(var, lo),
-              T.CJUMP(T.LE, var, hi, bodyLabel, break),
-              T.LABEL bodyLabel,
-              body,
-              T.CJUMP(T.LT, var, hi, incLabel, break),
-              T.LABEL incLabel,
-              T.MOVE(var, T.BINOP(T.PLUS, var, T.CONST 1)),
-              T.JUMP(T.NAME bodyLabel, [bodyLabel]),
-              T.LABEL break])
+      Nx (seq [T.MOVE(var, lo),
+               T.CJUMP(T.LE, var, hi, bodyLabel, break),
+               T.LABEL bodyLabel,
+               body,
+               T.CJUMP(T.LT, var, hi, incLabel, break),
+               T.LABEL incLabel,
+               T.MOVE(var, T.BINOP(T.PLUS, var, T.CONST 1)),
+               T.JUMP(T.NAME bodyLabel, [bodyLabel]),
+               T.LABEL break])
     end
 
   fun nilExp() = Ex (T.CONST 0)
 
   fun intExp(i) = Ex (T.CONST i)
 
-  fun seqExp([]) = Ex (T.CONST 0)
-    | seqExp([exp]) = exp
-    | seqExp(exp::more) = Ex (T.ESEQ (unNx exp, unEx (seqExp more)))
+  fun seqExp(exps : exp list) =
+    case List.length exps of
+      0 => Ex (T.CONST 0)
+    | 1 => Ex (unEx (hd exps))
+    | _ => (print "what seq"; Ex (T.ESEQ (seq (map unNx (List.take (exps, ((List.length exps) - 1)))), unEx (List.last exps))))
 
   fun assignExp(var, exp) = Nx (T.MOVE (unEx var, unEx exp))
 
@@ -253,6 +255,8 @@ struct
                             T.LABEL done])
     end
   fun callExp(label, exps) = Ex (T.CALL (T.NAME label, map unEx exps))
+
+  fun packExps(exps, mainexp) = Ex (T.ESEQ ((seq (map unNx exps)), (unEx mainexp)))
 
   fun procEntryExit({level = level, body = body}) =
     let

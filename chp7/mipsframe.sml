@@ -34,8 +34,8 @@ struct
 
   fun allocLocal (f: frame) (esc: bool) =
     case esc of
-      true  => (InReg (Temp.newtemp()))
-    | false => ((#3 f) := !(#3 f)-wordSize;InFrame (!(#3 f)+wordSize))
+      true  => ((#3 f) := !(#3 f)-wordSize;InFrame (!(#3 f)+wordSize))
+    | false => (InReg (Temp.newtemp()))
 
   fun resetFrame (f: frame) = (#3 f) := 0
 

@@ -1,16 +1,4 @@
-signature SEMANT =
-sig
-  type venv
-  type tenv
-
-  type expty
-
-  val transProg : Absyn.exp -> Translate.frag list
-  val transVar  : venv * tenv * Translate.level * Absyn.var * Tree.label-> expty
-  val transExp  : venv * tenv * Translate.level * Absyn.exp * Tree.label -> expty
-  val transDec  : venv * tenv * Translate.level * Absyn.dec * Tree.label -> {venv: venv, tenv: tenv}
-  val transTy   :        tenv                   * Absyn.ty  -> Types.ty
-end
+signature SEMANT = sig val transProg : Absyn.exp -> Translate.frag list end
 
 structure Semant :> SEMANT =
 struct
@@ -228,12 +216,13 @@ struct
             let
               val depth = !nest
               val _ = (nest := 0)
-              val {venv=venv', tenv=tenv'} = foldl (fn (x, ans) =>
-                                                      transDec (#venv ans, #tenv ans, level, x, break))
-                                               {venv=venv, tenv=tenv} decs
+              val {venv=venv', tenv=tenv', exps=exps'} =
+                    foldl (fn (x, ans) => transDec (#venv ans, #tenv ans, level, x, break))
+                          {venv=venv, tenv=tenv, exps=[]} decs
               val _ = (nest := depth)
+              val letRet = transExp(venv', tenv', level, body, break)
             in
-              transExp(venv', tenv', level, body, break)
+              {exp=R.packExps(exps', (#exp letRet)), ty=(#ty letRet)}
             end
         | trexp (A.ArrayExp{typ, size, init, pos}) =
             let
@@ -300,7 +289,7 @@ struct
       end
     and transDec (venv, tenv, level, dec, break) =
       let
-        fun trdec (A.VarDec {name, escape, typ, init, pos}) =
+        fun trdec (A.VarDec {name, escape, typ, init, pos}, exps) =
               let
                 val trValue = transExp(venv, tenv, level, init, break)
                 val typ' = case typ of
@@ -308,6 +297,9 @@ struct
                                                SOME t => SOME (actual_ty (tenv, t))
                                              | NONE   => (error pos "Type doesn't exist."; NONE))
                            | NONE        => NONE
+                val access = R.allocLocal level (!escape)
+                val varAc = R.simpleVarAccess (access, level)
+                val assign = R.assignExp (varAc, (#exp trValue))
               in
                 ((case trValue of
                     {ty=T.UNIT, ...} => (error pos "Cannot assign to unit."; ())
@@ -320,10 +312,11 @@ struct
                   | NONE   => ());
                   {tenv=tenv, venv=S.enter(venv, name,
                                            (case typ' of
-                                              SOME t => E.VarEntry {access=R.allocLocal level (!escape), ty=t}
-                                            | NONE   => E.VarEntry {access=R.allocLocal level (!escape), ty=(#ty trValue)}))})
+                                              SOME t => E.VarEntry {access=access, ty=t}
+                                            | NONE   => E.VarEntry {access=access, ty=(#ty trValue)})),
+                   exps=assign::exps})
               end
-          | trdec (A.TypeDec tydecs) =
+          | trdec (A.TypeDec tydecs, exps) =
               let
                 val tnames = map #name tydecs
 
@@ -363,9 +356,9 @@ struct
                       | _                       => (error pos "Did not find type in cycle detection")
               in
                 valid (tenv'', tydecs);
-                {venv=venv, tenv=tenv''}
+                {venv=venv, tenv=tenv'', exps=exps}
               end
-          | trdec (A.FunctionDec fundecs) =
+          | trdec (A.FunctionDec fundecs, exps) =
               let
                 val fnames = map #name fundecs
 
@@ -434,10 +427,10 @@ struct
                     end
               in
                 List.all checkFunc fundecs;
-                {venv=venv', tenv=tenv}
+                {venv=venv', tenv=tenv, exps=exps}
               end
       in
-        trdec dec
+        trdec (dec, [])
       end
     and transTy (tenv, typ) =
       case typ of
