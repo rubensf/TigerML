@@ -121,23 +121,6 @@ struct
                          staticLinking (Level deflevel, (#parent (#1 curlevel)))))
     | staticLinking (_,_) = T.CONST 0
 
-  fun simpleVarAccess (Access ac, Level l) = Ex (F.expFn (#2 ac) (staticLinking ((#1 ac), Level l)))
-    | simpleVarAccess (_, _) = (error 0 "Internal Failure."; Ex (T.CONST 0))
-
-  fun arrayVarAccess (var, subscr) =
-        Ex (T.MEM (T.BINOP (T.PLUS,
-                            T.MEM (unEx var),
-                            T.BINOP (T.MUL,
-                                     unEx subscr,
-                                     T.CONST (F.wordSize)))))
-
-  fun fieldVarAccess(v, off) =
-        Ex (T.MEM (T.BINOP (T.PLUS,
-                            T.MEM (unEx v),
-                            T.BINOP (T.MUL,
-                                     unEx off,
-                                     T.CONST F.wordSize))))
-
   fun allocLocal (lev: level) esc =
     case lev of
       Level l   => Access (lev, F.allocLocal(#frame (#1 l)) esc)
@@ -222,7 +205,7 @@ struct
         in
           Ex (T.ESEQ (d, unEx body))
         end
-  fun ifThenElseExp(test, then', else') = (* TODO fix *)
+  fun ifThenElseExp(test, then', else') =
     let
       val tlabel = Temp.newlabel()
       val flabel = Temp.newlabel()
@@ -276,10 +259,32 @@ struct
       val link = staticLinking (parent, curlevel)
       val expCalls = map unEx exps
     in
-      Ex (T.CALL (T.NAME label, link::expCalls))
+      Nx (T.MOVE ((T.TEMP F.rv), (T.CALL (T.NAME label, link::expCalls))))
     end
     | callExp _ = (error 0 "Top Level Exception"; Ex (T.CONST 0))
   fun packExps(exps, mainexp) = Ex (T.ESEQ ((seq (map unNx exps)), (unEx mainexp)))
+
+  fun simpleVarAccess (Access ac, Level l) = Ex (F.expFn (#2 ac) (staticLinking ((#1 ac), Level l)))
+    | simpleVarAccess (_, _) = (error 0 "Internal Failure."; Ex (T.CONST 0))
+
+  fun arrayVarAccess (var, subscr, size) =
+      ifThenElseExp(
+        Ex (T.BINOP(T.AND,
+                    unEx (intOpExp(A.GeOp, subscr, Ex (T.CONST 0))),
+                    unEx (intOpExp(A.LeOp, subscr, size)))),
+        Ex (T.MEM (T.BINOP (T.PLUS,
+                            T.MEM (unEx var),
+                            T.BINOP (T.MUL,
+                                     unEx subscr,
+                                     T.CONST (F.wordSize))))),
+        Ex (T.ERROR))
+
+  fun fieldVarAccess(v, off) =
+        Ex (T.MEM (T.BINOP (T.PLUS,
+                            T.MEM (unEx v),
+                            T.BINOP (T.MUL,
+                                     unEx off,
+                                     T.CONST F.wordSize))))
 
   fun procEntryExit({level = level, body = body}) =
     let

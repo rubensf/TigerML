@@ -12,7 +12,7 @@ struct
   type venv = E.enventry S.table
   type tenv = T.ty S.table
 
-  type expty = {exp: R.exp, ty: T.ty}
+  type expty = {exp: R.exp, ty: T.ty, aux: int}
 
   val error = ErrorMsg.error
   val nest = ref 0
@@ -24,17 +24,17 @@ struct
                                 | NONE       => T.UNIT)
       | _                   => ty
 
-  fun checkInt({exp, ty}, pos, refstring) =
+  fun checkInt({exp, ty, aux}, pos, refstring) =
       case ty of
         T.INT => true
       | _     => (error pos (refstring ^ ": Integer required."); false)
 
-  fun checkString({exp, ty}, pos, refstring) =
+  fun checkString({exp, ty, aux}, pos, refstring) =
       case ty of
         T.STRING => true
       | _        => (error pos (refstring ^ ": String required."); false)
 
-  fun checkUnit({exp, ty}, pos, refstring) =
+  fun checkUnit({exp, ty, aux}, pos, refstring) =
       case ty of
         T.UNIT => true
       | _      => (error pos (refstring ^ ": Unit required."); false)
@@ -58,11 +58,11 @@ struct
       fun trexp (A.VarExp var) =
             transVar(venv, tenv, level, var, break)
         | trexp (A.NilExp) =
-            {exp=R.nilExp(), ty=T.NIL}
+            {exp=R.nilExp(), ty=T.NIL, aux=0}
         | trexp (A.IntExp i) =
-            {exp=R.intExp(i), ty=T.INT}
+            {exp=R.intExp(i), ty=T.INT, aux=0}
         | trexp (A.StringExp (str,pos)) =
-            {exp=R.strExp(str), ty=T.STRING}
+            {exp=R.strExp(str), ty=T.STRING, aux=0}
         | trexp (A.OpExp {left, oper, right, pos}) =
             (let
               val left = (trexp left)
@@ -73,21 +73,21 @@ struct
                case oper of
                  (A.PlusOp | A.MinusOp | A.TimesOp | A.DivideOp) =>
                     (case (real_left, real_right) of
-                       (T.INT, T.INT)       => {exp=R.intOpExp(oper, #exp left, #exp right), ty=T.INT}
+                       (T.INT, T.INT)       => {exp=R.intOpExp(oper, #exp left, #exp right), ty=T.INT, aux=0}
                      | _                    => (error pos "Can only operate ints.";
-                                                {exp=R.errExp(), ty=T.INT}))
+                                                {exp=R.errExp(), ty=T.INT, aux=0}))
                | (A.LtOp | A.LeOp | A.GtOp | A.GeOp) =>
                     (case (real_left, real_right) of
-                       (T.INT, T.INT)       => {exp=R.intOpExp(oper, #exp left, #exp right), ty=T.INT}
-                     | (T.STRING, T.STRING) => {exp=R.strOpExp(oper, #exp left, #exp right), ty=T.INT}
+                       (T.INT, T.INT)       => {exp=R.intOpExp(oper, #exp left, #exp right), ty=T.INT, aux=0}
+                     | (T.STRING, T.STRING) => {exp=R.strOpExp(oper, #exp left, #exp right), ty=T.INT, aux=0}
                      | _                    => (error pos "Can only compare ints and strings.";
-                                                {exp=R.errExp(), ty=T.INT}))
+                                                {exp=R.errExp(), ty=T.INT, aux=0}))
                | (A.EqOp | A.NeqOp) =>
                     (if checkTypeMatch(real_left, real_right, tenv, pos, "Equal/NEqual Comp")
                      then case (real_left, real_right) of
-                            (T.STRING, T.STRING) => {exp=R.strOpExp(oper, #exp left, #exp right), ty=T.INT}
-                          |  _                   => {exp=R.intOpExp(oper, #exp left, #exp right), ty=T.INT}
-                     else (error pos "Can only compare same types."; {exp=R.errExp(), ty=T.INT}))
+                            (T.STRING, T.STRING) => {exp=R.strOpExp(oper, #exp left, #exp right), ty=T.INT, aux=0}
+                          |  _                   => {exp=R.intOpExp(oper, #exp left, #exp right), ty=T.INT, aux=0}
+                     else (error pos "Can only compare same types."; {exp=R.errExp(), ty=T.INT, aux=0}))
              end)
         | trexp (A.CallExp {func, args, pos}) =
             (case S.look(venv, func) of
@@ -102,13 +102,13 @@ struct
                                      tl ans
                                    end)
                               formals args);
-                            {exp=R.callExp(declevel, level, label, map #exp (map trexp args)), ty=result})
+                            {exp=R.callExp(declevel, level, label, map #exp (map trexp args)), ty=result, aux=0})
                    else (error pos "Function args length differ from defined.";
-                         {exp=R.errExp(), ty=result})
-               | SOME (E.VarEntry {access, ty}) => (error pos ("Function expected, but variable found.");
-                                                    {exp=R.errExp(), ty=ty})
-               | NONE                           => (error pos ("Function " ^ S.name func ^ " does not exist.");
-                                                    {exp=R.errExp(), ty=T.UNIT}))
+                         {exp=R.errExp(), ty=result, aux=0})
+               | SOME (E.VarEntry {access, ty, aux}) => (error pos ("Function expected, but variable found.");
+                                                         {exp=R.errExp(), ty=ty, aux=0})
+               | NONE                                => (error pos ("Function " ^ S.name func ^ " does not exist.");
+                                                         {exp=R.errExp(), ty=T.UNIT, aux=0}))
         | trexp (A.RecordExp{fields, typ, pos}) =
             (let
                val typty =
@@ -141,21 +141,21 @@ struct
                                          tl ans
                                        end)
                                 fields stlist);
-                              {exp=R.recCreation(!exps), ty=typty})
+                              {exp=R.recCreation(!exps), ty=typty, aux=0})
                           end
                       else (error pos "Record fields length differ from defined.";
-                            {exp=R.errExp(), ty=T.UNIT})
+                            {exp=R.errExp(), ty=T.UNIT, aux=0})
                | _ => (error pos (S.name typ ^ " isn't a type.");
-                       {exp=R.errExp(), ty=T.UNIT})
+                       {exp=R.errExp(), ty=T.UNIT, aux=0})
              end)
         | trexp (A.SeqExp exps) =
             if List.null exps
-              then {exp=R.seqExp([]), ty=T.UNIT}
+              then {exp=R.seqExp([]), ty=T.UNIT, aux=0}
               else let
                      val exps' = map trexp (map #1 exps)
                      val list_ty = List.last exps'
                    in
-                     {exp=R.seqExp(map #exp exps'), ty=(#ty list_ty)}
+                     {exp=R.seqExp(map #exp exps'), ty=(#ty list_ty), aux=0}
                    end
         | trexp (A.AssignExp{var, exp, pos}) =
             let
@@ -163,7 +163,7 @@ struct
               val exp' = trexp exp
             in
               checkTypeMatch(#ty var', #ty exp', tenv, pos, "Assignment");
-              {exp=R.assignExp(#exp var', #exp exp'), ty=T.UNIT}
+              {exp=R.assignExp(#exp var', #exp exp'), ty=T.UNIT, aux=0}
             end
         | trexp (A.IfExp {test, then', else', pos}) =
             (case else' of
@@ -172,16 +172,16 @@ struct
                   val test' = trexp test
                   val then'' = trexp then'
                   val else'' = trexp else'
-                  val {exp=if_exp, ty=if_ty} = then''
+                  val {exp=if_exp, ty=if_ty, aux=0} = then''
                 in
                   checkInt(test', pos, "If statement");
                   checkTypeMatch(#ty then'', #ty else'', tenv, pos, "If statement");
-                  {exp=R.ifThenElseExp(#exp test', #exp then'', #exp else''), ty=if_ty}
+                  {exp=R.ifThenElseExp(#exp test', #exp then'', #exp else''), ty=if_ty, aux=0}
                 end
               | NONE =>
                 (checkInt(trexp(test), pos, "If statement");
                  checkUnit(trexp(then'), pos, "If statement");
-                 {exp=R.ifThenExp(#exp (trexp test), #exp (trexp then')), ty=T.UNIT})
+                 {exp=R.ifThenExp(#exp (trexp test), #exp (trexp then')), ty=T.UNIT, aux=0})
             )
         | trexp (A.WhileExp{test, body, pos}) =
             let
@@ -193,12 +193,12 @@ struct
             in
               checkInt(trexp(test), pos, "While loop");
               checkUnit(trexp(body), pos, "While loop");
-              {exp=R.whileExp(#exp test', #exp body', breaklabel), ty=T.UNIT}
+              {exp=R.whileExp(#exp test', #exp body', breaklabel), ty=T.UNIT, aux=0}
             end
         | trexp (A.ForExp{var, escape, lo, hi, body, pos}) =
             let
               val access = R.allocLocal level (!escape)
-              val venv' = S.enter(venv, var, E.VarEntry{access=access, ty=T.INT})
+              val venv' = S.enter(venv, var, E.VarEntry{access=access, ty=T.INT, aux=0})
               val _ = (nest := !nest + 1);
               val lo' = trexp(lo)
               val hi' = trexp(hi)
@@ -209,14 +209,14 @@ struct
               checkInt(lo', pos, "For loop");
               checkInt(hi', pos, "For loop");
               checkUnit(body', pos, "For loop");
-              {exp=R.forExp(R.simpleVarAccess (access, level), breaklabel, #exp lo', #exp hi', #exp body'), ty = T.UNIT}
+              {exp=R.forExp(R.simpleVarAccess (access, level), breaklabel, #exp lo', #exp hi', #exp body'), ty = T.UNIT, aux=0}
             end
         | trexp (A.BreakExp pos) =
             let in
             case !nest > 0 of
-              true  => {exp = R.breakExp(break), ty = T.UNIT}
+              true  => {exp = R.breakExp(break), ty = T.UNIT, aux=0}
             | false => (error pos "Break must be inside a loop";
-                        {exp = R.errExp(), ty = T.UNIT})
+                        {exp = R.errExp(), ty = T.UNIT, aux=0})
             end
         | trexp (A.LetExp {decs, body, pos}) =
             let
@@ -227,13 +227,13 @@ struct
                              let
                                val result = transDec (#venv ans, #tenv ans, level, x, break)
                              in
-                               {venv=(#venv result), tenv=(#tenv result), exps=((#exps result) @ (#exps ans))}
+                               {venv=(#venv result), tenv=(#tenv result), exps=((#exps ans) @ (#exps result))}
                              end)
                           {venv=venv, tenv=tenv, exps=[]} decs
               val _ = (nest := depth)
               val letRet = transExp(venv', tenv', level, body, break)
             in
-              {exp=R.packExps(exps', (#exp letRet)), ty=(#ty letRet)}
+              {exp=R.packExps(exps', (#exp letRet)), ty=(#ty letRet), aux=0}
             end
         | trexp (A.ArrayExp{typ, size, init, pos}) =
             let
@@ -249,8 +249,8 @@ struct
               case array_ty of
                 T.ARRAY (ty, u) =>
                   (checkTypeMatch(ty, #ty init, tenv, pos, "Array Expr");
-                   {exp=R.arrCreation(#exp size, #exp init), ty=array_ty})
-              | _ => (error pos "Array expected"; {exp = R.errExp(), ty = T.UNIT})
+                   {exp=R.arrCreation(#exp size, #exp init), ty=array_ty, aux=0})
+              | _ => (error pos "Array expected"; {exp = R.errExp(), ty = T.UNIT, aux=0})
             end
     in
         trexp exp
@@ -259,11 +259,11 @@ struct
       let
         fun trvar (A.SimpleVar (id, pos)) =
               (case Symbol.look (venv, id) of
-                 SOME (E.VarEntry evrty) => {exp=R.simpleVarAccess(#access evrty, level), ty=(#ty evrty)}
+                 SOME (E.VarEntry evrty) => {exp=R.simpleVarAccess(#access evrty, level), ty=(#ty evrty), aux=0}
                | SOME (E.FunEntry _)     => (error pos (Symbol.name id ^ " is function, not a variable.");
-                                             {exp=R.errExp(), ty=T.NIL})
+                                             {exp=R.errExp(), ty=T.NIL, aux=0})
                | _                       => (error pos ("Undefined variable: " ^ Symbol.name id);
-                                             {exp=R.errExp(), ty=T.NIL}))
+                                             {exp=R.errExp(), ty=T.NIL, aux=0}))
           | trvar (A.FieldVar (var, id, pos)) =
               let
                 val var = trvar var
@@ -276,12 +276,12 @@ struct
                        val findPos = foldl (fn ((s, t, p), ans) => if s = id then (p, t) else ans) ((0-1), T.INT) posList
                      in
                        if (#1 findPos) <> (0-1)
-                       then {exp=R.fieldVarAccess((#exp var), R.intExp (#1 findPos)), ty=(#2 findPos)}
+                       then {exp=R.fieldVarAccess((#exp var), R.intExp (#1 findPos)), ty=(#2 findPos), aux=0}
                        else (error pos ("Field \"" ^ Symbol.name id ^ "\" does not belong to record.");
-                             {exp=R.errExp(), ty=T.UNIT})
+                             {exp=R.errExp(), ty=T.UNIT, aux=0})
                     end
                  | _                                  => (error pos ("Var " ^ Symbol.name id ^ " is not a record.");
-                                                          {exp=R.errExp(), ty=T.UNIT}))
+                                                          {exp=R.errExp(), ty=T.UNIT, aux=0}))
               end
           | trvar (A.SubscriptVar (var, exp, pos)) =
               let
@@ -294,9 +294,9 @@ struct
                 val varty' = actual_ty (tenv, (#ty varty))
               in
                  case varty' of
-                   T.ARRAY (ty, uniqv) => {exp=R.arrayVarAccess((#exp varty), subscrExp'), ty=ty}
+                   T.ARRAY (ty, uniqv) => {exp=R.arrayVarAccess((#exp varty), subscrExp', R.intExp (#aux subscrExp)), ty=ty, aux=0}
                  | _                   => (error pos ("Var is not an array.");
-                                           {exp=R.errExp(), ty=T.UNIT})
+                                           {exp=R.errExp(), ty=T.UNIT, aux=0})
               end
       in
         trvar var
@@ -326,8 +326,8 @@ struct
                   | NONE   => ());
                   {tenv=tenv, venv=S.enter(venv, name,
                                            (case typ' of
-                                              SOME t => E.VarEntry {access=access, ty=t}
-                                            | NONE   => E.VarEntry {access=access, ty=(#ty trValue)})),
+                                              SOME t => E.VarEntry {access=access, ty=t, aux=(#aux trValue)}
+                                            | NONE   => E.VarEntry {access=access, ty=(#ty trValue), aux=(#aux trValue)})),
                    exps=assign::exps})
               end
           | trdec (A.TypeDec tydecs, exps) =
@@ -424,7 +424,7 @@ struct
                       (* Arguments for new functions go in the current function frame. *)
                       fun enterparam ((name, escape, ty), venv) =
                          S.enter(venv, name, E.VarEntry {access=R.allocLocal level (!escape),
-                                                         ty=ty})
+                                                         ty=ty, aux=0})
                       val venv'' = foldl enterparam venv' (map transparam params)
 
                       val funcTrLevel =

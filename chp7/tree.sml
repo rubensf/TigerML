@@ -17,6 +17,7 @@ datatype stm = SEQ of stm * stm
              | NAME of label
              | CONST of int
              | CALL of exp * exp list
+             | ERROR
 
       and binop = PLUS | MINUS | MUL | DIV
                 | AND | OR | LSHIFT | RSHIFT | ARSHIFT | XOR
@@ -48,6 +49,7 @@ datatype stm = SEQ of stm * stm
              | NAME of label
              | CONST of int
              | CALL of exp * exp list
+             | ERROR
 
       and binop = PLUS | MINUS | MUL | DIV
                 | AND | OR | LSHIFT | RSHIFT | ARSHIFT | XOR

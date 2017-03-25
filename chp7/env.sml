@@ -1,19 +1,19 @@
 signature ENV =
 sig
   type access
-  type ty
+  type ty = Types.ty
 
-  datatype enventry = VarEntry of {access: Translate.access, ty: ty}
+  datatype enventry = VarEntry of {access: Translate.access, ty: ty, aux: int}
                     | FunEntry of {level: Translate.level,
                                    label: Temp.label,
                                    formals: ty list, result: ty}
 
   val base_tenv : ty Symbol.table
   val base_venv : enventry Symbol.table
+  val size_arrs : enventry Symbol.table
 end
 
-(* Make it transparent coz too much of a hassle not knowing type. *)
-structure Env : ENV =
+structure Env :> ENV =
 struct
   structure R = Translate
   structure S = Symbol
@@ -24,7 +24,7 @@ struct
 
   type ty = T.ty
 
-  datatype enventry = VarEntry of {access: R.access, ty: ty}
+  datatype enventry = VarEntry of {access: R.access, ty: ty, aux: int}
                     | FunEntry of {level: R.level,
                                    label: Temp.label,
                                    formals: ty list, result: ty}
@@ -49,4 +49,6 @@ struct
 
   fun fillFuncFn ((name, entry), ans) = S.enter(ans, S.symbol name, entry)
   val base_venv = foldl fillFuncFn S.empty predef_funcs
+
+  val size_arrs = S.empty
 end
