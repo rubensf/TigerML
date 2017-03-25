@@ -421,10 +421,10 @@ struct
                       val venv'' = foldl enterparam venv' (map transparam params)
 
                       val funcTrLevel =
-                        case S.look(venv, name) of
+                        case S.look(venv', name) of
                           SOME (E.FunEntry t) => (#level t)
-                        | SOME (E.VarEntry _) => ((error pos "Internal error processing functions."); level)
-                        | NONE                => ((error pos "Internal error processing functions."); level)
+                        | SOME (E.VarEntry _) => ((error pos "Internal error processing functions var."); level)
+                        | NONE                => ((error pos "Internal error processing functions none."); level)
 
                       val retTypeFound = (#ty (transExp(venv'', tenv, funcTrLevel, body, break)))
                     in
