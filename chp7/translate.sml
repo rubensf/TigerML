@@ -96,12 +96,6 @@ struct
     | strOpExp (A.GeOp,  l, r) = Ex (F.externCallFn("mystrcmp", [unEx l] @ [unEx r] @ [T.CONST 5]))
     | strOpExp _               = (error 0 "Internal Failure."; Ex (T.CONST 0))
 
-(*  fun relopExp (oper, left, right) =
-    Cx(fn(t, f) => T.CJUMP(oper, unEx left , unEx right , t, f))
-*)
-(*  fun relopStrExp (oper, left, right, str) =
-    Ex (F.externCallFn (str, unEx left, unEx right))
-*)
   fun lvEqual (Level(_, uref1), Level(_, uref2)) = uref1 = uref2
     | lvEqual (_,_) = false
 
