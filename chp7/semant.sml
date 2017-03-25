@@ -182,12 +182,12 @@ struct
                 in
                   checkInt(test', pos, "If statement");
                   checkTypeMatch(#ty then'', #ty else'', tenv, pos, "If statement");
-                  {exp=R.errExp(), ty=if_ty}
+                  {exp=R.ifThenElseExp(#exp test', #exp then'', #exp else''), ty=if_ty}
                 end
               | NONE =>
                 (checkInt(trexp(test), pos, "If statement");
                  checkUnit(trexp(then'), pos, "If statement");
-                 {exp=R.errExp(), ty=T.UNIT})
+                 {exp=R.ifThenExp(#exp (trexp test), #exp (trexp then')), ty=T.UNIT})
             )
         | trexp (A.WhileExp{test, body, pos}) =
             (checkInt(trexp(test), pos, "While loop");
