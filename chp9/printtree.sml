@@ -34,7 +34,8 @@ struct
           | exp(T.CALL(e,el),d)   = (indent d; sayln "CALL("; exp(e,d+1);
                                      app (fn a => (sayln ","; exp(a,d+2))) el;
                                      say ")")
-          | exp((T.ERROR), d)     = (indent d; sayln "ERROR")
+          | exp((T.ERROR (T.OUTOFBOUNDS)), d)    = (indent d; sayln "ERROR out of bounds")
+          | exp((T.ERROR (T.NILDEREFERENCE)), d) = (indent d; sayln "ERROR nil dereference")
 
   and binop T.PLUS = say "PLUS"
     | binop T.MINUS = say "MINUS"

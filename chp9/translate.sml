@@ -293,7 +293,7 @@ struct
                               T.BINOP (T.MUL,
                                        T.BINOP (T.PLUS, unEx subscr, T.CONST 1),
                                        T.CONST (F.wordSize))))),
-          Ex (T.ERROR))
+          Ex (T.ERROR (T.OUTOFBOUNDS)))
       end
 
   fun fieldVarAccess(v, off) =
@@ -304,7 +304,7 @@ struct
           intOpExp(A.EqOp,
                    Ex (T.CONST 0),
                    Ex (v)),
-          Ex (T.ERROR),
+          Ex (T.ERROR (T.NILDEREFERENCE)),
           Ex (T.MEM (T.BINOP (T.PLUS,
                               v,
                               T.BINOP (T.MUL,

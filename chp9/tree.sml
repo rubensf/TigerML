@@ -17,13 +17,16 @@ datatype stm = SEQ of stm * stm
              | NAME of label
              | CONST of int
              | CALL of exp * exp list
-             | ERROR
+             | ERROR of error
 
       and binop = PLUS | MINUS | MUL | DIV
                 | AND | OR | LSHIFT | RSHIFT | ARSHIFT | XOR
 
       and relop = EQ | NE | LT | GT | LE | GE
                 | ULT | ULE | UGT | UGE
+
+      and error = OUTOFBOUNDS
+                | NILDEREFERENCE
 
   val notRel : relop -> relop
 end
@@ -47,13 +50,16 @@ datatype stm = SEQ of stm * stm
              | NAME of label
              | CONST of int
              | CALL of exp * exp list
-             | ERROR
+             | ERROR of error
 
       and binop = PLUS | MINUS | MUL | DIV
                 | AND | OR | LSHIFT | RSHIFT | ARSHIFT | XOR
 
       and relop = EQ | NE | LT | GT | LE | GE
                 | ULT | ULE | UGT | UGE
+
+      and error = OUTOFBOUNDS
+                | NILDEREFERENCE
 
   fun notRel EQ = NE
     | notRel NE = EQ
