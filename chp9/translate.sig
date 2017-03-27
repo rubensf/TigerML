@@ -20,7 +20,7 @@ sig
   val nilExp          : unit -> exp
 
   val simpleVarAccess : access * level -> exp
-  val arrayVarAccess  : exp * exp * exp -> exp
+  val arrayVarAccess  : exp * exp -> exp
   val fieldVarAccess  : exp * exp -> exp
 
   val arrCreation     : exp * exp -> exp

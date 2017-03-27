@@ -5,7 +5,7 @@ sig
 
   structure R : TRANSLATE
 
-  datatype enventry = VarEntry of {access: R.access, ty: ty, aux: R.exp}
+  datatype enventry = VarEntry of {access: R.access, ty: ty}
                     | FunEntry of {level: R.level,
                                    label: Temp.label,
                                    formals: ty list, result: ty}
@@ -25,7 +25,7 @@ struct
 
   type ty = T.ty
 
-  datatype enventry = VarEntry of {access: R.access, ty: ty, aux: R.exp}
+  datatype enventry = VarEntry of {access: R.access, ty: ty}
                     | FunEntry of {level: R.level,
                                    label: Temp.label,
                                    formals: ty list, result: ty}

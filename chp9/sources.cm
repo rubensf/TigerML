@@ -3,12 +3,14 @@ Group is
 absyn.sml
 assem.sml
 canon.sml
+codegen.sig
 errormsg.sml
 env.sml
 findescape.sml
 frame.sig
 main.sml
 mipsframe.sml
+mipsgen.sml
 parsetest.sml
 printtree.sml
 prabsyn.sml

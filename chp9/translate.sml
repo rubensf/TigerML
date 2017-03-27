@@ -129,7 +129,18 @@ struct
     | Outermost => NilAccess
 
   fun arrCreation (size, init) =
-    Ex (F.externCallFn ("initArray", [unEx size] @ [unEx init]))
+    let
+      val arr = F.externCallFn ("initArray",
+                                [T.BINOP(T.PLUS,
+                                         (unEx size),
+                                          T.CONST 1)] @
+                                [unEx init])
+      val tmp = T.TEMP (Temp.newtemp ())
+      val save = T.MOVE (tmp, arr)
+      val savesize = T.MOVE (T.MEM tmp, (unEx size))
+    in
+      Ex (T.ESEQ (T.SEQ (save, savesize), tmp))
+    end
   fun recCreation (args) =
     let
       val argsSize = List.length args
@@ -269,15 +280,15 @@ struct
   fun simpleVarAccess (Access ac, Level l) = Ex (F.expFn (#2 ac) (staticLinking ((#1 ac), Level l)))
     | simpleVarAccess (_, _) = (error 0 "Internal Failure."; Ex (T.CONST 0))
 
-  fun arrayVarAccess (var, subscr, size) =
+  fun arrayVarAccess (var, subscr) =
       ifThenElseExp(
         Ex (T.BINOP(T.AND,
                     unEx (intOpExp(A.GeOp, subscr, Ex (T.CONST 0))),
-                    unEx (intOpExp(A.LeOp, subscr, size)))),
+                    unEx (intOpExp(A.LeOp, subscr, Ex (T.MEM (unEx var)))))),
         Ex (T.MEM (T.BINOP (T.PLUS,
-                            T.MEM (unEx var),
+                            (unEx var),
                             T.BINOP (T.MUL,
-                                     unEx subscr,
+                                     T.BINOP (T.PLUS, unEx subscr, T.CONST 1),
                                      T.CONST (F.wordSize))))),
         Ex (T.ERROR))
 

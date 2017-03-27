@@ -4,11 +4,10 @@ struct
 
   datatype access = InFrame of int |
                     InReg of Temp.temp
-
   type frame      = Temp.label * access list * int ref
-
-  datatype frag = PROC of {body: Tree.stm, frame: frame}
-                | STRING of Temp.label
+  datatype frag   = PROC of {body: Tree.stm, frame: frame}
+                  | STRING of Temp.label
+  type register   = string
 
   val wordSize = 4
 

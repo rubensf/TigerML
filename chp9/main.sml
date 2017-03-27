@@ -1,5 +1,6 @@
 structure Main =
 struct
+	structure CG = MipsGen
 	structure R = Translate (MipsFrame)
 	structure S = Semant (R)
 
