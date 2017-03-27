@@ -281,23 +281,36 @@ struct
     | simpleVarAccess (_, _) = (error 0 "Internal Failure."; Ex (T.CONST 0))
 
   fun arrayVarAccess (var, subscr) =
-      ifThenElseExp(
-        Ex (T.BINOP(T.AND,
-                    unEx (intOpExp(A.GeOp, subscr, Ex (T.CONST 0))),
-                    unEx (intOpExp(A.LeOp, subscr, Ex (T.MEM (unEx var)))))),
-        Ex (T.MEM (T.BINOP (T.PLUS,
-                            (unEx var),
-                            T.BINOP (T.MUL,
-                                     T.BINOP (T.PLUS, unEx subscr, T.CONST 1),
-                                     T.CONST (F.wordSize))))),
-        Ex (T.ERROR))
+      let
+        val var = unEx var
+      in
+        ifThenElseExp(
+          Ex (T.BINOP(T.AND,
+                      unEx (intOpExp(A.GeOp, subscr, Ex (T.CONST 0))),
+                      unEx (intOpExp(A.LeOp, subscr, Ex (T.MEM var))))),
+          Ex (T.MEM (T.BINOP (T.PLUS,
+                              var,
+                              T.BINOP (T.MUL,
+                                       T.BINOP (T.PLUS, unEx subscr, T.CONST 1),
+                                       T.CONST (F.wordSize))))),
+          Ex (T.ERROR))
+      end
 
   fun fieldVarAccess(v, off) =
-        Ex (T.MEM (T.BINOP (T.PLUS,
-                            T.MEM (unEx v),
-                            T.BINOP (T.MUL,
-                                     unEx off,
-                                     T.CONST F.wordSize))))
+      let
+        val v = unEx v
+      in
+        ifThenElseExp(
+          intOpExp(A.EqOp,
+                   Ex (T.CONST 0),
+                   Ex (v)),
+          Ex (T.ERROR),
+          Ex (T.MEM (T.BINOP (T.PLUS,
+                              v,
+                              T.BINOP (T.MUL,
+                                       unEx off,
+                                       T.CONST F.wordSize)))))
+      end
 
   fun procEntryExit({level = level, body = body}) =
     let
@@ -317,7 +330,8 @@ struct
   fun errExp () = Ex (T.CONST 0)
 
   fun printFrag (F.PROC {body, frame}) =
-        List.app (fn s => Printtree.printtree (TextIO.stdOut, s))
-                  (C.traceSchedule (C.basicBlocks (C.linearize body)))
+        (print "New body:\n";
+         List.app (fn s => Printtree.printtree (TextIO.stdOut, s))
+                   (C.traceSchedule (C.basicBlocks (C.linearize body))))
       | printFrag (F.STRING lbl) = print ((Temp.getlabeltxt lbl) ^ "\n")
 end
