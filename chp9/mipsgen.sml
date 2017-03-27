@@ -7,7 +7,17 @@ struct
   fun codegen frame stm =
     let
       val instrlist = ref (nil: A.instr list)
+
       fun emit x = instrlist := x :: !instrlist
+
+      fun relToString T.EQ = "beqz"
+        | relToString T.NE = "bnez"
+        | relToString T.LT = "bltz"
+        | relToString T.GT = "bgtz"
+        | relToString T.LE = "blez"
+        | relToString T.GE = "bgez"
+        | relToString _    = (ErrorMsg.error 0 "Internal error - unnecessary relop to string."; "")
+
       fun result(gen) =
         let
           val t = Temp.newtemp()
@@ -130,7 +140,8 @@ struct
         | munchExp (T.TEMP t) = t
         | munchExp (T.ESEQ(s, e)) = (munchStm s; munchExp e)
 
-      and munchStm (T.SEQ(a, b)) = (munchStm a; munchStm b)
+      and munchStm (T.SEQ(e1, e2)) = (munchStm e1; munchStm e2)
+        | munchStm (T.EXP(e)) = (munchExp e; ())
         | munchStm (T.MOVE(T.MEM(T.BINOP(T.PLUS, e1, T.CONST i)), e2)) =
             emit(A.OPER {assem="sw      $s0, " ^ (Int.toString i) ^ "($s1)\n",
                          src=[munchExp e2, munchExp e1],
@@ -151,9 +162,75 @@ struct
             emit(A.OPER {assem="sw      $s0, 0($s1)\n",
                          src=[munchExp e2, munchExp e1],
                          dst=[], jump=NONE})
+        | munchStm (T.MOVE(T.TEMP t, e)) =
+            emit(A.OPER {assem="move    $d0, $s0\n",
+                         src=[munchExp e],
+                         dst=[t], jump=NONE})
+        | munchStm (T.MOVE(e1, e2)) =
+            emit(A.OPER {assem="addi $v0, $r0, 10\n syscall",
+                         src=[],
+                         dst=[], jump=NONE}) (* TODO Print error message*)
         | munchStm (T.LABEL l) =
             emit(A.LABEL {assem=(Temp.labelToString l) ^ ":\n",
                           lab=l})
+        | munchStm (T.JUMP(T.NAME(l), ll)) =
+            emit(A.OPER {assem="j       " ^ (Temp.labelToString l) ^ "\n",
+                         src=[],
+                         dst=[], jump=SOME(ll)})
+        | munchStm (T.JUMP(e, ll)) =
+            emit(A.OPER {assem="jr      $s0\n",
+                         src=[munchExp e],
+                         dst=[], jump=SOME(ll)})
+        | munchStm (T.CJUMP(T.ULT, e, T.CONST i, l1, l2)) =
+            let
+              val t = Temp.newtemp ()
+            in
+              emit (A.OPER {assem="sltiu   $d0, $s0, " ^ (Int.toString i),
+                             src=[munchExp e],
+                             dst=[t], jump=NONE});
+              munchStm(T.CJUMP(T.NE, T.TEMP t, T.CONST 0, l1, l2))
+            end
+        | munchStm (T.CJUMP(T.ULT, e1, e2, l1, l2)) =
+            let
+              val t = Temp.newtemp ()
+            in
+              emit (A.OPER {assem="slti    $d0, $s0, $s1",
+                            src=[munchExp e1, munchExp e2],
+                            dst=[t], jump=NONE});
+              munchStm(T.CJUMP(T.NE, T.TEMP t, T.CONST 0, l1, l2))
+            end
+        | munchStm (T.CJUMP(T.ULE, e, T.CONST i, l1, l2)) =
+            let
+              val l3 = Temp.newlabel ()
+            in
+              munchStm(T.CJUMP (T.ULT, e, T.CONST i, l1, l3));
+              munchStm(T.LABEL l3);
+              munchStm(T.CJUMP (T.EQ, e, T.CONST i, l1, l2))
+            end
+        | munchStm (T.CJUMP(T.ULE, e1, e2, l1, l2)) =
+            let
+              val l3 = Temp.newlabel ()
+            in
+              munchStm(T.CJUMP (T.ULT, e1, e2, l1, l3));
+              munchStm(T.LABEL l3);
+              munchStm(T.CJUMP (T.EQ, e1, e2, l1, l2))
+            end
+        | munchStm (T.CJUMP(T.UGT, e1, e2, l1, l2)) =
+            let
+              val l3 = Temp.newlabel ()
+            in
+              munchStm(T.CJUMP (T.ULT, e1, e2, l2, l3));
+              munchStm(T.LABEL l3);
+              munchStm(T.CJUMP (T.EQ, e1, e2, l2, l3))
+            end
+        | munchStm (T.CJUMP(T.UGE, e1, e2, l1, l2)) =
+            munchStm(T.CJUMP (T.ULT, e1, e2, l2, l1))
+        | munchStm (T.CJUMP(rel, e1, e2, l1, l2)) =
+            emit(A.OPER {assem="sub     $t0, $s0, $s1\n" ^
+                               (relToString rel) ^ "    $t0, " ^ (Temp.labelToString l1) ^ "\n" ^
+                               "j       " ^ (Temp.labelToString l2) ^ "\n",
+                         src=[munchExp e1, munchExp e2],
+                         dst=[], jump=SOME([l1, l2])})
         | munchStm (T.ERROR e) =
             emit(A.OPER {assem="addi $v0, $r0, 10\n syscall",
                          src=[],
