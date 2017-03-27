@@ -1,7 +1,9 @@
-structure Translate :> TRANSLATE =
+functor Translate(F: FRAME) :> TRANSLATE =
 struct
+  structure F = F
+
   structure A = Absyn
-  structure F = MipsFrame
+  structure C = Canon
   structure T = Tree
 
   val error = ErrorMsg.error
@@ -302,4 +304,9 @@ struct
   fun getResult () = !frags
 
   fun errExp () = Ex (T.CONST 0)
+
+  fun printFrag (F.PROC {body, frame}) =
+        List.app (fn s => Printtree.printtree (TextIO.stdOut, s))
+                  (C.traceSchedule (C.basicBlocks (C.linearize body)))
+      | printFrag (F.STRING lbl) = print ((Temp.getlabeltxt lbl) ^ "\n")
 end

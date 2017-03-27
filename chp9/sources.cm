@@ -1,6 +1,7 @@
 Group is
 
 absyn.sml
+assem.sml
 canon.sml
 errormsg.sml
 env.sml

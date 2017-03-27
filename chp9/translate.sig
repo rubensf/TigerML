@@ -1,9 +1,11 @@
 signature TRANSLATE =
 sig
+  structure F : FRAME
+
   type level
   type access
   type exp
-  type frag = MipsFrame.frag (* TODO fix this *)
+  type frag
 
   val newLevel   : {parent: level, name: Temp.label, formals: bool list} -> level
   val outermost  : level
@@ -41,4 +43,6 @@ sig
   val getResult       : unit -> frag list
 
   val errExp          : unit -> exp
+
+  val printFrag       : frag -> unit
 end

@@ -3,8 +3,10 @@ sig
   type access
   type ty = Types.ty
 
-  datatype enventry = VarEntry of {access: Translate.access, ty: ty, aux: Translate.exp}
-                    | FunEntry of {level: Translate.level,
+  structure R : TRANSLATE
+
+  datatype enventry = VarEntry of {access: R.access, ty: ty, aux: R.exp}
+                    | FunEntry of {level: R.level,
                                    label: Temp.label,
                                    formals: ty list, result: ty}
 
@@ -12,9 +14,9 @@ sig
   val base_venv : enventry Symbol.table
 end
 
-structure Env :> ENV =
+functor Env(R: TRANSLATE) : ENV =
 struct
-  structure R = Translate
+  structure R = R
   structure S = Symbol
   structure T = Types
 
@@ -23,7 +25,7 @@ struct
 
   type ty = T.ty
 
-  datatype enventry = VarEntry of {access: R.access, ty: ty, aux: Translate.exp}
+  datatype enventry = VarEntry of {access: R.access, ty: ty, aux: R.exp}
                     | FunEntry of {level: R.level,
                                    label: Temp.label,
                                    formals: ty list, result: ty}
