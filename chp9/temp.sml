@@ -3,16 +3,15 @@ struct
   type temp = int
   type label = Symbol.symbol
 
-  val temps = ref 100
+  structure Table = IntMapTable(type key = temp
+                                fun getInt n = n)
 
-  structure Table = IntMapTable(
-        type key = int
-        fun getInt n = n)
+  val temps = ref 100
 
   fun newtemp() = let val t = !temps in temps := t+1; t end
   fun makestring t = "t" ^ Int.toString t
   fun namedlabel l = Symbol.symbol l
-  fun getlabeltxt l = Symbol.name l
+  fun labelToString l = Symbol.name l
 
   local
     structure F = Format
@@ -20,5 +19,6 @@ struct
     val labs = ref 0
   in
     fun newlabel() = Symbol.symbol(F.format "L%d" [F.INT(postinc labs)])
+    fun reset() = (labs := 0; temps := 100)
   end
 end

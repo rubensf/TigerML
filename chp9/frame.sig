@@ -21,6 +21,12 @@ sig
 	val fp       : Temp.temp
 	val rv       : Temp.temp
 
+	(* General registers *)
+(*	val specialregs     : register list
+	val argregs         : register list
+	val calleesavesregs : register list
+	val callersavesregs : register list
+*)
 	(* Auxiliar, arch dependent functions *)
 	val expFn        : access -> Tree.exp -> Tree.exp (* Get's the specific access function. *)
 	val externCallFn : string * Tree.exp list -> Tree.exp (* Calls an external function, such as C heap management. *)

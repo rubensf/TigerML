@@ -9,6 +9,7 @@ datatype stm = SEQ of stm * stm
              | CJUMP of relop * exp * exp * label * label
              | MOVE of exp * exp
              | EXP of exp
+             | ERROR of error
 
      and exp = BINOP of binop * exp * exp
              | MEM of exp
@@ -17,7 +18,6 @@ datatype stm = SEQ of stm * stm
              | NAME of label
              | CONST of int
              | CALL of exp * exp list
-             | ERROR of error
 
       and binop = PLUS | MINUS | MUL | DIV
                 | AND | OR | LSHIFT | RSHIFT | ARSHIFT | XOR
@@ -42,6 +42,7 @@ datatype stm = SEQ of stm * stm
              | CJUMP of relop * exp * exp * label * label
              | MOVE of exp * exp
              | EXP of exp
+             | ERROR of error
 
      and exp = BINOP of binop * exp * exp
              | MEM of exp
@@ -50,7 +51,6 @@ datatype stm = SEQ of stm * stm
              | NAME of label
              | CONST of int
              | CALL of exp * exp list
-             | ERROR of error
 
       and binop = PLUS | MINUS | MUL | DIV
                 | AND | OR | LSHIFT | RSHIFT | ARSHIFT | XOR

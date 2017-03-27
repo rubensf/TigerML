@@ -12,30 +12,30 @@ struct
 
         fun stm(T.SEQ(a,b),d)         =
               (indent d; sayln "SEQ("; stm(a,d+1); sayln ","; stm(b,d+1); say ")")
-          | stm(T.LABEL lab, d)       = (indent d; say "LABEL "; say (Symbol.name lab))
+          | stm(T.LABEL lab, d)       = (indent d; say "LABEL "; say (Temp.labelToString lab))
           | stm(T.JUMP (e,_), d)      =  (indent d; sayln "JUMP("; exp(e,d+1); say ")")
           | stm(T.CJUMP(r,a,b,t,f),d) = (indent d; say "CJUMP(";
                                          relop r; sayln ",";
                                          exp(a,d+1); sayln ","; exp(b,d+1); sayln ",";
-                                         indent(d+1); say(Symbol.name t);
-                                         say ","; say (Symbol.name f); say ")")
+                                         indent(d+1); say(Temp.labelToString t);
+                                         say ","; say (Temp.labelToString f); say ")")
           | stm(T.MOVE(a,b),d)        = (indent d; sayln "MOVE("; exp(a,d+1); sayln ",";
                                          exp(b,d+1); say ")")
           | stm(T.EXP e, d)           = (indent d; sayln "EXP("; exp(e,d+1); say ")")
+          | stm(T.ERROR (T.OUTOFBOUNDS), d)    = (indent d; sayln "ERROR out of bounds")
+          | stm(T.ERROR (T.NILDEREFERENCE), d) = (indent d; sayln "ERROR nil dereference")
 
         and exp(T.BINOP(p,a,b),d) = (indent d; say "BINOP("; binop p; sayln ",";
                                      exp(a,d+1); sayln ","; exp(b,d+1); say ")")
           | exp(T.MEM(e),d)       = (indent d; sayln "MEM("; exp(e,d+1); say ")")
-          | exp(T.TEMP t, d)      = (indent d; say "TEMP t"; say(Int.toString t))
+          | exp(T.TEMP t, d)      = (indent d; say "TEMP t"; say(Temp.makestring t))
           | exp(T.ESEQ(s,e),d)    = (indent d; sayln "ESEQ("; stm(s,d+1); sayln ",";
                                      exp(e,d+1); say ")")
-          | exp(T.NAME lab, d)    = (indent d; say "NAME "; say (Symbol.name lab))
+          | exp(T.NAME lab, d)    = (indent d; say "NAME "; say (Temp.labelToString lab))
           | exp(T.CONST i, d)     = (indent d; say "CONST "; say(Int.toString i))
           | exp(T.CALL(e,el),d)   = (indent d; sayln "CALL("; exp(e,d+1);
                                      app (fn a => (sayln ","; exp(a,d+2))) el;
                                      say ")")
-          | exp((T.ERROR (T.OUTOFBOUNDS)), d)    = (indent d; sayln "ERROR out of bounds")
-          | exp((T.ERROR (T.NILDEREFERENCE)), d) = (indent d; sayln "ERROR nil dereference")
 
   and binop T.PLUS = say "PLUS"
     | binop T.MINUS = say "MINUS"

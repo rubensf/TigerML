@@ -4,6 +4,8 @@ struct
 	structure R = Translate (MipsFrame)
 	structure S = Semant (R)
 
+	fun resetAll () = (R.resetFrags(); Temp.reset())
+
 	fun compile file =
 		let
 			val ast = Parse.parse file
@@ -14,7 +16,7 @@ struct
 			        PrintAbsyn.print (TextIO.stdOut, ast);
 			        print "Semanting Analysis: \n";
 			        FindEscape.findEscape ast;
-			        R.resetFrags ();
+			        resetAll();
 			        let
 			          val frags = S.transProg ast;
 			        in

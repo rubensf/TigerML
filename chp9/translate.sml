@@ -293,7 +293,7 @@ struct
                               T.BINOP (T.MUL,
                                        T.BINOP (T.PLUS, unEx subscr, T.CONST 1),
                                        T.CONST (F.wordSize))))),
-          Ex (T.ERROR (T.OUTOFBOUNDS)))
+          Ex (T.ESEQ (T.ERROR (T.OUTOFBOUNDS), T.CONST 0)))
       end
 
   fun fieldVarAccess(v, off) =
@@ -304,7 +304,7 @@ struct
           intOpExp(A.EqOp,
                    Ex (T.CONST 0),
                    Ex (v)),
-          Ex (T.ERROR (T.NILDEREFERENCE)),
+          Ex (T.ESEQ (T.ERROR (T.NILDEREFERENCE), T.CONST 0)),
           Ex (T.MEM (T.BINOP (T.PLUS,
                               v,
                               T.BINOP (T.MUL,
@@ -333,5 +333,5 @@ struct
         (print "New body:\n";
          List.app (fn s => Printtree.printtree (TextIO.stdOut, s))
                    (C.traceSchedule (C.basicBlocks (C.linearize body))))
-      | printFrag (F.STRING lbl) = print ((Temp.getlabeltxt lbl) ^ "\n")
+      | printFrag (F.STRING lbl) = print ((Temp.labelToString lbl) ^ "\n")
 end
