@@ -8,6 +8,8 @@ struct
     let
       val instrlist = ref (nil: A.instr list)
 
+      val err = ErrorMsg.error
+
       fun emit x = instrlist := x :: !instrlist
 
       fun relToString T.EQ = "beqz"
@@ -16,6 +18,10 @@ struct
         | relToString T.GT = "bgtz"
         | relToString T.LE = "blez"
         | relToString T.GE = "bgez"
+        | relToString T.ULT = "bltu"
+        | relToString T.UGT = "bgtu"
+        | relToString T.ULE = "bleu"
+        | relToString T.UGE = "bgeu"
         | relToString _    = (ErrorMsg.error 0 "Internal error - unnecessary relop to string."; "")
 
       fun result(gen) =
@@ -139,6 +145,14 @@ struct
                                         dst=[r], jump=NONE}))
         | munchExp (T.TEMP t) = t
         | munchExp (T.ESEQ(s, e)) = (munchStm s; munchExp e)
+        | munchExp (T.CALL(T.NAME n, args)) = 
+            (emit(A.OPER {
+                  assem = "jal " ^ (Temp.labelToString n) ^ "\n",
+                  src = munchArgs(0, args, 16), 
+                  dst = F.ra::F.rv::(F.getRegTemps F.calleeRegs), 
+                  jump = NONE
+                });F.rv)
+        | munchExp (T.CALL(_, _)) = (err 0 "Pls supply NAME to T.CALL"; Temp.newtemp())
 
       and munchStm (T.SEQ(e1, e2)) = (munchStm e1; munchStm e2)
         | munchStm (T.EXP(e)) = (munchExp e; ())
@@ -235,6 +249,22 @@ struct
             emit(A.OPER {assem="addi $v0, $r0, 10\n syscall",
                          src=[],
                          dst=[], jump=NONE}) (* TODO Print error message*)
+      and munchArgs(i, [], offset) = []
+        | munchArgs(i, a::l, offset) =
+            case i < 4 of
+              true => 
+                let
+                  val temp = List.nth(F.getRegTemps F.argsRegs, i)
+                in 
+                  munchStm(T.MOVE(T.TEMPLOC temp, arg));
+                  temp::munchArgs(i + 1, l, offset)
+                end
+              false =>
+                let
+                in
+                  munchStm(T.MOVE(T.MEMLOC(T.BINOP(T.PLUS, T.TEMP F.sp, T.CONST offset)), arg));
+                  munchArgs(i + 1, l, offset + 4)
+                end
     in
       munchStm stm;
       List.rev (!instrlist)

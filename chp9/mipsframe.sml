@@ -12,7 +12,47 @@ struct
   val wordSize = 4
 
   val fp = Temp.newtemp ()
+  val sp = Temp.newtemp ()
   val rv = Temp.newtemp ()
+  val ra = Temp.newtemp ()
+
+  val specialRegs = [
+    (R0, "$r0"),
+    (RA, "$ra"),
+    (SP, "$sp"),
+    (FP, "$fp")
+  ]
+
+  val argsRegs = [
+    (A0, "$a0"),
+    (A1, "$a1"),
+    (A2, "$a2"),
+    (A3, "$a3")
+  ]
+
+  val calleeRegs = [
+    (S0, "$s0"),
+    (S1, "$s1"),
+    (S2, "$s2"),
+    (S3, "$s3"),
+    (S4, "$s4"),
+    (S5, "$s5"),
+    (S6, "$s6"),
+    (S7, "$s7")
+  ]
+
+  val callerRegs = [
+    (T0, "$t0"),
+    (T1, "$t1"),
+    (T2, "$t2"),
+    (T3, "$t3"),
+    (T4, "$t4"),
+    (T5, "$t5"),
+    (T6, "$t6"),
+    (T7, "$t7"),
+    (T8, "$t8"),
+    (T9, "$t9")
+  ]
 
   fun name (f: frame)       = #1 f
   fun formals (f: frame)    = #2 f
@@ -31,6 +71,8 @@ struct
 
   fun getOffset (f: frame) = !(#3 f)
 
+  fun getRegTemps = map (fn (t, r) => t)
+
   fun allocLocal (f: frame) (esc: bool) =
     case esc of
       true  => ((#3 f) := !(#3 f)-wordSize;InFrame (!(#3 f)+wordSize))
@@ -45,4 +87,16 @@ struct
     CALL (NAME (Temp.namedlabel s), args)
 
   fun procEntryExit (frame, treeExp) = treeExp (* TODO *)
+
+  fun procEntryExit2 (frame, body) = 
+    body @ [A.OPER {assem="",
+                    src=getRegTemps (specialRegs @ calleesaves),
+                    dst=[],jump=SOME[]}
+    ]
+
+  fun procEntryExit3 (FRAME {name, params, locals}, body) = {
+    prolog = "PROCEDURE " ^ Symbol.name name ^ "\n",
+    body = body,
+    epilog = "END " ^ Symbol.name name ^ "\n"
+  }
 end
