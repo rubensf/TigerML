@@ -90,7 +90,7 @@ struct
 
   fun procEntryExit2 (frame, body) = 
     body @ [A.OPER {assem="",
-                    src=getRegTemps (specialRegs @ calleesaves),
+                    src=getRegTemps (specialRegs @ calleeRegs),
                     dst=[],jump=SOME[]}
     ]
 
