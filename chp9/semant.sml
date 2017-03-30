@@ -3,7 +3,7 @@ signature SEMANT = sig
   val transProg : Absyn.exp -> R.frag list
 end
 
-functor Semant(R: TRANSLATE) :> SEMANT =
+functor Semant(R: TRANSLATE) : SEMANT =
 struct
   structure R = R
 

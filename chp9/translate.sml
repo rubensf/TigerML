@@ -1,4 +1,4 @@
-functor Translate(F: FRAME) :> TRANSLATE =
+functor Translate(F: FRAME) : TRANSLATE =
 struct
   structure F = F
 
