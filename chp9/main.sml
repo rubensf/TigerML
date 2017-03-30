@@ -15,7 +15,7 @@ struct
       val stms    = C.linearize body
       val stms'   = C.traceSchedule(C.basicBlocks stms)
       val instrs  = List.concat(map (CG.codegen frame) stms')
-      val format0 = A.format (Temp.makestring)
+      val format0 = A.format (F.makestring)
     in
       app (fn i => TextIO.output(out, format0 i)) instrs
     end
