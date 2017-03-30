@@ -33,4 +33,6 @@ sig
 
 	(* Function "decorators" - add prologue and epilogue standard mumbo jumbo *)
 	val procEntryExit : frame * Tree.exp -> Tree.exp
+	val tempMap : register Temp.Table.table
+	val makestring : Temp.temp -> string
 end

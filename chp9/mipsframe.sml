@@ -54,6 +54,16 @@ struct
     (T9, "$t9")
   ]
 
+  val tempMap = 
+    let
+      val map_add_ ((t,s), map) = Temp.Table.enter(map, t, s);
+    in
+      foldr map_add Temp.table.empty specialRegs
+    end
+
+  fun makestring (t:Temp.temp) = case Temp.Table.look(tempMap, t) of
+    SOME(s) => s
+  | NONE    => Temp.makestring t
   fun name (f: frame)       = #1 f
   fun formals (f: frame)    = #2 f
 
