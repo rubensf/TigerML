@@ -240,9 +240,15 @@ struct
         | munchStm (T.CJUMP(T.UGE, e1, e2, l1, l2)) =
             munchStm(T.CJUMP (T.ULT, e1, e2, l2, l1))
         | munchStm (T.CJUMP(rel, e1, e2, l1, l2)) =
-            emit(A.OPER {assem=(relToString rel) ^ "    `s0, `s1, `j0\nb `j1\n" ,
-                         src=[munchExp e1, munchExp e2],
-                         dst=[], jump=SOME([l1, l2])})
+            let
+              val t = Temp.newtemp()
+            in
+              emit(A.OPER {assem="sub     `d0, `s0, `s1\n"
+                          ^ (relToString rel) ^ "    `s2, `s3, `j0\nb `j1\n" ,
+                         src=[munchExp e1, munchExp e2, t, F.r0],
+                         dst=[t], jump=SOME([l1, l2])})
+            end
+            
         | munchStm (T.ERROR e) =
             munchError ()
       and munchArgs(i, [], offset) = []
