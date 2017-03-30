@@ -31,7 +31,7 @@ struct
         end
 
       fun munchError() =
-            emit(A.OPER {assem="addi    $d0, $s0, 10\n syscall",
+            emit(A.OPER {assem="addi    $d0, $s0, 10\n syscall\n",
                          src=[F.r0],
                          dst=[F.rv], jump=NONE}) (* TODO Print error message*)
       and munchExp(T.CONST i) =
@@ -131,19 +131,19 @@ struct
                                         src=[],
                                         dst=[r], jump=NONE}))
         | munchExp (T.MEM (T.BINOP(T.PLUS, e, T.CONST i))) =
-            result(fn r => emit(A.OPER {assem="lw      $d0, " ^ (Int.toString i) ^ "($s0)",
+            result(fn r => emit(A.OPER {assem="lw      $d0, " ^ (Int.toString i) ^ "($s0)\n",
                                         src=[munchExp e],
                                         dst=[r], jump=NONE}))
         | munchExp (T.MEM (T.BINOP(T.PLUS, T.CONST i, e))) =
-            result(fn r => emit(A.OPER {assem="lw      $d0, " ^ (Int.toString i) ^ "($s0)",
+            result(fn r => emit(A.OPER {assem="lw      $d0, " ^ (Int.toString i) ^ "($s0)\n",
                                         src=[munchExp e],
                                         dst=[r], jump=NONE}))
         | munchExp (T.MEM (T.BINOP(T.MINUS, e, T.CONST i))) =
-            result(fn r => emit(A.OPER {assem="lw      $d0, " ^ (Int.toString (~i)) ^ "($s0)",
+            result(fn r => emit(A.OPER {assem="lw      $d0, " ^ (Int.toString (~i)) ^ "($s0)\n",
                                         src=[munchExp e],
                                         dst=[r], jump=NONE}))
         | munchExp (T.MEM e) =
-            result(fn r => emit(A.OPER {assem="lw      $d0, 0($s0)",
+            result(fn r => emit(A.OPER {assem="lw      $d0, 0($s0)\n",
                                         src=[munchExp e],
                                         dst=[r], jump=NONE}))
         | munchExp (T.TEMP t) = t
