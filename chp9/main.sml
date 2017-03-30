@@ -9,7 +9,7 @@ struct
 
   fun resetAll () = (R.resetFrags(); Temp.reset())
 
-  fun emitproc out (F.PROC{body,frame}) = 
+  fun emitproc out (F.PROC{body,frame}) =
     let
       val _       = print("emit " ^ (Temp.labelToString (F.name frame)) ^ "\n")
       val stms    = C.linearize body
@@ -19,7 +19,7 @@ struct
     in
       app (fn i => TextIO.output(out, format0 i)) instrs
     end
-    | emitproc out (F.STRING lab) = TextIO.output(out, Temp.labelToString lab)
+    | emitproc out (F.STRING (lab, str)) = TextIO.output(out, (Temp.labelToString lab) ^ ": " ^ str ^ "\n")
   fun compile file =
     let
       val ast = Parse.parse file

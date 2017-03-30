@@ -5,7 +5,7 @@ sig
   type register
 
   datatype frag = PROC of {body: Tree.stm, frame: frame}
-                | STRING of Temp.label
+                | STRING of Temp.label * string
 
   val newFrame   : {name: Temp.label, formals: bool list} -> frame
   val name       : frame -> Temp.label

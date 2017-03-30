@@ -6,7 +6,7 @@ struct
                     InReg of Temp.temp
   type frame      = Temp.label * access list * int ref
   datatype frag   = PROC of {body: Tree.stm, frame: frame}
-                  | STRING of Temp.label
+                  | STRING of Temp.label * string
   type register   = string
 
   val wordSize = 4
@@ -91,7 +91,7 @@ struct
     (T9, "$t9")
   ]
 
-  val tempMap = 
+  val tempMap =
     let
       fun map_add ((t,s), map) = Temp.Table.enter(map, t, s);
     in
@@ -135,7 +135,7 @@ struct
 
   fun procEntryExit (frame, treeExp) = treeExp (* TODO *)
 
-  fun procEntryExit2 (frame, body) = 
+  fun procEntryExit2 (frame, body) =
     body @ [Assem.OPER {assem="",
                     src=getRegTemps (specialRegs @ calleeRegs),
                     dst=[],jump=SOME[]}

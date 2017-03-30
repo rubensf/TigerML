@@ -108,7 +108,7 @@ struct
     let
       val lab = Temp.newlabel ()
     in
-      frags := (F.STRING lab) :: !frags;
+      frags := (F.STRING (lab, str)) :: !frags;
       Ex (T.NAME lab)
     end
 
@@ -333,5 +333,5 @@ struct
         (print "New body:\n";
          List.app (fn s => Printtree.printtree (TextIO.stdOut, s))
                    (C.traceSchedule (C.basicBlocks (C.linearize body))))
-      | printFrag (F.STRING lbl) = print ((Temp.labelToString lbl) ^ "\n")
+      | printFrag (F.STRING (lbl, str)) = print ("String:\n" ^ (Temp.labelToString lbl) ^ ": " ^ str ^ "\n")
 end
