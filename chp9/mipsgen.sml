@@ -1,8 +1,10 @@
-structure MipsGen :> CODEGEN =
+structure MipsGen : CODEGEN =
 struct
   structure A = Assem
   structure F = MipsFrame
   structure T = Tree
+
+  type frame = F.frame
 
   fun codegen frame stm =
     let
