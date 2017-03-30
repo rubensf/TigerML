@@ -208,7 +208,7 @@ struct
             let
               val t = Temp.newtemp ()
             in
-              emit (A.OPER {assem="slti    `d0, `s0, `s1",
+              emit (A.OPER {assem="sltu    `d0, `s0, `s1",
                             src=[munchExp e1, munchExp e2],
                             dst=[t], jump=NONE});
               munchStm(T.CJUMP(T.NE, T.TEMP t, T.CONST 0, l1, l2))
@@ -235,14 +235,12 @@ struct
             in
               munchStm(T.CJUMP (T.ULT, e1, e2, l2, l3));
               munchStm(T.LABEL l3);
-              munchStm(T.CJUMP (T.EQ, e1, e2, l2, l3))
+              munchStm(T.CJUMP (T.EQ, e1, e2, l2, l1))
             end
         | munchStm (T.CJUMP(T.UGE, e1, e2, l1, l2)) =
             munchStm(T.CJUMP (T.ULT, e1, e2, l2, l1))
         | munchStm (T.CJUMP(rel, e1, e2, l1, l2)) =
-            emit(A.OPER {assem="sub     `t0, `s0, `s1\n" ^
-                               (relToString rel) ^ "    `t0, " ^ (Temp.labelToString l1) ^ "\n" ^
-                               "j       " ^ (Temp.labelToString l2) ^ "\n",
+            emit(A.OPER {assem=(relToString rel) ^ "    `s0, `s1, `j0\nb `j1\n" ,
                          src=[munchExp e1, munchExp e2],
                          dst=[], jump=SOME([l1, l2])})
         | munchStm (T.ERROR e) =
