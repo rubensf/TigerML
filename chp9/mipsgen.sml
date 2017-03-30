@@ -33,8 +33,8 @@ struct
                          src=[F.r0],
                          dst=[F.rv], jump=NONE}) (* TODO Print error message*)
       and munchExp(T.CONST i) =
-            result(fn r => emit(A.OPER {assem="addi    $d0, $r0, " ^ Int.toString i ^ "\n",
-                                        src=[],
+            result(fn r => emit(A.OPER {assem="addi    $d0, $s0, " ^ Int.toString i ^ "\n",
+                                        src=[F.r0],
                                         dst=[r], jump=NONE}))
         | munchExp (T.BINOP(T.PLUS, e, T.CONST i)) =
             result(fn r => emit(A.OPER {assem="addi    $d0, $s0, " ^ (Int.toString i) ^ "\n",
