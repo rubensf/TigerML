@@ -150,7 +150,7 @@ struct
         | munchExp (T.ESEQ(s, e)) = (munchStm s; munchExp e)
         | munchExp (T.CALL(T.NAME n, args)) =
             (emit(A.OPER {
-                  assem = "jal " ^ (Temp.labelToString n) ^ "\n",
+                  assem = "jal     " ^ (Temp.labelToString n) ^ "\n",
                   src = munchArgs(0, args, 16),
                   dst = F.ra::F.rv::(F.getRegTemps F.calleeRegs),
                   jump = NONE});
