@@ -30,10 +30,10 @@ sig
   val ra        : Temp.temp
 
   (* General registers *)
-  val specialRegs     : (Temp.temp * register) list
-  val argsRegs         : (Temp.temp * register) list
-  val calleeRegs : (Temp.temp * register) list
-  val callerRegs : (Temp.temp * register) list
+  val specialRegs : (Temp.temp * register) list
+  val argsRegs    : (Temp.temp * register) list
+  val calleeRegs  : (Temp.temp * register) list
+  val callerRegs  : (Temp.temp * register) list
 
   (* Auxiliar, arch dependent functions *)
   val expFn        : access -> Tree.exp -> Tree.exp (* Get's the specific access function. *)

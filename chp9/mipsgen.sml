@@ -18,11 +18,8 @@ struct
         | relToString T.GT = "bgtz"
         | relToString T.LE = "blez"
         | relToString T.GE = "bgez"
-        | relToString T.ULT = "bltu"
-        | relToString T.UGT = "bgtu"
-        | relToString T.ULE = "bleu"
-        | relToString T.UGE = "bgeu"
         | relToString _    = (ErrorMsg.error 0 "Internal error - unnecessary relop to string."; "")
+        (* There are no unsigned branch instructions in MIPS. *)
 
       fun result(gen) =
         let
@@ -31,7 +28,11 @@ struct
            gen t; t
         end
 
-      fun munchExp(T.CONST i) =
+      fun munchError() =
+            emit(A.OPER {assem="addi    $d0, $s0, 10\n syscall",
+                         src=[F.r0],
+                         dst=[F.rv], jump=NONE}) (* TODO Print error message*)
+      and munchExp(T.CONST i) =
             result(fn r => emit(A.OPER {assem="addi    $d0, $r0, " ^ Int.toString i ^ "\n",
                                         src=[],
                                         dst=[r], jump=NONE}))
@@ -145,15 +146,14 @@ struct
                                         dst=[r], jump=NONE}))
         | munchExp (T.TEMP t) = t
         | munchExp (T.ESEQ(s, e)) = (munchStm s; munchExp e)
-        | munchExp (T.CALL(T.NAME n, args)) = 
+        | munchExp (T.CALL(T.NAME n, args)) =
             (emit(A.OPER {
                   assem = "jal " ^ (Temp.labelToString n) ^ "\n",
-                  src = munchArgs(0, args, 16), 
-                  dst = F.ra::F.rv::(F.getRegTemps F.calleeRegs), 
-                  jump = NONE
-                });F.rv)
-        | munchExp (T.CALL(_, _)) = (err 0 "Pls supply NAME to T.CALL"; Temp.newtemp())
-
+                  src = munchArgs(0, args, 16),
+                  dst = F.ra::F.rv::(F.getRegTemps F.calleeRegs),
+                  jump = NONE});
+             F.rv)
+        | munchExp (T.CALL(_, _)) = (err 0 "Please supply NAME to T.CALL."; Temp.newtemp())
       and munchStm (T.SEQ(e1, e2)) = (munchStm e1; munchStm e2)
         | munchStm (T.EXP(e)) = (munchExp e; ())
         | munchStm (T.MOVE(T.MEM(T.BINOP(T.PLUS, e1, T.CONST i)), e2)) =
@@ -181,9 +181,7 @@ struct
                          src=[munchExp e],
                          dst=[t], jump=NONE})
         | munchStm (T.MOVE(e1, e2)) =
-            emit(A.OPER {assem="addi $v0, $r0, 10\n syscall",
-                         src=[],
-                         dst=[], jump=NONE}) (* TODO Print error message*)
+            munchError ()
         | munchStm (T.LABEL l) =
             emit(A.LABEL {assem=(Temp.labelToString l) ^ ":\n",
                           lab=l})
@@ -246,25 +244,20 @@ struct
                          src=[munchExp e1, munchExp e2],
                          dst=[], jump=SOME([l1, l2])})
         | munchStm (T.ERROR e) =
-            emit(A.OPER {assem="addi $v0, $r0, 10\n syscall",
-                         src=[],
-                         dst=[], jump=NONE}) (* TODO Print error message*)
+            munchError ()
       and munchArgs(i, [], offset) = []
         | munchArgs(i, arg::l, offset) =
-            case i < 4 of
-              true => 
-                let
-                  val temp = List.nth(F.getRegTemps F.argsRegs, i)
-                in 
-                  munchStm(T.MOVE(T.TEMPLOC temp, arg));
-                  temp::munchArgs(i + 1, l, offset)
-                end
-            | false =>
-                let
-                in
-                  munchStm(T.MOVE(T.MEMLOC(T.BINOP(T.PLUS, T.TEMP F.sp, T.CONST offset)), arg));
-                  munchArgs(i + 1, l, offset + 4)
-                end
+            if i < 4
+            then
+              let
+                val temp = List.nth(F.getRegTemps F.argsRegs, i)
+              in
+                munchStm(T.MOVE(T.TEMP temp, arg));
+                temp::munchArgs(i + 1, l, offset)
+              end
+            else
+                (munchStm(T.MOVE(T.MEM(T.BINOP(T.PLUS, T.TEMP F.sp, T.CONST offset)), arg));
+                 munchArgs(i + 1, l, offset + 4))
     in
       munchStm stm;
       List.rev (!instrlist)
