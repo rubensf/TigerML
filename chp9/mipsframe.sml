@@ -11,16 +11,53 @@ struct
 
   val wordSize = 4
 
-  val fp = Temp.newtemp ()
-  val sp = Temp.newtemp ()
+  val r0 = Temp.newtemp ()
+  val at = Temp.newtemp ()
   val rv = Temp.newtemp ()
+  val v1 = Temp.newtemp ()
+  val k0 = Temp.newtemp ()
+  val k1 = Temp.newtemp ()
+  val gp = Temp.newtemp ()
+  val sp = Temp.newtemp ()
+  val fp = Temp.newtemp ()
   val ra = Temp.newtemp ()
 
+  val A0 = Temp.newtemp ()
+  val A1 = Temp.newtemp ()
+  val A2 = Temp.newtemp ()
+  val A3 = Temp.newtemp ()
+
+  val S0 = Temp.newtemp ()
+  val S1 = Temp.newtemp ()
+  val S2 = Temp.newtemp ()
+  val S3 = Temp.newtemp ()
+  val S4 = Temp.newtemp ()
+  val S5 = Temp.newtemp ()
+  val S6 = Temp.newtemp ()
+  val S7 = Temp.newtemp ()
+
+  val T0 = Temp.newtemp ()
+  val T1 = Temp.newtemp ()
+  val T2 = Temp.newtemp ()
+  val T3 = Temp.newtemp ()
+  val T4 = Temp.newtemp ()
+  val T5 = Temp.newtemp ()
+  val T6 = Temp.newtemp ()
+  val T7 = Temp.newtemp ()
+  val T8 = Temp.newtemp ()
+  val T9 = Temp.newtemp ()
+
   val specialRegs = [
-    (R0, "$r0"),
-    (RA, "$ra"),
-    (SP, "$sp"),
-    (FP, "$fp")
+    (r0, "$r0"),
+    (at, "$at"),
+    (rv, "$rv"),
+    (v1, "$v1"),
+    (k0, "$k0"),
+    (k1, "$k1"),
+    (gp, "$gp"),
+    (sp, "$sp"),
+    (fp, "$fp"),
+    (ra, "$ra")
   ]
 
   val argsRegs = [
@@ -56,9 +93,9 @@ struct
 
   val tempMap = 
     let
-      val map_add_ ((t,s), map) = Temp.Table.enter(map, t, s);
+      fun map_add ((t,s), map) = Temp.Table.enter(map, t, s);
     in
-      foldr map_add Temp.table.empty specialRegs
+      foldr map_add Temp.Table.empty specialRegs
     end
 
   fun makestring (t:Temp.temp) = case Temp.Table.look(tempMap, t) of
@@ -81,7 +118,7 @@ struct
 
   fun getOffset (f: frame) = !(#3 f)
 
-  fun getRegTemps = map (fn (t, r) => t)
+  fun getRegTemps l = map (fn (t, r) => t) l
 
   fun allocLocal (f: frame) (esc: bool) =
     case esc of
@@ -99,12 +136,12 @@ struct
   fun procEntryExit (frame, treeExp) = treeExp (* TODO *)
 
   fun procEntryExit2 (frame, body) = 
-    body @ [A.OPER {assem="",
+    body @ [Assem.OPER {assem="",
                     src=getRegTemps (specialRegs @ calleeRegs),
                     dst=[],jump=SOME[]}
     ]
 
-  fun procEntryExit3 (FRAME {name, params, locals}, body) = {
+  fun procEntryExit3 ({name, params, locals}, body) = {
     prolog = "PROCEDURE " ^ Symbol.name name ^ "\n",
     body = body,
     epilog = "END " ^ Symbol.name name ^ "\n"

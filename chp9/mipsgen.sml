@@ -250,7 +250,7 @@ struct
                          src=[],
                          dst=[], jump=NONE}) (* TODO Print error message*)
       and munchArgs(i, [], offset) = []
-        | munchArgs(i, a::l, offset) =
+        | munchArgs(i, arg::l, offset) =
             case i < 4 of
               true => 
                 let
@@ -259,7 +259,7 @@ struct
                   munchStm(T.MOVE(T.TEMPLOC temp, arg));
                   temp::munchArgs(i + 1, l, offset)
                 end
-              false =>
+            | false =>
                 let
                 in
                   munchStm(T.MOVE(T.MEMLOC(T.BINOP(T.PLUS, T.TEMP F.sp, T.CONST offset)), arg));
