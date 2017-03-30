@@ -36,7 +36,7 @@ struct
               in
                 if !ErrorMsg.anyErrors
                 then print "Errors with Semantic analysis. Stopping compilation.\n"
-                else List.app R.printFrag (R.getResult ())
+                else (List.app R.printFrag (R.getResult ());(app (emitproc TextIO.stdOut) frags))
               end;
               ())
     end
