@@ -31,7 +31,7 @@ struct
         end
 
       fun munchError() =
-            emit(A.OPER {assem="addi    `d0, `s0, 10\n syscall\n",
+            emit(A.OPER {assem="addi    `d0, `s0, 10\nsyscall\n",
                          src=[F.r0],
                          dst=[F.rv], jump=NONE}) (* TODO Print error message*)
       and munchExp(T.CONST i) =
@@ -244,11 +244,11 @@ struct
               val t = Temp.newtemp()
             in
               emit(A.OPER {assem="sub     `d0, `s0, `s1\n"
-                          ^ (relToString rel) ^ "    `s2, `s3, `j0\nb `j1\n" ,
+                          ^ (relToString rel) ^ "    `s2, `s3, `j0\nj       `j1\n" ,
                          src=[munchExp e1, munchExp e2, t, F.r0],
                          dst=[t], jump=SOME([l1, l2])})
             end
-            
+
         | munchStm (T.ERROR e) =
             munchError ()
       and munchArgs(i, [], offset) = []
