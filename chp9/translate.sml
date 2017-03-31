@@ -69,7 +69,7 @@ struct
     | unCx (Ex (T.CONST _)) = (fn (t, f) => T.JUMP(T.NAME t, [t]))
     | unCx (Ex e) = (fn (t, f) => T.CJUMP(T.NE, T.CONST 0, e, t, f))
     | unCx (Cx genstm) = genstm
-    | unCx (Nx _) = (fn (t, f) => (error 0 "Internal Failure."; T.EXP (T.CONST 0))) (* change to error message if possible *)
+    | unCx (Nx _) = (fn (t, f) => (error 0 "Internal Failure: unCx."; T.EXP (T.CONST 0))) (* change to error message if possible *)
 
   fun unNx (Ex e) = T.EXP e
     | unNx (Nx s) = s
@@ -79,7 +79,7 @@ struct
     | convertAopTop (A.MinusOp)  = T.MINUS
     | convertAopTop (A.TimesOp)  = T.MUL
     | convertAopTop (A.DivideOp) = T.DIV
-    | convertAopTop _            = (error 0 "Internal Failure."; T.PLUS)
+    | convertAopTop _            = (error 0 "Internal Failure: convertAopTop."; T.PLUS)
 
   fun convertAopTrelop (A.EqOp)  = T.EQ
     | convertAopTrelop (A.NeqOp) = T.NE
@@ -87,7 +87,7 @@ struct
     | convertAopTrelop (A.LeOp)  = T.LE
     | convertAopTrelop (A.GtOp)  = T.GT
     | convertAopTrelop (A.GeOp)  = T.GE
-    | convertAopTrelop _         = (error 0 "Internal Failure."; T.EQ)
+    | convertAopTrelop _         = (error 0 "Internal Failure: convertAopTrelop."; T.EQ)
 
   fun intOpExp (oper as (A.PlusOp | A.MinusOp | A.TimesOp | A.DivideOp), l, r) =
         Ex (T.BINOP((convertAopTop oper), unEx l, unEx r))
@@ -100,7 +100,7 @@ struct
     | strOpExp (A.LeOp,  l, r) = Ex (F.externCallFn("mystrcmp", [unEx l] @ [unEx r] @ [T.CONST 3]))
     | strOpExp (A.GtOp,  l, r) = Ex (F.externCallFn("mystrcmp", [unEx l] @ [unEx r] @ [T.CONST 4]))
     | strOpExp (A.GeOp,  l, r) = Ex (F.externCallFn("mystrcmp", [unEx l] @ [unEx r] @ [T.CONST 5]))
-    | strOpExp _               = (error 0 "Internal Failure."; Ex (T.CONST 0))
+    | strOpExp _               = (error 0 "Internal Failure: strOpExp."; Ex (T.CONST 0))
 
   fun intExp i = Ex (T.CONST i)
 
@@ -278,7 +278,7 @@ struct
   fun packExps(exps, mainexp) = Ex (T.ESEQ ((seq (map unNx exps)), (unEx mainexp)))
 
   fun simpleVarAccess (Access ac, Level l) = Ex (F.expFn (#2 ac) (staticLinking ((#1 ac), Level l)))
-    | simpleVarAccess (_, _) = (error 0 "Internal Failure."; Ex (T.CONST 0))
+    | simpleVarAccess (_, _) = (error 0 "Internal Failure: simpleVarAccess."; Ex (T.CONST 0))
 
   fun arrayVarAccess (var, subscr) =
       let
