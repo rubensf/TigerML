@@ -244,8 +244,8 @@ struct
               val t = Temp.newtemp()
             in
               emit(A.OPER {assem="sub     `d0, `s0, `s1\n"
-                          ^ (relToString rel) ^ "    `s2, `s3, `j0\nj       `j1\n" ,
-                         src=[munchExp e1, munchExp e2, t, F.r0],
+                          ^ (relToString rel) ^ "    `s2, `j0\nj       `j1\n" ,
+                         src=[munchExp e1, munchExp e2, t],
                          dst=[t], jump=SOME([l1, l2])})
             end
 
