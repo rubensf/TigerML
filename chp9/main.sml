@@ -7,7 +7,7 @@ struct
   structure A = Assem
   structure F = MipsFrame
 
-  fun resetAll () = (R.resetFrags(); Temp.reset())
+  fun resetAll () = R.resetFrags()
 
   fun emitproc out (F.PROC{body,frame}) =
     let
