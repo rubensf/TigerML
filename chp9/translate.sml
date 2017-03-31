@@ -69,7 +69,7 @@ struct
     | unCx (Ex (T.CONST _)) = (fn (t, f) => T.JUMP(T.NAME t, [t]))
     | unCx (Ex e) = (fn (t, f) => T.CJUMP(T.NE, T.CONST 0, e, t, f))
     | unCx (Cx genstm) = genstm
-    | unCx (Nx _) = (fn (t, f) => (error 0 "Internal Failure: unCx."; T.EXP (T.CONST 0))) (* change to error message if possible *)
+    | unCx (Nx n) = (fn (t, f) => (Printtree.printtree(TextIO.stdOut,n);error 0 "Internal Failure: unCx."; T.EXP (T.CONST 0))) (* change to error message if possible *)
 
   fun unNx (Ex e) = T.EXP e
     | unNx (Nx s) = s
@@ -300,16 +300,16 @@ struct
       let
         val v = unEx v
       in
-        ifThenElseExp(
+        (*ifThenElseExp(
           intOpExp(A.EqOp,
                    Ex (T.CONST 0),
                    Ex (v)),
-          Ex (T.ESEQ (T.ERROR (T.NILDEREFERENCE), T.CONST 0)),
+          Ex (T.ESEQ (T.ERROR (T.NILDEREFERENCE), T.CONST 0)),*)
           Ex (T.MEM (T.BINOP (T.PLUS,
                               v,
                               T.BINOP (T.MUL,
                                        unEx off,
-                                       T.CONST F.wordSize)))))
+                                       T.CONST F.wordSize))))
       end
 
   fun procEntryExit({level = level, body = body}) =
