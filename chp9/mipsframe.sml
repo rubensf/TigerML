@@ -95,7 +95,7 @@ struct
     let
       fun map_add ((t,s), map) = Temp.Table.enter(map, t, s);
     in
-      foldr map_add Temp.Table.empty specialRegs
+      foldr map_add Temp.Table.empty (specialRegs @ argsRegs)
     end
 
   fun makestring (t:Temp.temp) = case Temp.Table.look(tempMap, t) of
