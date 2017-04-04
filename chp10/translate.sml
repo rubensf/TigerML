@@ -272,7 +272,7 @@ struct
       val link = staticLinking (parent, curlevel)
       val expCalls = map unEx exps
     in
-      Nx (T.MOVE ((T.TEMP F.rv), (T.CALL (T.NAME label, link::expCalls))))
+      Ex (T.ESEQ(T.MOVE ((T.TEMP F.rv), (T.CALL (T.NAME label, link::expCalls))), T.TEMP(F.rv)))
     end
     | callExp _ = (error 0 "Top Level Exception"; Ex (T.CONST 0))
   fun packExps(exps, mainexp) = Ex (T.ESEQ ((seq (map unNx exps)), (unEx mainexp)))

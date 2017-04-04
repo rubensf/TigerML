@@ -22,8 +22,8 @@ struct
           | stm(T.MOVE(a,b),d)        = (indent d; sayln "MOVE("; exp(a,d+1); sayln ",";
                                          exp(b,d+1); say ")")
           | stm(T.EXP e, d)           = (indent d; sayln "EXP("; exp(e,d+1); say ")")
-          | stm(T.ERROR (T.OUTOFBOUNDS), d)    = (indent d; sayln "ERROR out of bounds")
-          | stm(T.ERROR (T.NILDEREFERENCE), d) = (indent d; sayln "ERROR nil dereference")
+          | stm(T.ERROR (T.OUTOFBOUNDS), d)    = (indent d; sayln "Runtime Error: array out of bounds check")
+          | stm(T.ERROR (T.NILDEREFERENCE), d) = (indent d; sayln "Runtime Error: nil dereference check")
 
         and exp(T.BINOP(p,a,b),d) = (indent d; say "BINOP("; binop p; sayln ",";
                                      exp(a,d+1); sayln ","; exp(b,d+1); say ")")
