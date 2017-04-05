@@ -130,11 +130,10 @@ struct
 
   fun arrCreation (size, init) =
     let
-      val arr = F.externCallFn ("initArray",
-                                [T.BINOP(T.PLUS,
-                                         (unEx size),
-                                          T.CONST 1)] @
-                                [unEx init])
+      val size' = case (unEx size) of
+                    T.CONST x => T.CONST (x + 1)
+                  | e         => T.BINOP(T.PLUS, e, T.CONST 1)
+      val arr = F.externCallFn ("initArray", [size']@[(unEx init)])
       val tmp = T.TEMP (Temp.newtemp ())
       val save = T.MOVE (tmp, arr)
       val savesize = T.MOVE (T.MEM tmp, (unEx size))
