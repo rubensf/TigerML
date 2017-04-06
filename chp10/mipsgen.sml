@@ -272,7 +272,5 @@ struct
       munchStm stm;
       List.rev (!instrlist)
     end
-
-  (*fun codegen f t =*)
 end
 
