@@ -178,6 +178,10 @@ struct
             emit(A.OPER {assem="sw      `s0, 0(`s1)\n",
                          src=[munchExp e2, munchExp e1],
                          dst=[], jump=NONE})
+        | munchStm (T.MOVE(T.TEMP t, T.CONST i)) =
+            emit(A.OPER {assem="addi    `d0, `s0, " ^ Int.toString i ^ "\n",
+                         src=[F.r0],
+                         dst=[t], jump=NONE})
         | munchStm (T.MOVE(T.TEMP t, e)) =
             emit(A.OPER {assem="move    `d0, `s0\n",
                          src=[munchExp e],

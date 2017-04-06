@@ -279,37 +279,45 @@ struct
   fun simpleVarAccess (Access ac, Level l) = Ex (F.expFn (#2 ac) (staticLinking ((#1 ac), Level l)))
     | simpleVarAccess (_, _) = (error 0 "Internal Failure: simpleVarAccess."; Ex (T.CONST 0))
 
+  (* Both array and record accesses use a workaround so that the T.MOVE
+     can receive a T.MEM and properly do a save instead of a load.
+     ie we do a slightly different implementation of IF/ELSE*)
   fun arrayVarAccess (var, subscr) =
-      let
-        val var = unEx var
-      in
-        ifThenElseExp(
-          Ex (T.BINOP(T.AND,
-                      unEx (intOpExp(A.GeOp, subscr, Ex (T.CONST 0))),
-                      unEx (intOpExp(A.LeOp, subscr, Ex (T.MEM var))))),
-          Ex (T.MEM (T.BINOP (T.PLUS,
-                              var,
-                              T.BINOP (T.MUL,
-                                       T.BINOP (T.PLUS, unEx subscr, T.CONST 1),
-                                       T.CONST (F.wordSize))))),
-          Ex (T.ESEQ (T.ERROR (T.OUTOFBOUNDS), T.CONST 0)))
-      end
+    let
+      val tlabel = Temp.newlabel ()
+      val flabel = Temp.newlabel ()
+      val var = (unEx var)
+      val test = T.BINOP(T.OR,
+                         unEx (intOpExp(A.LtOp, subscr, Ex (T.CONST 0))),
+                         unEx (intOpExp(A.GeOp, subscr, Ex (T.MEM var))))
+    in
+      Ex (T.ESEQ (seq [(unCx (Ex test)) (tlabel, flabel),
+                       T.LABEL tlabel,
+                       T.ERROR (T.OUTOFBOUNDS),
+                       T.LABEL flabel],
+                  T.MEM (T.BINOP (T.PLUS,
+                                  var,
+                                  T.BINOP (T.MUL,
+                                           T.BINOP (T.PLUS, unEx subscr, T.CONST 1),
+                                           T.CONST (F.wordSize))))))
+    end
 
   fun fieldVarAccess(v, off) =
-      let
-        val v = unEx v
-      in
-        ifThenElseExp(
-          intOpExp(A.EqOp,
-                   Ex (T.CONST 0),
-                   Ex (v)),
-          Ex (T.ESEQ (T.ERROR (T.NILDEREFERENCE), T.CONST 0)),
-          Ex (T.MEM (T.BINOP (T.PLUS,
-                              v,
-                              T.BINOP (T.MUL,
-                                       unEx off,
-                                       T.CONST F.wordSize)))))
-      end
+    let
+      val tlabel = Temp.newlabel ()
+      val flabel = Temp.newlabel ()
+      val v = unEx v
+    in
+      Ex (T.ESEQ (seq [T.CJUMP (T.EQ, T.CONST 0, v, tlabel, flabel),
+                       T.LABEL tlabel,
+                       T.ERROR (T.NILDEREFERENCE),
+                       T.LABEL flabel],
+                  T.MEM (T.BINOP (T.PLUS,
+                                  v,
+                                  T.BINOP (T.MUL,
+                                           unEx off,
+                                           T.CONST F.wordSize)))))
+    end
 
   fun procEntryExit({level = level, body = body}) =
     let
