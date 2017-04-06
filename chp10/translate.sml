@@ -290,6 +290,9 @@ struct
       val test = T.BINOP(T.OR,
                          unEx (intOpExp(A.LtOp, subscr, Ex (T.CONST 0))),
                          unEx (intOpExp(A.GeOp, subscr, Ex (T.MEM var))))
+      val subscr' = case (unEx subscr) of
+                      T.CONST i => T.CONST (i+1)
+                    | e         => T.BINOP (T.PLUS, e, T.CONST 1)
     in
       Ex (T.ESEQ (seq [(unCx (Ex test)) (tlabel, flabel),
                        T.LABEL tlabel,
@@ -298,7 +301,7 @@ struct
                   T.MEM (T.BINOP (T.PLUS,
                                   var,
                                   T.BINOP (T.MUL,
-                                           T.BINOP (T.PLUS, unEx subscr, T.CONST 1),
+                                           subscr',
                                            T.CONST (F.wordSize))))))
     end
 
