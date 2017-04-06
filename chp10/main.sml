@@ -14,7 +14,8 @@ struct
       val _       = print("emit " ^ (Temp.labelToString (F.name frame)) ^ "\n")
       val stms    = C.linearize body
       val stms'   = C.traceSchedule(C.basicBlocks stms)
-      val instrs  = List.concat(map (CG.codegen frame) stms')
+      val stms''  = (Tree.LABEL (F.name frame))::stms'
+      val instrs  = List.concat(map (CG.codegen frame) stms'')
       val format0 = A.format (F.makestring)
     in
       app (fn i => TextIO.output(out, format0 i)) instrs
