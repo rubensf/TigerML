@@ -32,7 +32,7 @@ struct
       val x  = !labelCount
       val () = labelCount := x +1
     in
-      Symbol.symbol (Int.toString(x))
+      Symbol.symbol ("L" ^ Int.toString(x))
     end
   val namedlabel = Symbol.symbol
   fun labelToString l = Symbol.name l
