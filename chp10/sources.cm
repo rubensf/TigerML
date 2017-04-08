@@ -13,6 +13,7 @@ graph.sig
 graph.sml
 liveness.sml
 main.sml
+makegraph.sml
 mipsframe.sml
 mipsgen.sml
 parsetest.sml
