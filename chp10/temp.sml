@@ -2,7 +2,7 @@ structure Temp :> TEMP =
 struct
   type temp = int
   type label = Symbol.symbol
-
+  val compare = Int.compare
   val temps = ref 100
 
   fun newtemp() = let val t = !temps in temps := t+1; t end
@@ -22,7 +22,7 @@ struct
   structure TempOrd = 
   struct 
     type ord_key = temp
-    val compare = compare
+    val compare = Int.compare
   end
 
   structure Set = SplaySetFn(TempOrd)

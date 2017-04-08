@@ -93,12 +93,12 @@ struct
 
   val tempMap =
     let
-      fun map_add ((t,s), map) = Temp.Table.enter(map, t, s);
+      fun map_add ((t,s), map) = Temp.Map.insert(map, t, s);
     in
-      foldr map_add Temp.Table.empty (specialRegs @ argsRegs)
+      foldr map_add Temp.Map.empty (specialRegs @ argsRegs)
     end
 
-  fun makestring (t:Temp.temp) = case Temp.Table.look(tempMap, t) of
+  fun makestring (t:Temp.temp) = case Temp.Map.find(tempMap, t) of
     SOME(s) => s
   | NONE    => Temp.makestring t
   fun name (f: frame)       = #1 f
