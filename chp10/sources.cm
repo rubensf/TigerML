@@ -7,6 +7,7 @@ codegen.sig
 errormsg.sml
 env.sml
 findescape.sml
+flowgraph.sml
 funcgraph.sig
 funcgraph.sml
 frame.sig
