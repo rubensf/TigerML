@@ -1,6 +1,6 @@
-signature FUNCGRAPH=
+signature FUNCGRAPH =
 sig
-type nodeID 
+type nodeID
 type 'a node
 type 'a edge = {from: nodeID, to: nodeID}
 type 'a graph
@@ -15,8 +15,8 @@ val addNode: 'a graph * nodeID * 'a -> 'a graph
 (* add a node, and return it immediately w/ the new graph*)
 val addNode': 'a graph * nodeID * 'a -> 'a graph * 'a node
 
-(* remove a node (and all of its edges). 
- *  raises NoSuchNode(nodeId) if not present 
+(* remove a node (and all of its edges).
+ *  raises NoSuchNode(nodeId) if not present
  *)
 val removeNode: 'a graph * nodeID -> 'a graph
 (* remove a node (and all of its edges).
@@ -43,13 +43,13 @@ val addEdge: 'a graph * 'a edge -> 'a graph
 val doubleEdge : 'a graph * nodeID * nodeID -> 'a graph
 
 (* remove an edge.  raises NoSuchNode if the specified
- * nodes do not exists, or NoSuchEdge if the edge does not exist 
+ * nodes do not exists, or NoSuchEdge if the edge does not exist
  *)
 val removeEdge: 'a graph * 'a edge -> 'a graph
 
 (* remove an edge. If the edge does not
  * exist, ignores it an returns the graph unchanged.
- * If the nodes involved do not exists, throws NoSuchNode 
+ * If the nodes involved do not exists, throws NoSuchNode
  *)
 val removeEdge': 'a graph * 'a edge -> 'a graph
 
@@ -103,7 +103,7 @@ val isAdjacent: 'a node * 'a node -> bool
 
 (* print the graph.  Give it a function
  * that says how to convert any given node's data into a
- * string, and it will print everything out 
+ * string, and it will print everything out
  *)
 val printGraph:  ((nodeID * 'a) -> string) -> 'a graph  -> unit
 

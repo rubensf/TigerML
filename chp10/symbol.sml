@@ -1,8 +1,10 @@
 signature SYMBOL =
 sig
   eqtype symbol
-  val symbol : string -> symbol
-  val name : symbol -> string
+  val symbol  : string -> symbol
+  val name    : symbol -> string
+  val compare : symbol * symbol -> order
+
   type 'a table
   val empty : 'a table
   val enter : 'a table * symbol * 'a -> 'a table
@@ -20,6 +22,8 @@ struct
   val sizeHint = 128
   val hashtable : (string,int) H.hash_table =
 		H.mkTable(HashString.hashString, op = ) (sizeHint,Symbol)
+
+  fun compare (s1: symbol, s2: symbol) = String.compare (#1 s1, #1 s2)
 
   fun symbol name =
       case H.find hashtable name

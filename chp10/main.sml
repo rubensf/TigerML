@@ -1,6 +1,7 @@
 structure Main =
 struct
   structure CG = MipsGen
+  structure MG = MakeGraph
   structure R = Translate (MipsFrame)
   structure S = Semant (R)
   structure C = Canon
@@ -14,11 +15,15 @@ struct
       val _       = print("emit " ^ (Temp.labelToString (F.name frame)) ^ "\n")
       val stms    = C.linearize body
       val stms'   = C.traceSchedule(C.basicBlocks stms)
-      val stms''  = (Tree.LABEL (F.name frame))::stms'
-      val instrs  = List.concat(map (CG.codegen frame) stms'')
-      val format0 = A.format (F.makestring)
+      val instrs  = List.concat(map (CG.codegen frame) stms')
+
+      (* Printing instr selection *)
+      val format' = A.format (F.makestring)
+      val _       = app (fn i => TextIO.output(out, format' i)) instrs
+
+      val _       = MG.instrs2graph(instrs)
     in
-      app (fn i => TextIO.output(out, format0 i)) instrs
+      ()
     end
     | emitproc out (F.STRING (lab, str)) = TextIO.output(out, (Temp.labelToString lab) ^ ": " ^ str ^ "\n")
   fun compile file =
@@ -37,7 +42,8 @@ struct
               in
                 if !ErrorMsg.anyErrors
                 then print "Errors with Semantic analysis. Stopping compilation.\n"
-                else (List.app R.printFrag (R.getResult ());(app (emitproc TextIO.stdOut) frags))
+                else (List.app R.printFrag (R.getResult ());
+                      (app (emitproc TextIO.stdOut) frags))
               end;
               ())
     end

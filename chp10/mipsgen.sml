@@ -153,10 +153,10 @@ struct
         | munchExp (T.ESEQ(s, e)) = (munchStm s; munchExp e)
         | munchExp (T.CALL(T.NAME n, args)) =
             (emit(A.OPER {
-                  assem = "jal     " ^ (Temp.labelToString n) ^ "\n",
-                  src = munchArgs(0, args, 16),
-                  dst = F.ra::F.rv::(F.getRegTemps F.calleeRegs),
-                  jump = NONE});
+                  assem="jal     " ^ (Temp.labelToString n) ^ "\n",
+                  src=munchArgs(0, args, 16),
+                  dst=F.ra::F.rv::(F.getRegTemps F.calleeRegs),
+                  jump=NONE});
              F.rv)
         | munchExp (T.CALL(_, _)) = (err 0 "Please supply NAME to T.CALL."; Temp.newtemp())
       and munchStm (T.SEQ(e1, e2)) = (munchStm e1; munchStm e2)
@@ -186,9 +186,9 @@ struct
                          src=[F.r0],
                          dst=[t], jump=NONE})
         | munchStm (T.MOVE(T.TEMP t, e)) =
-            emit(A.OPER {assem="move    `d0, `s0\n",
-                         src=[munchExp e],
-                         dst=[t], jump=NONE})
+            emit(A.MOVE {assem="move    `d0, `s0\n",
+                         src=(munchExp e),
+                         dst=t})
         | munchStm (T.MOVE(e1, e2)) =
             munchError ()
         | munchStm (T.LABEL l) =
