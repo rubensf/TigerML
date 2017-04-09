@@ -203,7 +203,7 @@ struct
   fun seqExp(exps : exp list) =
     case List.length exps of
       0 => Ex (T.CONST 0)
-    | 1 => Ex (unEx (hd exps))
+    | 1 => (hd exps)
     | _ => Ex (T.ESEQ (seq (map unNx (List.take (exps, ((List.length exps) - 1)))), unEx (List.last exps)))
 
   fun assignExp(var, exp) = Nx (T.MOVE (unEx var, unEx exp))
