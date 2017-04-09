@@ -95,7 +95,7 @@ struct
     let
       fun map_add ((t,s), map) = Temp.Map.insert(map, t, s);
     in
-      foldr map_add Temp.Map.empty (specialRegs @ argsRegs)
+      foldr map_add Temp.Map.empty (specialRegs @ argsRegs @ callerRegs @ calleeRegs)
     end
 
   fun makestring (t:Temp.temp) = case Temp.Map.find(tempMap, t) of
