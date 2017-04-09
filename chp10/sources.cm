@@ -11,6 +11,7 @@ flowgraph.sml
 funcgraph.sig
 funcgraph.sml
 frame.sig
+liveness.sml
 main.sml
 makegraph.sml
 mipsframe.sml
