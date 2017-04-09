@@ -3,15 +3,20 @@ struct
   structure LabelOrdKey = struct type ord_key = Temp.label
                                  val compare = Symbol.compare
                           end
+  structure TempOrdKey = struct type ord_key = Temp.temp
+                                val compare = Temp.compare
+                         end
+
   structure FG = FuncGraph(LabelOrdKey)
   structure NodeMap = SplayMapFn(LabelOrdKey)
+  structure TempSet = ListSetFn(TempOrdKey)
 
   structure A = Assem
 
   datatype flowgraph = FGRAPH of {
           control: Assem.instr list FG.graph,
-          def: Temp.temp list NodeMap.map,
-          use: Temp.temp list NodeMap.map}
+          def: TempSet.set NodeMap.map,
+          use: TempSet.set NodeMap.map}
 
   fun makeDefUse g =
     let
@@ -20,24 +25,26 @@ struct
           fun doThing (origSrc, origDst, {def, use}) =
             let
               fun shouldAdd src =
-                case List.find (fn x => x = src) def of
+                case TempSet.find (fn x => x = src) def of
                   SOME j => false
                 | NONE   => true
               val newUses = List.foldl (fn (x, ans) =>
                                         if (shouldAdd x)
-                                        then ans@[x]
+                                        then TempSet.add(ans, x)
                                         else ans)
                                        use origSrc
             in
-              {def=def@origDst,
+              {def=TempSet.addList(def, origDst),
                use=newUses}
             end
 
           fun step (A.LABEL l, defUse) = defUse
-            | step (A.OPER oper, defUse) = doThing(#src oper, #dst oper, defUse)
-            | step (A.MOVE mov, defUse) = doThing([#src mov], [#dst mov], defUse)
+            | step (A.OPER oper, defUse) =
+                doThing(#src oper, #dst oper, defUse)
+            | step (A.MOVE mov, defUse) = 
+                doThing([#src mov], [#dst mov], defUse)
         in
-          List.foldl step {def=[], use=[]} (FG.nodeInfo block)
+          List.foldl step {def=TempSet.empty, use=TempSet.empty} (FG.nodeInfo block)
         end
     in
       List.foldl (fn (x, {def, use}) =>

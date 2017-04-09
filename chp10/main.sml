@@ -3,6 +3,7 @@ struct
   structure CG = MipsGen
   structure MG = MakeGraph
   structure FG = Flow.FG
+  structure TempSet = Flow.TempSet
   structure R = Translate (MipsFrame)
   structure S = Semant (R)
   structure C = Canon
@@ -27,8 +28,8 @@ struct
                          val useEntry' = Option.valOf(useEntry)
                        in
                          print ("Frame " ^ (Temp.labelToString x) ^ "\n" ^
-                                "Defs: " ^ (List.foldl (fn (x, ans) => ans ^ (Temp.makestring x) ^ ", ") "" defEntry') ^ "\n" ^
-                                "Uses: " ^ (List.foldl (fn (x, ans) => ans ^ (Temp.makestring x) ^ ", ") "" useEntry') ^ "\n")
+                                "Defs: " ^ (TempSet.foldl (fn (x, ans) => ans ^ (Temp.makestring x) ^ ", ") "" defEntry') ^ "\n" ^
+                                "Uses: " ^ (TempSet.foldl (fn (x, ans) => ans ^ (Temp.makestring x) ^ ", ") "" useEntry') ^ "\n")
                        end)
               (map FG.getNodeID (FG.nodes control)))
 
