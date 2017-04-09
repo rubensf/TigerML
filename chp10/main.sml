@@ -27,8 +27,8 @@ struct
                          val useEntry' = Option.valOf(useEntry)
                        in
                          print ("Frame " ^ (Temp.labelToString x) ^ "\n" ^
-                                "Defs: " ^ (List.foldl (fn (x, ans) => ans ^ (Temp.makestring x) ^ ", ") "" defEntry') ^ "\n" ^
-                                "Uses: " ^ (List.foldl (fn (x, ans) => ans ^ (Temp.makestring x) ^ ", ") "" useEntry') ^ "\n")
+                                "Defs: " ^ (List.foldl (fn (x, ans) => ans ^ (MipsFrame.makestring x) ^ ", ") "" defEntry') ^ "\n" ^
+                                "Uses: " ^ (List.foldl (fn (x, ans) => ans ^ (MipsFrame.makestring x) ^ ", ") "" useEntry') ^ "\n")
                        end)
               (map FG.getNodeID (FG.nodes control)))
 
