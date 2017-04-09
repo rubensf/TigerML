@@ -61,15 +61,6 @@ struct
       val g' = foldl findJumpDst g nodes'
       val defUses = Flow.makeDefUse g'
     in
-      print "Beginning flow graph print\n";
-      print ((Int.toString(List.length (FG.nodes g))) ^ "\n");
-      FG.printGraph (fn (id, instrsX) =>
-                     let
-                       val format' = A.format (MipsFrame.makestring)
-                     in
-                       foldl (fn (x, ans) => ans ^ (format' x)) "" instrsX
-                     end)
-                    g';
       Flow.FGRAPH {control=g', def=(#def defUses), use=(#use defUses)}
     end
 end

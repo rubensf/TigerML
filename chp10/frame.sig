@@ -40,7 +40,11 @@ sig
   val externCallFn : string * Tree.exp list -> Tree.exp (* Calls an external function, such as C heap management. *)
 
   (* Function "decorators" - add prologue and epilogue standard mumbo jumbo *)
-  val procEntryExit : frame * Tree.exp -> Tree.exp
+  val procEntryExit  : frame * Tree.exp -> Tree.exp
+  (* Insert a final "instruction" to make sure that special registers and callee saved
+     ones are "live" at the end of a function execution. *)
+  val procEntryExit2 : frame * Assem.instr list -> Assem.instr list
+
   val tempMap : register Temp.Map.map
   val makestring : Temp.temp -> string
   val getRegTemps : (Temp.temp * register) list -> Temp.temp list

@@ -137,9 +137,8 @@ struct
 
   fun procEntryExit2 (frame, body) =
     body @ [Assem.OPER {assem="",
-                    src=getRegTemps (specialRegs @ calleeRegs),
-                    dst=[],jump=SOME[]}
-    ]
+                        src=getRegTemps (specialRegs @ calleeRegs),
+                        dst=[],jump=SOME[]}]
 
   fun procEntryExit3 ({name, params, locals}, body) = {
     prolog = "PROCEDURE " ^ Symbol.name name ^ "\n",
