@@ -3,13 +3,9 @@ struct
   structure LabelOrdKey = struct type ord_key = Temp.label
                                  val compare = Symbol.compare
                           end
-  structure TempOrdKey = struct type ord_key = Temp.temp
-                                val compare = Temp.compare
-                         end
-
   structure FG = FuncGraph(LabelOrdKey)
   structure NodeMap = SplayMapFn(LabelOrdKey)
-  structure TempSet = ListSetFn(TempOrdKey)
+  structure TempSet = Temp.Set
 
   structure A = Assem
 
