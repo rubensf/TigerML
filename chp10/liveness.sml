@@ -60,7 +60,7 @@ struct
               loopUntilDone(nodes, liveIn'', liveOut'', checkIn andalso checkOut)
             end
     in
-      ()
+      loopUntilDone (nodes, liveIn, liveOut, false)
     end
 
 
