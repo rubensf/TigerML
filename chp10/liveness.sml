@@ -122,7 +122,8 @@ struct
       val _ = TextIO.output(outstream, "==================Printing Interference Graph==================\n")
 
     in
-      List.app printNode nodes
+      FG.printGraph (fn (id,node)=>MipsFrame.makestring(id)) graph
+      (*List.app printNode nodes*)
     end
    (*TODO *)
   fun interferenceGraph(f as Flow.FGRAPH{control, def, use}) = 
