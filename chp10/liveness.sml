@@ -83,8 +83,14 @@ struct
             end
           val defsAdded = T.Set.foldl add ans defs
           val liveAdded = T.Set.foldl add defsAdded live
+          fun iterDefs (defTemp, ans) = 
+            let
+              fun addEdge (liveTemp, ans) = FG.doubleEdge(ans, defTemp, liveTemp)
+            in
+              T.Set.foldl addEdge ans live
+            end
         in
-          liveAdded
+          T.Set.foldl iterDefs liveAdded defs
         end
     in
       foldl f FG.empty nodes
