@@ -33,6 +33,12 @@ struct
                        end)
               (map FG.getNodeID (FG.nodes control)))
 
+  fun printIGraph (fg) =
+    let
+      val (igraph, func) = Liveness.interferenceGraph(fg) 
+    in
+      Liveness.show(TextIO.stdOut, igraph)
+    end
 
   fun emitproc (F.PROC{body,frame}) =
     let
@@ -50,6 +56,7 @@ struct
       val flow    = MG.instrs2graph(instrs')
 
       val _       = printFlow flow
+      val _       = printIGraph flow
     in
       ()
     end
