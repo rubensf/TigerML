@@ -40,16 +40,22 @@ struct
               val liveOut' = foldl (fn (x,ans) => NodeMap.insert(ans, Flow.FG.getNodeID x, Option.valOf(NodeMap.find(liveOut, Flow.FG.getNodeID x)))) NodeMap.empty nodes
               fun updateSets (x, {li, lo}) = 
                 let
+                  val _ = print ("Node " ^ T.labelToString(Flow.FG.getNodeID x) ^ "\n")
                   val useSet = Option.valOf(NodeMap.find(use, Flow.FG.getNodeID x))
+                  val _ = print ("useSet = " ^ Int.toString(T.Set.numItems(useSet)) ^ "\n")
                   val outSet = Option.valOf(NodeMap.find(lo, Flow.FG.getNodeID x))
+                  val _ = print ("outSet = " ^ Int.toString(T.Set.numItems(outSet)) ^ "\n")
                   val defSet = Option.valOf(NodeMap.find(def, Flow.FG.getNodeID x))
+                  val _ = print ("defSet = " ^ Int.toString(T.Set.numItems(defSet)) ^ "\n")
                   val newInSet = T.Set.union(useSet, T.Set.difference(outSet, defSet))
+                  val _ = print ("newInSet = " ^ Int.toString(T.Set.numItems(newInSet)) ^ "\n")
                   val li' = NodeMap.insert(li, Flow.FG.getNodeID x, newInSet)
                   val succIDs = Flow.FG.succs x
                   val newOutSet = foldl (fn (xID, ans) => T.Set.union(ans, Option.valOf(NodeMap.find(li', xID)))) T.Set.empty succIDs
+                  val _ = print ("newOutSet = " ^ Int.toString(T.Set.numItems(newOutSet)) ^ "\n")
                   val lo' = NodeMap.insert(lo, Flow.FG.getNodeID x, newOutSet)
                 in
-                  {li=li, lo=lo}
+                  {li=li', lo=lo'}
                 end
               val both = foldl updateSets {li=liveIn, lo=liveOut} nodes
               val liveIn'' = #li both
@@ -68,7 +74,9 @@ struct
       fun f (x, ans: T.temp FG.graph) = 
         let
           val defs = Option.valOf(NodeMap.find(def, Flow.FG.getNodeID x))
+          val _ = print ("DEF SIZE: " ^ (Int.toString(T.Set.numItems(defs))) ^ "\n")
           val live = Option.valOf(NodeMap.find(liveOut, Flow.FG.getNodeID x))
+          val _ = print ("LIVE SIZE: " ^ (Int.toString(T.Set.numItems(live))) ^ "\n")
           val temps = map FG.nodeInfo (FG.nodes ans)
           fun add (t, ans) = 
             let
