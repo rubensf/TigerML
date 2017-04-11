@@ -116,14 +116,15 @@ struct
             case FG.isAdjacent(node, n) of
               true => TextIO.output(outstream, MipsFrame.makestring(gtemp n) ^ ", ")
             | false => ()
+          val _ = List.app f nodes
         in
           TextIO.output(outstream, "\n")
         end
       val _ = TextIO.output(outstream, "==================Printing Interference Graph==================\n")
 
     in
-      FG.printGraph (fn (id,node)=>MipsFrame.makestring(id)) graph
-      (*List.app printNode nodes*)
+      (*FG.printGraph (fn (id,node)=>MipsFrame.makestring(id)) graph*)
+      List.app printNode nodes
     end
    (*TODO *)
   fun interferenceGraph(f as Flow.FGRAPH{control, def, use}) = 
