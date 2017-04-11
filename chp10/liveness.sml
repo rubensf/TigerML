@@ -8,7 +8,7 @@ sig
                tnode: T.temp -> T.temp FG.node,
                gtemp: T.temp FG.node -> T.temp,
                moves: (T.temp FG.node * T.temp FG.node) list }
-  (*val interferenceGraph: Flow.flowgraph -> igraph * (FG.node -> T.temp list)*)
+  val interferenceGraph: Flow.flowgraph -> igraph * (Assem.instr list Flow.FG.node -> T.Set.set)
   val show: TextIO.outstream * igraph -> unit
 end =
 struct
@@ -99,9 +99,25 @@ struct
   (* TODO *)
   fun show(outstream, IGRAPH {graph = graph, tnode = tnode, gtemp = gtemp, moves = moves}) =
     let
+      val nodes = FG.nodes graph
     in
       TextIO.output(outstream, "hello")
     end
    (*TODO *)
-  (*fun interferenceGraph(Flow.FGRAPH{control, def, use}) = *)
+  fun interferenceGraph(f as Flow.FGRAPH{control, def, use}) = 
+    let
+      val liveSets = computeLiveSets(f)
+      val liveIn = #inMap liveSets
+      val liveOut = #outMap liveSets
+      val ig = createInterferenceGraph(liveOut, def, control)
+      fun mapping node = 
+        case NodeMap.find(liveOut, Flow.FG.getNodeID node) of
+          NONE => T.Set.empty (* should not happen *)
+        | SOME set => set
+      fun tnode t = FG.getNode(ig, t)
+      fun gtemp n = FG.getNodeID(n)
+      val igrph = IGRAPH{graph=ig, tnode=tnode, gtemp=gtemp, moves=[]}
+    in
+      (igrph, mapping)
+    end
 end
