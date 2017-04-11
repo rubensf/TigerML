@@ -89,9 +89,25 @@ struct
     | convertAopTrelop (A.GeOp)  = T.GE
     | convertAopTrelop _         = (error 0 "Internal Failure: convertAopTrelop."; T.EQ)
 
-  fun intOpExp (oper as (A.PlusOp | A.MinusOp | A.TimesOp | A.DivideOp), l, r) =
+  fun intOpExp (oper as A.PlusOp, l, r) =
         Ex (T.BINOP((convertAopTop oper), unEx l, unEx r))
-    | intOpExp (oper as (A.EqOp | A.NeqOp | A.LtOp | A.LeOp | A.GtOp | A.GeOp), l, r) =
+    | intOpExp (oper as A.MinusOp, l, r) =
+        Ex (T.BINOP((convertAopTop oper), unEx l, unEx r))
+    | intOpExp (oper as A.TimesOp, l, r) =
+        Ex (T.BINOP((convertAopTop oper), unEx l, unEx r))
+    | intOpExp (oper as A.DivideOp, l, r) =
+        Ex (T.BINOP((convertAopTop oper), unEx l, unEx r))
+    | intOpExp (oper as A.EqOp, l, r) =
+        Cx (fn (t, f) => T.CJUMP((convertAopTrelop oper), unEx l, unEx r, t, f))
+    | intOpExp (oper as A.NeqOp, l, r) =
+        Cx (fn (t, f) => T.CJUMP((convertAopTrelop oper), unEx l, unEx r, t, f))
+    | intOpExp (oper as A.LtOp, l, r) =
+        Cx (fn (t, f) => T.CJUMP((convertAopTrelop oper), unEx l, unEx r, t, f))
+    | intOpExp (oper as A.LeOp, l, r) =
+        Cx (fn (t, f) => T.CJUMP((convertAopTrelop oper), unEx l, unEx r, t, f))
+    | intOpExp (oper as A.GtOp, l, r) =
+        Cx (fn (t, f) => T.CJUMP((convertAopTrelop oper), unEx l, unEx r, t, f))
+    | intOpExp (oper as A.GeOp, l, r) =
         Cx (fn (t, f) => T.CJUMP((convertAopTrelop oper), unEx l, unEx r, t, f))
 
   fun strOpExp (A.EqOp,  l, r) = Ex (F.externCallFn("mystrcmp", [unEx l] @ [unEx r] @ [T.CONST 0]))

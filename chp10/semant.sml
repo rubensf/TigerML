@@ -75,18 +75,57 @@ struct
               val real_right = actual_ty(tenv, #ty right)
              in
                case oper of
-                 (A.PlusOp | A.MinusOp | A.TimesOp | A.DivideOp) =>
+                 (A.PlusOp) =>
                     (case (real_left, real_right) of
                        (T.INT, T.INT)       => {exp=R.intOpExp(oper, #exp left, #exp right), ty=T.INT}
                      | _                    => (error pos "Can only operate ints.";
                                                 {exp=R.errExp(), ty=T.INT}))
-               | (A.LtOp | A.LeOp | A.GtOp | A.GeOp) =>
+               | (A.MinusOp) =>
+                    (case (real_left, real_right) of
+                       (T.INT, T.INT)       => {exp=R.intOpExp(oper, #exp left, #exp right), ty=T.INT}
+                     | _                    => (error pos "Can only operate ints.";
+                                                {exp=R.errExp(), ty=T.INT}))
+               | (A.TimesOp) =>
+                    (case (real_left, real_right) of
+                       (T.INT, T.INT)       => {exp=R.intOpExp(oper, #exp left, #exp right), ty=T.INT}
+                     | _                    => (error pos "Can only operate ints.";
+                                                {exp=R.errExp(), ty=T.INT}))
+               | (A.DivideOp) =>
+                    (case (real_left, real_right) of
+                       (T.INT, T.INT)       => {exp=R.intOpExp(oper, #exp left, #exp right), ty=T.INT}
+                     | _                    => (error pos "Can only operate ints.";
+                                                {exp=R.errExp(), ty=T.INT}))
+               | (A.LtOp) =>
                     (case (real_left, real_right) of
                        (T.INT, T.INT)       => {exp=R.intOpExp(oper, #exp left, #exp right), ty=T.INT}
                      | (T.STRING, T.STRING) => {exp=R.strOpExp(oper, #exp left, #exp right), ty=T.INT}
                      | _                    => (error pos "Can only compare ints and strings.";
                                                 {exp=R.errExp(), ty=T.INT}))
-               | (A.EqOp | A.NeqOp) =>
+               | (A.LeOp) =>
+                    (case (real_left, real_right) of
+                       (T.INT, T.INT)       => {exp=R.intOpExp(oper, #exp left, #exp right), ty=T.INT}
+                     | (T.STRING, T.STRING) => {exp=R.strOpExp(oper, #exp left, #exp right), ty=T.INT}
+                     | _                    => (error pos "Can only compare ints and strings.";
+                                                {exp=R.errExp(), ty=T.INT}))
+               | (A.GtOp) =>
+                    (case (real_left, real_right) of
+                       (T.INT, T.INT)       => {exp=R.intOpExp(oper, #exp left, #exp right), ty=T.INT}
+                     | (T.STRING, T.STRING) => {exp=R.strOpExp(oper, #exp left, #exp right), ty=T.INT}
+                     | _                    => (error pos "Can only compare ints and strings.";
+                                                {exp=R.errExp(), ty=T.INT}))
+               | (A.GeOp) =>
+                    (case (real_left, real_right) of
+                       (T.INT, T.INT)       => {exp=R.intOpExp(oper, #exp left, #exp right), ty=T.INT}
+                     | (T.STRING, T.STRING) => {exp=R.strOpExp(oper, #exp left, #exp right), ty=T.INT}
+                     | _                    => (error pos "Can only compare ints and strings.";
+                                                {exp=R.errExp(), ty=T.INT}))
+               | (A.EqOp) =>
+                    (if checkTypeMatch(real_left, real_right, tenv, pos, "Equal/NEqual Comp")
+                     then case (real_left, real_right) of
+                            (T.STRING, T.STRING) => {exp=R.strOpExp(oper, #exp left, #exp right), ty=T.INT}
+                          |  _                   => {exp=R.intOpExp(oper, #exp left, #exp right), ty=T.INT}
+                     else (error pos "Can only compare same types."; {exp=R.errExp(), ty=T.INT}))
+               | (A.NeqOp) =>
                     (if checkTypeMatch(real_left, real_right, tenv, pos, "Equal/NEqual Comp")
                      then case (real_left, real_right) of
                             (T.STRING, T.STRING) => {exp=R.strOpExp(oper, #exp left, #exp right), ty=T.INT}

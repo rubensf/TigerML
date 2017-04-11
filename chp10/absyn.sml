@@ -3,6 +3,10 @@ struct
 
 type pos = int   and   symbol = Symbol.symbol
 
+type field = {name: symbol, escape: bool ref, 
+              typ: symbol, pos: pos}
+
+
 datatype var = SimpleVar of symbol * pos
             | FieldVar of var * symbol * pos
             | SubscriptVar of var * exp * pos
@@ -40,9 +44,7 @@ and ty = NameTy of symbol * pos
 and oper = PlusOp | MinusOp | TimesOp | DivideOp
          | EqOp | NeqOp | LtOp | LeOp | GtOp | GeOp
 
-withtype field = {name: symbol, escape: bool ref, 
-		  typ: symbol, pos: pos}
-   and   fundec = {name: symbol,
+withtype fundec = {name: symbol,
 		   params: field list,
 		   result: (symbol * pos) option,
 		   body: exp,

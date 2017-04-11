@@ -78,3 +78,6 @@ struct
               ())
     end
 end
+
+val _ = Main.compile "../tests/test1.tig";
+
