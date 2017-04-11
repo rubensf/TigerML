@@ -51,6 +51,7 @@ struct
                   val _ = print ("newInSet = " ^ Int.toString(T.Set.numItems(newInSet)) ^ "\n")
                   val li' = NodeMap.insert(li, Flow.FG.getNodeID x, newInSet)
                   val succIDs = Flow.FG.succs x
+                  val _ = print ("successor size = " ^ Int.toString(List.length(succIDs)) ^ "\n")
                   val newOutSet = foldl (fn (xID, ans) => T.Set.union(ans, Option.valOf(NodeMap.find(li', xID)))) T.Set.empty succIDs
                   val _ = print ("newOutSet = " ^ Int.toString(T.Set.numItems(newOutSet)) ^ "\n")
                   val lo' = NodeMap.insert(lo, Flow.FG.getNodeID x, newOutSet)
