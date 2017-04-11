@@ -100,8 +100,20 @@ struct
   fun show(outstream, IGRAPH {graph = graph, tnode = tnode, gtemp = gtemp, moves = moves}) =
     let
       val nodes = FG.nodes graph
+      fun printNode node = 
+        let
+          val _ = TextIO.output(outstream, MipsFrame.makestring(gtemp node) ^  " => ")
+          fun f n = 
+            case FG.isAdjacent(node, n) of
+              true => TextIO.output(outstream, MipsFrame.makestring(gtemp n) ^ ", ")
+            | false => ()
+        in
+          TextIO.output(outstream, "\n")
+        end
+      val _ = TextIO.output(outstream, "==================Printing Interference Graph==================\n")
+
     in
-      TextIO.output(outstream, "hello")
+      List.app printNode nodes
     end
    (*TODO *)
   fun interferenceGraph(f as Flow.FGRAPH{control, def, use}) = 
