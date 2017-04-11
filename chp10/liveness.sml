@@ -60,9 +60,41 @@ struct
               loopUntilDone(nodes, liveIn'', liveOut'', checkIn andalso checkOut)
             end
     in
-      ()
+      loopUntilDone (nodes, liveIn, liveOut, false)
     end
-
+  fun createInterferenceGraph (liveOut:liveMap, def, control) = 
+    let
+      val nodes = Flow.FG.nodes control
+      fun f (x, ans: T.temp FG.graph) = 
+        let
+          val defs = Option.valOf(NodeMap.find(def, Flow.FG.getNodeID x))
+          val live = Option.valOf(NodeMap.find(liveOut, Flow.FG.getNodeID x))
+          val temps = map FG.nodeInfo (FG.nodes ans)
+          fun add (t, ans) = 
+            let
+              fun eq x = 
+                case T.compare(x,t) of
+                  EQUAL => true
+                | _     => false
+            in
+              case List.find eq temps of 
+                NONE    => FG.addNode(ans, t, t)
+              | SOME x  => ans
+            end
+          val defsAdded = T.Set.foldl add ans defs
+          val liveAdded = T.Set.foldl add defsAdded live
+          fun iterDefs (defTemp, ans) = 
+            let
+              fun addEdge (liveTemp, ans) = FG.doubleEdge(ans, defTemp, liveTemp)
+            in
+              T.Set.foldl addEdge ans live
+            end
+        in
+          T.Set.foldl iterDefs liveAdded defs
+        end
+    in
+      foldl f FG.empty nodes
+    end
 
   (* TODO *)
   fun show(outstream, IGRAPH {graph = graph, tnode = tnode, gtemp = gtemp, moves = moves}) =
@@ -70,6 +102,6 @@ struct
     in
       TextIO.output(outstream, "hello")
     end
-  (* TODO *)
-  (*fun interferenceGraph(Flow.FGRAPH{control, def, use, ismove}) = *)
+   (*TODO *)
+  (*fun interferenceGraph(Flow.FGRAPH{control, def, use}) = *)
 end
