@@ -62,8 +62,9 @@ struct
     in
       loopUntilDone (nodes, liveIn, liveOut, false)
     end
-  fun createInterferenceGraph (liveOut, def) = 
+  fun createInterferenceGraph (liveOut:liveMap, def, control) = 
     let
+      val nodes = Flow.FG.nodes control
       fun f (x, ans: T.temp FG.graph) = 
         let
           val defs = Option.valOf(NodeMap.find(def, Flow.FG.getNodeID x))
@@ -80,13 +81,13 @@ struct
                 NONE    => FG.addNode(ans, t, t)
               | SOME x  => ans
             end
-          val defsAdded = NodeMap.foldl add ans defs
-          val liveAdded = NodeMap.foldl add defsAdded live
+          val defsAdded = T.Set.foldl add ans defs
+          val liveAdded = T.Set.foldl add defsAdded live
         in
           liveAdded
         end
     in
-      NodeMap.foldl f FG.empty liveOut
+      foldl f FG.empty nodes
     end
 
   (* TODO *)
