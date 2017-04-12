@@ -21,7 +21,6 @@ struct
                              | A.OPER e => (ErrorMsg.error 0 ("Internal failure: First instr not label. (" ^ (#assem e) ^ ")"); Temp.newlabel ())
 
                in
-                 print (Int.toString(List.length block) ^ "\n");
                  FG.addNode(g, label, block)
                end
         end
@@ -31,11 +30,14 @@ struct
         | step(oper as A.OPER {jump=SOME jl,...}, accum) =
             let val g = handleBlock((#1 accum), (#2 accum)@[oper]) in (g, []) end
         | step(label as A.LABEL {assem, lab}, accum) =
-            let val g = handleBlock((#1 accum),
-                                    (#2 accum)@[A.OPER{assem="",
-                                                       dst=[],
-                                                       src=[],
-                                                       jump=SOME[lab]}])
+            let
+              val g = if List.null (#2 accum)
+                      then (#1 accum)
+                      else handleBlock((#1 accum),
+                                       (#2 accum)@[A.OPER{assem="",
+                                                          dst=[],
+                                                          src=[],
+                                                          jump=SOME[lab]}])
             in (g, [label]) end
         | step(move as A.MOVE {...}, accum) =
             ((#1 accum), (#2 accum)@[move])
