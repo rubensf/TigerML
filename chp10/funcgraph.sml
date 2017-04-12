@@ -114,24 +114,27 @@ fun isAdjacent ((n1,_,s1,p1),(n2,_,s2,p2)) =
   NodeSet.member(NodeSet.union(s2,p2),n1)
 
 fun printGraph stringify g =
-    let fun println x = print(x ^"\n")
-    fun stringNid nid =
-        let val (_,data,_,_) = getNode(g,nid)
-        in
-        "   "^ stringify(nid,data)
-        end
-    fun prSet s = NodeSet.app (println o stringNid) s
-    fun prOneNode(nid,data,succs,preds) =
-        let val s = stringify(nid,data)
-        val () = println("Node: " ^ s)
-        val () = println(" -> Successors:")
-        val () = prSet succs
-        val () = println(" -> Predecessors:")
-        val () = prSet preds
-        in
-        ()
-        end
+    let 
+      fun println x = print(x ^"\n")
+      fun stringNid nid =
+          let 
+            val (_,data,_,_) = getNode(g,nid)
+          in
+            "   "^ stringify(nid,data)
+          end
+      fun prSet s = NodeSet.app (println o stringNid) s
+      fun prOneNode(nid,data,succs,preds) =
+          let 
+            val s = stringify(nid,data)
+            val () = println("Node: " ^ s)
+            val () = println(" -> Successors:")
+            val () = prSet succs
+            val () = println(" -> Predecessors:")
+            val () = prSet preds
+          in
+            ()
+          end
     in
-    NodeMap.app prOneNode g
+      NodeMap.app prOneNode g
     end
 end
