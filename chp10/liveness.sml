@@ -74,32 +74,63 @@ struct
       val nodes = Flow.FG.nodes control
       fun f (x, ans: T.temp FG.graph) = 
         let
-          val defs = Option.valOf(NodeMap.find(def, Flow.FG.getNodeID x))
           (*val _ = print ("DEF SIZE: " ^ (Int.toString(T.Set.numItems(defs))) ^ "\n")*)
           val live = Option.valOf(NodeMap.find(liveOut, Flow.FG.getNodeID x))
           (*val _ = print ("LIVE SIZE: " ^ (Int.toString(T.Set.numItems(live))) ^ "\n")*)
-          val temps = map FG.nodeInfo (FG.nodes ans)
-          fun add (t, ans) = 
+          val instrs:Assem.instr list = Flow.FG.nodeInfo x
+          fun handleInstr(instr, {live, graph}) = 
             let
-              fun eq x = 
-                case T.compare(x,t) of
-                  EQUAL => true
-                | _     => false
+              val deflist = case instr of 
+                  Assem.OPER{assem=_, src=_, dst=d, jump=_} => d
+                | Assem.LABEL l => []
+                | Assem.MOVE{assem=_, src=_, dst=d} => [d]
+              val uselist = case instr of 
+                  Assem.OPER{assem=_, src=s, dst=_, jump=_} => s
+                | Assem.LABEL l => []
+                | Assem.MOVE{assem=_, src=s, dst=_} => [s]
+              val ismove = case instr of 
+                  Assem.MOVE m => true
+                | _            => false
+              val defSet = T.Set.addList(T.Set.empty, deflist)
+              val useSet = T.Set.addList(T.Set.empty, uselist)
+              val liveBefore = T.Set.union(useSet, T.Set.difference(live, defSet))
+              fun handleDefs (def, ans) = 
+                let
+                  fun tempEqual(t1, t2) = case T.compare(t1, t2) of
+                    EQUAL => true
+                  | _     => false
+                  fun handleLiveOutTemps(liveOutTemp, ans) = 
+                    let
+                      val usedTemp = (T.Set.exists (fn x => tempEqual(x, liveOutTemp)) useSet) 
+                      val shouldAdd = (not ismove) orelse (ismove andalso (not usedTemp))
+                      val temps = map FG.nodeInfo (FG.nodes ans)
+                      fun addEdge(graph, t1, t2) = 
+                        let
+                          val g' = case List.exists (fn x => tempEqual(x, t1)) temps of
+                            true => graph
+                          | false => FG.addNode(graph, t1, t1)
+                          val g'' = case List.exists (fn x => tempEqual(x, t2)) temps of 
+                            true => g'
+                          | false => FG.addNode(g', t2, t2)
+                        in
+                          FG.doubleEdge(g'', t1, t2)
+                        end
+                      val result = case shouldAdd of
+                        false => ans
+                      | true  => addEdge(ans, def, liveOutTemp)
+                    in
+                      result
+                    end
+                in
+                  T.Set.foldl handleLiveOutTemps ans live
+                end
+                val g = T.Set.foldl handleDefs graph defSet
             in
-              case List.find eq temps of 
-                NONE    => FG.addNode(ans, t, t)
-              | SOME x  => ans
+              {live=liveBefore, graph=g}
             end
-          val defsAdded = T.Set.foldl add ans defs
-          val liveAdded = T.Set.foldl add defsAdded live
-          fun iterDefs (defTemp, ans) = 
-            let
-              fun addEdge (liveTemp, ans) = FG.doubleEdge(ans, defTemp, liveTemp)
-            in
-              T.Set.foldl addEdge ans live
-            end
+            val last = foldr handleInstr {live=live, graph=ans} instrs (*make sure this is going in the right direction*)
         in
-          T.Set.foldl iterDefs liveAdded defs
+          #graph last
         end
     in
       foldl f FG.empty nodes
