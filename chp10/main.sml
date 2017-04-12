@@ -228,5 +228,3 @@ struct
   fun compile file = compileverb file 0
 end
 
-val _ = Main.compileverb "../tests/test1.tig" 3;
-
