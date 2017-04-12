@@ -205,26 +205,26 @@ struct
         end
     in
       case (parsefile file) of
-        (abst, true) => ()
+        (abst, true) => false
       | (abst, false) =>
       case (findescape abst) of
-        true => ()
+        true => false
       | false =>
       case (semanticanalysis abst) of
-        (frags, true) => ()
+        (frags, true) => false
       | (frags, false) =>
       case (linearize frags) of
-        (frags', true) => ()
+        (frags', true) => false
       | (frags', false) =>
       case (codegen frags') of
-        (instrs, true) => ()
+        (instrs, true) => false
       | (instrs, false) =>
       case (makeflowgraph instrs) of
-        (instrflowframelist, true) => ()
+        (instrflowframelist, true) => false
       | (instrflowframelist, false) =>
       case (liveness instrflowframelist) of
-        (instrflowigraphframelist, true) => ()
-      | (instrflowigraphframelist, false) => ()
+        (instrflowigraphframelist, true) => false
+      | (instrflowigraphframelist, false) => true
     end
 
   fun compile file = compileverb file 0
