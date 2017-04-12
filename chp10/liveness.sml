@@ -136,7 +136,7 @@ struct
       foldl f FG.empty nodes
     end
 
-  (* TODO *)
+  
   fun show(outstream, IGRAPH {graph = graph, tnode = tnode, gtemp = gtemp, moves = moves}) =
     let
       val nodes = FG.nodes graph
@@ -157,7 +157,7 @@ struct
       (*FG.printGraph (fn (id,node)=>MipsFrame.makestring(id)) graph*)
       List.app printNode nodes
     end
-   (*TODO *)
+   
   fun interferenceGraph(f as Flow.FGRAPH{control, def, use}) = 
     let
       val liveSets = computeLiveSets(f)
