@@ -227,6 +227,6 @@ struct
       | (instrflowigraphframelist, false) => true
     end
 
-  fun compile file = compileverb file 3
+  fun compile file = compileverb file 0
 end
 
