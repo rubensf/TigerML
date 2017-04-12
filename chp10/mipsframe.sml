@@ -136,8 +136,8 @@ struct
   fun procEntryExit (frame, treeExp) = treeExp (* TODO *)
 
   fun procEntryExit2 (frame, body) =
-    body @ [Assem.OPER {assem="",
-                        src=getRegTemps (specialRegs @ calleeRegs),
+    body @ [Assem.OPER {assem="jr      `s0\n",
+                        src=[ra]@getRegTemps (specialRegs @ calleeRegs),
                         dst=[],jump=SOME[]}]
 
   fun procEntryExit3 ({name, params, locals}, body) = {

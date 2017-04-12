@@ -441,9 +441,13 @@ local
       structure gs_64 = Flow
    end
    local
+      structure Assem = gs_19
       signature FUNCGRAPH = gs_53
       structure Flow = gs_64
       functor FuncGraph = gs_63
+      structure Int = gs_2
+      structure List = gs_1
+      structure MipsFrame = gs_32
       signature ORD_KEY = gs_62
       structure Option = gs_46
       signature TEMP = gs_17
@@ -502,6 +506,7 @@ local
       structure FindEscape = gs_45
       structure Flow = gs_64
       structure List = gs_1
+      structure Liveness = gs_65
       structure MakeGraph = gs_70
       structure MipsFrame = gs_32
       structure MipsGen = gs_33
@@ -547,16 +552,6 @@ in
    structure Symbol = gs_12
    signature TABLE = gs_9
    signature TEMP = gs_17
-   signature TRANSLATE = gs_24
-   signature TREE = gs_20
-   structure Temp = gs_18
-   functor TigerLexFun = gs_52
-   functor TigerLrValsFun = gs_60
-   signature Tiger_LRVALS = gs_43
-   signature Tiger_TOKENS = gs_44
-   functor Translate = gs_28
-   structure Tree = gs_21
-   structure Types = gs_54
    signature TRANSLATE = gs_24
    signature TREE = gs_20
    structure Temp = gs_18
