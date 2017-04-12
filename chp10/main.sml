@@ -193,7 +193,9 @@ struct
           then (print ("Errors with making interference graph. " ^
                        "Stopping compilation.\n");
                 ([], !err))
-          else (if verbose >= 2
+          else (if verbose = 2
+                then print "For printing the liveness graph, please use verbose 3.\n"
+                else if verbose > 2
                 then (print "==========Printing Interference Graph==========\n";
                       List.app (fn (_, _, igraph, _, _) =>
                                   Liveness.show(TextIO.stdOut, igraph))
