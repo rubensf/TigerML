@@ -1,7 +1,5 @@
 signature TRANSLATE =
 sig
-  structure F : FRAME
-
   type level
   type access
   type exp

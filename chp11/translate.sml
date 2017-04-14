@@ -1,7 +1,5 @@
-functor Translate(F: FRAME) : TRANSLATE =
+functor Translate(F: FRAME) :> TRANSLATE where type frag = F.frag =
 struct
-  structure F = F
-
   structure A = Absyn
   structure C = Canon
   structure T = Tree

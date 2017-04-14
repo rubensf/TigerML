@@ -1,4 +1,4 @@
-structure MipsGen : CODEGEN =
+structure MipsGen :> CODEGEN where type frame = MipsFrame.frame =
 struct
   structure A = Assem
   structure F = MipsFrame

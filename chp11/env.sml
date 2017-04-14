@@ -1,12 +1,11 @@
 signature ENV =
 sig
   type access
+  type level
   type ty = Types.ty
 
-  structure R : TRANSLATE
-
-  datatype enventry = VarEntry of {access: R.access, ty: ty}
-                    | FunEntry of {level: R.level,
+  datatype enventry = VarEntry of {access: access, ty: ty}
+                    | FunEntry of {level: level,
                                    label: Temp.label,
                                    formals: ty list, result: ty}
 
@@ -14,19 +13,18 @@ sig
   val base_venv : enventry Symbol.table
 end
 
-functor Env(R: TRANSLATE) : ENV =
+functor Env(R: TRANSLATE) :> ENV where type access = R.access
+                                   and type level = R.level =
 struct
-  structure R = R
   structure S = Symbol
   structure T = Types
 
-  (* Dunno what's this yet *)
-  type access = unit
-
+  type access = R.access
+  type level = R.level
   type ty = T.ty
 
-  datatype enventry = VarEntry of {access: R.access, ty: ty}
-                    | FunEntry of {level: R.level,
+  datatype enventry = VarEntry of {access: access, ty: ty}
+                    | FunEntry of {level: level,
                                    label: Temp.label,
                                    formals: ty list, result: ty}
 

@@ -1,18 +1,17 @@
 signature SEMANT = sig
-  structure R : TRANSLATE
-  val transProg : Absyn.exp -> R.frag list
+  type frag
+  val transProg : Absyn.exp -> frag list
 end
 
-functor Semant(R: TRANSLATE) : SEMANT =
+functor Semant(R: TRANSLATE) :> SEMANT where type frag = R.frag =
 struct
-  structure R = R
-
   structure A = Absyn
   structure E = Env (R)
   structure P = PrintAbsyn
   structure S = Symbol
   structure T = Types
 
+  type frag = R.frag
   type venv = E.enventry S.table
   type tenv = T.ty S.table
 
