@@ -2,7 +2,7 @@ signature FRAME =
 sig
   type access
   type frame
-  type register
+  eqtype register
 
   datatype frag = PROC of {body: Tree.stm, frame: frame}
                 | STRING of Temp.label * string

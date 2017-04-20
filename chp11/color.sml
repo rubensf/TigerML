@@ -1,35 +1,35 @@
-signature COLOR = 
+signature COLOR =
 sig
-  structure Frame : FRAME
+  structure F : FRAME
   structure FG : FUNCGRAPH
-  type allocation = Frame.register Temp.Map.map
+  type allocation = F.register Temp.Map.map
   val color: {
     igraph: Liveness.igraph,
     initial: allocation,
     spillCost: Temp.temp FG.node -> int,
-    registers: Frame.register list,
+    registers: F.register list,
     moves: (Temp.temp FG.node * Temp.temp FG.node) list
   } -> allocation * Temp.temp list
 end
 
-structure Color :> COLOR = 
+functor Color(F: FRAME) :> COLOR =
 struct
-  structure Frame = MipsFrame
+  structure F = F
   structure T = Temp
   structure FG = Liveness.FG
-  type allocation = Frame.register Temp.Map.map
-  fun color {igraph, initial, spillCost, registers, movelist} =
+  type allocation = F.register Temp.Map.map
+  fun color {igraph, initial, spillCost, registers, moves} =
     let
-      val (graph, tnode, gtemp, moves) = case igraph of Liveness.IGRAPH{graph=g, tnode=t, gtemp=gt, moves=m} => (g, t, gt, m)
+      val (graph, tnode, gtemp, _) = case igraph of Liveness.IGRAPH{graph=g, tnode=t, gtemp=gt, moves=m} => (g, t, gt, m)
       fun precolored n = (case Temp.Map.find(initial, FG.nodeInfo n) of
                 SOME(r) => true
               | _       => false)
 
       fun simplify(graph) =
         let
-          fun removeNodes(g, stack) = 
+          fun removeNodes(g, stack) =
             let
-              fun processNode(n, stack) = (case FG.degree(n) < 22 of 
+              fun processNode(n, stack) = (case FG.degree(n) < 22 of
                                 true  => n::stack
                               | false => stack)
               val stack' = foldl processNode stack (List.filter (fn n => not (precolored n)) (FG.nodes g))
@@ -46,12 +46,12 @@ struct
           stack'
         end
 
-      fun needToSpill(stack, alreadySpilled) = 
+      fun needToSpill(stack, alreadySpilled) =
         let
           val nodes = FG.nodes graph
           val stackIDs = map FG.getNodeID stack
           val spilledIDs = map FG.getNodeID alreadySpilled
-          fun onStack node = 
+          fun onStack node =
             let
               val nodeID = FG.getNodeID node
               val opt = List.find (fn x => x = nodeID) stackIDs
@@ -61,11 +61,11 @@ struct
             in
               ret
             end
-          fun onSpilled node = 
+          fun onSpilled node =
             let
               val nodeID = FG.getNodeID node
               val opt = List.find(fn x => x = nodeID) spilledIDs
-              val ret = (case opt of 
+              val ret = (case opt of
                                 SOME x => true
                               | NONE   => false)
             in
@@ -81,12 +81,12 @@ struct
 
       fun simplifySpill(stack, graph, alreadySpilled) =
         let
-          val stack' = stack @ simplify(graph) 
+          val stack' = stack @ simplify(graph)
           val nodeToSpill = needToSpill(stack, alreadySpilled)
           val shouldSpill = Option.isSome nodeToSpill
-          val graph' = (case shouldSpill of 
+          val graph' = (case shouldSpill of
                         true  => FG.removeNode(graph, FG.getNodeID (Option.valOf nodeToSpill))
-                      | false => graph) 
+                      | false => graph)
           val ret = (case shouldSpill of
                         true  => simplifySpill(stack', graph', (Option.valOf nodeToSpill)::alreadySpilled)
                       | false => (stack', alreadySpilled))
@@ -94,27 +94,30 @@ struct
           ret
         end
       val (stack, spills) = simplifySpill([], graph, [])
-      fun allocate(map, stack) = 
+      fun allocate(map, stack) =
         let
           val actualSpills = ref []
-          fun assignColor(node, allocation) = 
+          fun assignColor(node, allocation) =
             let
-              fun availableColor(unavailable, color::rest) = (case (List.find (fn x => x = color) unavailable) of 
-                                  SOME c => availableColor(unavailable, rest)
-                                | NONE   => color)
-                | availableColor(unavailable, []) = "NO_COLOR"
-              fun createUnavailable node = List.mapPartial (fn neighbor => Temp.Map.find(allocation, neighbor)) (FG.succs node)
-              val assigned = availableColor(createUnavailable node, registers)
+              fun availableColor(unavailable, color::rest) =
+                (case (List.find (fn x => x = color) unavailable) of
+                   SOME c => availableColor(unavailable, rest)
+                 | NONE   => SOME color)
+                | availableColor(unavailable, []) = NONE
+              fun createUnavailable node =
+                List.mapPartial (fn x => Temp.Map.find(allocation, x))
+                                (FG.succs node)
             in
-              assigned
+              availableColor(createUnavailable node, registers)
             end
 
-          fun pushColorToMap(node, allocation) = 
+          fun pushColorToMap(node, allocation) =
             let
               val color = assignColor(node, allocation)
-              val newAllocation = (case color <> "NO_COLOR" of
-                                  true  => Temp.Map.insert(allocation, FG.nodeInfo node, color)
-                                | false => (actualSpills:=(node::(!actualSpills));allocation))
+              val newAllocation =
+                (case color of
+                   SOME c => Temp.Map.insert(allocation, FG.nodeInfo node, c)
+                 | NONE => (actualSpills:=(node::(!actualSpills));allocation))
             in
               newAllocation
             end
@@ -122,10 +125,10 @@ struct
           val nonPrecolored = (List.filter (fn node => not (Option.isSome (Temp.Map.find(map, FG.nodeInfo node)))) stack)
         in
           (foldl pushColorToMap map nonPrecolored, !actualSpills)
-        end  
+        end
       val (alloc, _) = allocate(initial, stack)
       val (alloc', actualSpills) = allocate(alloc, spills)
-      val spills' = map G.nodeInfo actualSpills
+      val spills' = map FG.nodeInfo actualSpills
     in
       (alloc', spills')
     end
