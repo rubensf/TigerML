@@ -79,6 +79,20 @@ struct
           firstNode
         end
 
+      fun simplifySpill(stack, graph, alreadySpilled) =
+        let
+          val stack' = stack @ simplify(graph) 
+          val nodeToSpill = needToSpill(stack, alreadySpilled)
+          val shouldSpill = Option.isSome nodeToSpill
+          val graph' = (case shouldSpill of 
+                        true  => FG.removeNode(graph, FG.getNodeID (Option.valOf nodeToSpill))
+                      | false => graph) 
+          val ret = (case shouldSpill of
+                        true  => simplifySpill(stack', graph', (Option.valOf nodeToSpill)::alreadySpilled)
+                      | false => (stack', alreadySpilled))
+        in
+          ret
+        end
         
     in
       ()
