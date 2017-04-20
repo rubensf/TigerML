@@ -16,10 +16,7 @@ structure Color :> COLOR =
 struct
   structure Frame = MipsFrame
   structure T = Temp
-  structure TempOrdKey = struct type ord_key = Temp.temp
-                                val compare = Temp.compare
-                         end
-  structure FG = FuncGraph(TempOrdKey)
+  structure FG = Liveness.FG
   type allocation = Frame.register Temp.Map.map
   fun color {igraph, initial, spillCost, registers, movelist} =
     let
@@ -48,6 +45,41 @@ struct
         in
           stack'
         end
+
+      fun needToSpill(stack, alreadySpilled) = 
+        let
+          val nodes = FG.nodes graph
+          val stackIDs = map FG.getNodeID stack
+          val spilledIDs = map FG.getNodeID alreadySpilled
+          fun onStack node = 
+            let
+              val nodeID = FG.getNodeID node
+              val opt = List.find (fn x => x = nodeID) stackIDs
+              val ret = (case opt of
+                                SOME x => true
+                              | NONE   => false)
+            in
+              ret
+            end
+          fun onSpilled node = 
+            let
+              val nodeID = FG.getNodeID node
+              val opt = List.find(fn x => x = nodeID) spilledIDs
+              val ret = (case opt of 
+                                SOME x => true
+                              | NONE   => false)
+            in
+              ret
+            end
+          val spillChoices = List.filter (fn node => not (precolored node) andalso (not (onStack node)) andalso (not (onSpilled node))) nodes
+          val firstNode = case List.length spillChoices of
+              0 => NONE
+            | _ => SOME (List.nth(spillChoices, 0))
+        in
+          firstNode
+        end
+
+        
     in
       ()
     end
