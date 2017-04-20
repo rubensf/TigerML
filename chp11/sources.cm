@@ -4,6 +4,7 @@ absyn.sml
 assem.sml
 canon.sml
 codegen.sig
+color.sml
 errormsg.sml
 env.sml
 findescape.sml
