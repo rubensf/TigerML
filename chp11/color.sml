@@ -93,8 +93,40 @@ struct
         in
           ret
         end
-        
+      val (stack, spills) = simplifySpill([], graph, [])
+      fun allocate(map, stack) = 
+        let
+          val actualSpills = ref []
+          fun assignColor(node, allocation) = 
+            let
+              fun availableColor(unavailable, color::rest) = (case (List.find (fn x => x = color) unavailable) of 
+                                  SOME c => availableColor(unavailable, rest)
+                                | NONE   => color)
+                | availableColor(unavailable, []) = "NO_COLOR"
+              fun createUnavailable node = List.mapPartial (fn neighbor => Temp.Map.find(allocation, neighbor)) (FG.succs node)
+              val assigned = availableColor(createUnavailable node, registers)
+            in
+              assigned
+            end
+
+          fun pushColorToMap(node, allocation) = 
+            let
+              val color = assignColor(node, allocation)
+              val newAllocation = (case color <> "NO_COLOR" of
+                                  true  => Temp.Map.insert(allocation, FG.nodeInfo node, color)
+                                | false => (actualSpills:=(node::(!actualSpills));allocation))
+            in
+              newAllocation
+            end
+
+          val nonPrecolored = (List.filter (fn node => not (Option.isSome (Temp.Map.find(map, FG.nodeInfo node)))) stack)
+        in
+          (foldl pushColorToMap map nonPrecolored, !actualSpills)
+        end  
+      val (alloc, _) = allocate(initial, stack)
+      val (alloc', actualSpills) = allocate(alloc, spills)
+      val spills' = map G.nodeInfo actualSpills
     in
-      ()
+      (alloc', spills')
     end
 end
