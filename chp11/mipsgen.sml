@@ -42,7 +42,25 @@ struct
                                         src=[F.r0],
                                         dst=[r], jump=NONE}))
         | munchExp (T.BINOP(T.PLUS, T.CONST i1, T.CONST i2)) =
-            munchExp (T.CONST (Word.toInt (Word.+(Word.fromInt i1, Word.fromInt i2))))
+            munchExp (T.CONST (Word.toIntX (Word.+(Word.fromInt i1, Word.fromInt i2))))
+        | munchExp (T.BINOP(T.MINUS, T.CONST i1, T.CONST i2)) =
+            munchExp (T.CONST (Word.toIntX (Word.-(Word.fromInt i1, Word.fromInt i2))))
+        | munchExp (T.BINOP(T.MUL, T.CONST i1, T.CONST i2)) =
+            munchExp (T.CONST (Word.toIntX (Word.*(Word.fromInt i1, Word.fromInt i2))))
+        | munchExp (T.BINOP(T.DIV, T.CONST i1, T.CONST i2)) =
+            munchExp (T.CONST (Word.toIntX (Word.div(Word.fromInt i1, Word.fromInt i2))))
+        | munchExp (T.BINOP(T.AND, T.CONST i1, T.CONST i2)) =
+            munchExp (T.CONST (Word.toIntX (Word.andb(Word.fromInt i1, Word.fromInt i2))))
+        | munchExp (T.BINOP(T.OR, T.CONST i1, T.CONST i2)) =
+            munchExp (T.CONST (Word.toIntX (Word.orb(Word.fromInt i1, Word.fromInt i2))))
+        | munchExp (T.BINOP(T.XOR, T.CONST i1, T.CONST i2)) =
+            munchExp (T.CONST (Word.toIntX (Word.xorb(Word.fromInt i1, Word.fromInt i2))))
+        | munchExp (T.BINOP(T.LSHIFT, T.CONST i1, T.CONST i2)) =
+            munchExp (T.CONST (Word.toIntX (Word.<<(Word.fromInt i1, Word.fromInt i2))))
+        | munchExp (T.BINOP(T.RSHIFT, T.CONST i1, T.CONST i2)) =
+            munchExp (T.CONST (Word.toIntX (Word.>>(Word.fromInt i1, Word.fromInt i2))))
+        | munchExp (T.BINOP(T.ARSHIFT, T.CONST i1, T.CONST i2)) =
+            munchExp (T.CONST (Word.toIntX (Word.~>>(Word.fromInt i1, Word.fromInt i2))))
         | munchExp (T.BINOP(T.PLUS, e, T.CONST i)) =
             result(fn r => emit(A.OPER {assem="addi    `d0, `s0, " ^ (i2s i) ^ "\n",
                                         src=[munchExp e],
@@ -55,8 +73,6 @@ struct
             result(fn r => emit(A.OPER {assem="add     `d0, `s0, `s1\n",
                                         src=[munchExp e1, munchExp e2],
                                         dst=[r], jump=NONE}))
-        | munchExp (T.BINOP(T.MINUS, T.CONST i1, T.CONST i2)) =
-            munchExp (T.CONST (Word.toInt (Word.-(Word.fromInt i1, Word.fromInt i2))))
         | munchExp (T.BINOP(T.MINUS, e, T.CONST i)) =
             result(fn r => emit(A.OPER {assem="addi    `d0, `s0, " ^ (i2s (~i)) ^ "\n",
                                         src=[munchExp e],
@@ -65,20 +81,14 @@ struct
             result(fn r => emit(A.OPER {assem="sub     `d0, `s0, `s1\n",
                                         src=[munchExp e1,  munchExp e2],
                                         dst=[r], jump=NONE}))
-        | munchExp (T.BINOP(T.MUL, T.CONST i1, T.CONST i2)) =
-            munchExp (T.CONST (Word.toInt (Word.*(Word.fromInt i1, Word.fromInt i2))))
         | munchExp (T.BINOP(T.MUL, e1, e2)) =
             result(fn r => emit(A.OPER {assem="mul     `d0, `s0, `s1\n",
                                         src=[munchExp e1, munchExp e2],
                                         dst=[r], jump=NONE}))
-        | munchExp (T.BINOP(T.DIV, T.CONST i1, T.CONST i2)) =
-            munchExp (T.CONST (Word.toInt (Word.div(Word.fromInt i1, Word.fromInt i2))))
         | munchExp (T.BINOP(T.DIV, e1, e2)) =
             result(fn r => emit(A.OPER {assem="div     `d0, `s0, `s1\n",
                                         src=[munchExp e1, munchExp e2],
                                         dst=[r], jump=NONE}))
-        | munchExp (T.BINOP(T.AND, T.CONST i1, T.CONST i2)) =
-            munchExp (T.CONST (Word.toInt (Word.andb(Word.fromInt i1, Word.fromInt i2))))
         | munchExp (T.BINOP(T.AND, e, T.CONST i)) =
             result(fn r => emit(A.OPER {assem="andi    `d0, `s0, " ^ (i2s i) ^ "\n",
                                         src=[munchExp e],
@@ -91,8 +101,6 @@ struct
             result(fn r => emit(A.OPER {assem="and     `d0, `s0, `s1\n",
                                         src=[munchExp e1, munchExp e2],
                                         dst=[r], jump=NONE}))
-        | munchExp (T.BINOP(T.OR, T.CONST i1, T.CONST i2)) =
-            munchExp (T.CONST (Word.toInt (Word.orb(Word.fromInt i1, Word.fromInt i2))))
         | munchExp (T.BINOP(T.OR, e, T.CONST i)) =
             result(fn r => emit(A.OPER {assem="ori     `d0, `s0, " ^ (i2s i) ^ "\n",
                                         src=[munchExp e],
@@ -105,8 +113,6 @@ struct
             result(fn r => emit(A.OPER {assem="or      `d0, `s0, `s1\n",
                                         src=[munchExp e1, munchExp e2],
                                         dst=[r], jump=NONE}))
-        | munchExp (T.BINOP(T.LSHIFT, T.CONST i1, T.CONST i2)) =
-            munchExp (T.CONST (Word.toInt (Word.<<(Word.fromInt i1, Word.fromInt i2))))
         | munchExp (T.BINOP(T.LSHIFT, e, T.CONST i)) =
             result(fn r => emit(A.OPER {assem="sll     `d0, `s0, " ^ (i2s i) ^ "\n",
                                         src=[munchExp e],
@@ -115,8 +121,6 @@ struct
             result(fn r => emit(A.OPER {assem="sllv    `d0, `s0, `s1\n",
                                         src=[munchExp e1, munchExp e2],
                                         dst=[r], jump=NONE}))
-        | munchExp (T.BINOP(T.RSHIFT, T.CONST i1, T.CONST i2)) =
-            munchExp (T.CONST (Word.toInt (Word.>>(Word.fromInt i1, Word.fromInt i2))))
         | munchExp (T.BINOP(T.RSHIFT, e, T.CONST i)) =
             result(fn r => emit(A.OPER {assem="srl     `d0, `s0, " ^ (i2s i) ^ "\n",
                                         src=[munchExp e],
@@ -125,8 +129,6 @@ struct
             result(fn r => emit(A.OPER {assem="srlv    `d0, `s0, `s1\n",
                                         src=[munchExp e1, munchExp e2],
                                         dst=[r], jump=NONE}))
-        | munchExp (T.BINOP(T.ARSHIFT, T.CONST i1, T.CONST i2)) =
-            munchExp (T.CONST (Word.toInt (Word.~>>(Word.fromInt i1, Word.fromInt i2))))
         | munchExp (T.BINOP(T.ARSHIFT, e, T.CONST i)) =
             result(fn r => emit(A.OPER {assem="sra     `d0, `s0, " ^ (i2s i) ^ "\n",
                                         src=[munchExp e],
@@ -135,8 +137,6 @@ struct
             result(fn r => emit(A.OPER {assem="srav    `d0, `s0, `s1\n",
                                         src=[munchExp e1, munchExp e2],
                                         dst=[r], jump=NONE}))
-        | munchExp (T.BINOP(T.XOR, T.CONST i1, T.CONST i2)) =
-            munchExp (T.CONST (Word.toInt (Word.xorb(Word.fromInt i1, Word.fromInt i2))))
         | munchExp (T.BINOP(T.XOR, e, T.CONST i)) =
             result(fn r => emit(A.OPER {assem="xori    `d0, `s0, " ^ (i2s i) ^ "\n",
                                         src=[munchExp e],
