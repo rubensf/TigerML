@@ -11,6 +11,8 @@ struct
   structure F = MipsFrame
   structure CO = Color(F)
 
+  val outStream = TextIO.stdOut
+
   fun compileverb file verbose =
     let
       fun parsefile file =
@@ -27,7 +29,7 @@ struct
                 (abst, !err))
           else (if verbose >= 2
                 then (print "==========Priting Abstract Syntax Tree==========\n";
-                      PrintAbsyn.print (TextIO.stdOut, abst))
+                      PrintAbsyn.print (outStream, abst))
                 else ();
                 (abst, !err))
         end
@@ -62,8 +64,10 @@ struct
                 (frags, !err))
           else (if verbose >= 2
                 then (print "==========Printing Non-Linear IR==========\n";
-                      List.app (fn F.PROC{body, frame} => Printtree.printtree(TextIO.stdOut, body)
-                                 | F.STRING (lbl, str) => print ((Temp.labelToString lbl) ^ ": " ^ str))
+                      List.app (fn F.PROC{body, frame} =>
+                                    Printtree.printtree(outStream, body)
+                                 | F.STRING (lb, str) =>
+                                    print ((Temp.labelToString lb) ^ ": " ^ str))
                                frags)
                 else ();
                 (frags, !err))
@@ -87,9 +91,10 @@ struct
                        ([], !err))
           else (if verbose >= 2
                 then (print "==========Printing IR==========\n";
-                      List.app (fn (frags'', _) => List.app (fn y =>
-                                                             Printtree.printtree(TextIO.stdOut, y))
-                                                            frags'')
+                      List.app (fn (frags'', _) => 
+                                  List.app (fn y =>
+                                              Printtree.printtree(outStream, y))
+                                           frags'')
                                frags')
                 else ();
                 (frags', !err))
@@ -114,7 +119,7 @@ struct
                 ([], !err))
           else (if verbose >= 2
                 then (print "==========Printing Pre-Register Allocation Assembly==========\n";
-                      List.app (fn (instrs', _) => List.app (fn y => TextIO.output(TextIO.stdOut, format y))
+                      List.app (fn (instrs', _) => List.app (fn y => TextIO.output(outStream, format y))
                                                             instrs')
                                instrs)
                 else ();
@@ -199,7 +204,7 @@ struct
                 else if verbose > 2
                 then (print "==========Printing Interference Graph==========\n";
                       List.app (fn (_, _, igraph, _, _) =>
-                                  Liveness.show(TextIO.stdOut, igraph))
+                                  Liveness.show(outStream, igraph))
                                instrflowigraphframelist)
                 else ();
                 (instrflowigraphframelist, !err))
@@ -211,7 +216,8 @@ struct
                   else ()
           fun f ((instrs, flow, igraph, gettemps, frame), ans) = 
             let
-              val (alloc, spills) = CO.color {igraph=igraph, initial=CO.F.tempMap, spillCost=(fn x => 1), registers=CO.F.registers}
+              val (alloc, spills) = CO.color {igraph=igraph,
+              initial=CO.F.tempMap, spillCost=(fn x => 1), registers=F.colorRegisters}
               val didSpill = (List.length spills) <> 0
             in
               ans @ [{ins=instrs, alloc=alloc, spill=didSpill}]
@@ -225,7 +231,7 @@ struct
                 F.regToString (Option.valOf(Temp.Map.find(alloc, temp)))
               val format = A.format(pickRegister)
             in
-              List.app (fn x => TextIO.output(TextIO.stdOut, format x)) ins
+              List.app (fn x => TextIO.output(outStream, format x)) ins
             end
           val _ = List.app printCode colorings
           val err = ErrorMsg.anyErrors
