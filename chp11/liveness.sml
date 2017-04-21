@@ -7,7 +7,7 @@ sig
     IGRAPH of {graph: T.temp FG.graph,
                tnode: T.temp -> T.temp FG.node,
                gtemp: T.temp FG.node -> T.temp,
-               moves: (T.temp FG.node * T.temp FG.node) list }
+               moves: (T.temp FG.node * T.temp FG.node) list}
   val interferenceGraph: Flow.flowgraph -> igraph * (Assem.instr list Flow.FG.node -> T.Set.set)
   val show: TextIO.outstream * igraph -> unit
 end =

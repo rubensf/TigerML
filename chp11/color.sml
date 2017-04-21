@@ -7,8 +7,7 @@ sig
     igraph: Liveness.igraph,
     initial: allocation,
     spillCost: Temp.temp FG.node -> int,
-    registers: F.register list,
-    moves: (Temp.temp FG.node * Temp.temp FG.node) list
+    registers: F.register list
   } -> allocation * Temp.temp list
 end
 
@@ -18,29 +17,40 @@ struct
   structure T = Temp
   structure FG = Liveness.FG
   type allocation = F.register Temp.Map.map
-  fun color {igraph, initial, spillCost, registers, moves} =
+  fun color {igraph, initial, spillCost, registers} =
     let
-      val (graph, tnode, gtemp, _) = case igraph of Liveness.IGRAPH{graph=g, tnode=t, gtemp=gt, moves=m} => (g, t, gt, m)
-      fun precolored n = (case Temp.Map.find(initial, FG.nodeInfo n) of
-                SOME(r) => true
-              | _       => false)
+      val (graph, tnode, _, _) =
+        case igraph of
+          Liveness.IGRAPH{graph=g, tnode=t, gtemp=gt, moves=m} => (g, t, gt, m)
+
+      fun isPrecolored n =
+        case Temp.Map.find (initial, FG.nodeInfo n) of
+          SOME(r) => true
+        | _       => false
 
       fun simplify(graph) =
         let
           fun removeNodes(g, stack) =
             let
-              fun processNode(n, stack) = (case FG.degree(n) < 22 of
-                                true  => n::stack
-                              | false => stack)
-              val stack' = foldl processNode stack (List.filter (fn n => not (precolored n)) (FG.nodes g))
-              fun removeNode(n, graph) = FG.removeNode'(graph, FG.getNodeID n)
+              fun canRemoveNode(n, stack) =
+                if FG.degree(n) < (List.length F.callerRegs)
+                then n::stack
+                else stack
+
+              val stack' = foldl canRemoveNode
+                                 stack
+                                 (List.filter
+                                    (fn n => not (isPrecolored n))
+                                    (FG.nodes g))
+
+              fun removeNode(n, g') = FG.removeNode'(g', FG.getNodeID n)
               val g' = foldl removeNode g stack'
-              val ret = (case (List.length stack = List.length stack') of
-                                true  => (g, stack)
-                              | false => removeNodes(g', stack'))
             in
-              ret
+              if List.length stack = List.length stack'
+              then (g, stack)
+              else removeNodes(g', stack')
             end
+
           val (graph', stack') = removeNodes(graph, [])
         in
           stack'
@@ -51,49 +61,36 @@ struct
           val nodes = FG.nodes graph
           val stackIDs = map FG.getNodeID stack
           val spilledIDs = map FG.getNodeID alreadySpilled
+
           fun onStack node =
-            let
-              val nodeID = FG.getNodeID node
-              val opt = List.find (fn x => x = nodeID) stackIDs
-              val ret = (case opt of
-                                SOME x => true
-                              | NONE   => false)
-            in
-              ret
-            end
+            Option.isSome (List.find (fn x => x = (FG.getNodeID node)) stackIDs)
+
           fun onSpilled node =
-            let
-              val nodeID = FG.getNodeID node
-              val opt = List.find(fn x => x = nodeID) spilledIDs
-              val ret = (case opt of
-                                SOME x => true
-                              | NONE   => false)
-            in
-              ret
-            end
-          val spillChoices = List.filter (fn node => not (precolored node) andalso (not (onStack node)) andalso (not (onSpilled node))) nodes
-          val firstNode = case List.length spillChoices of
-              0 => NONE
-            | _ => SOME (List.nth(spillChoices, 0))
+            Option.isSome (List.find (fn x => x = (FG.getNodeID node)) spilledIDs)
         in
-          firstNode
+          List.find
+            (fn node => (not (isPrecolored node)) andalso
+                        (not (onStack node))      andalso
+                        (not (onSpilled node)))
+            nodes
         end
 
       fun simplifySpill(stack, graph, alreadySpilled) =
         let
           val stack' = stack @ simplify(graph)
           val nodeToSpill = needToSpill(stack, alreadySpilled)
-          val shouldSpill = Option.isSome nodeToSpill
-          val graph' = (case shouldSpill of
-                        true  => FG.removeNode(graph, FG.getNodeID (Option.valOf nodeToSpill))
-                      | false => graph)
-          val ret = (case shouldSpill of
-                        true  => simplifySpill(stack', graph', (Option.valOf nodeToSpill)::alreadySpilled)
-                      | false => (stack', alreadySpilled))
+
+          val graph' = if Option.isSome nodeToSpill
+                       then FG.removeNode(graph, FG.getNodeID (Option.valOf nodeToSpill))
+                       else graph
         in
-          ret
+          if Option.isSome nodeToSpill
+          then simplifySpill(stack', graph', (Option.valOf nodeToSpill)::alreadySpilled)
+          else (stack', alreadySpilled)
         end
+
       val (stack, spills) = simplifySpill([], graph, [])
+
       fun allocate(map, stack) =
         let
           val actualSpills = ref []
@@ -126,6 +123,7 @@ struct
         in
           (foldl pushColorToMap map nonPrecolored, !actualSpills)
         end
+
       val (alloc, _) = allocate(initial, stack)
       val (alloc', actualSpills) = allocate(alloc, spills)
       val spills' = map FG.nodeInfo actualSpills
