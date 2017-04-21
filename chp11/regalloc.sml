@@ -12,11 +12,11 @@ struct
   structure C = Color(Frame)
   type allocation = Frame.register T.Map.map
 
-  fun alloc (instrs, frame) = 
+  fun alloc (instrs, frame:Frame.frame) = 
     let
       val flowgraph = MakeGraph.instrs2graph instrs
       val (igraph, liveOutMap) = Liveness.interferenceGraph flowgraph
-      val (allocation, spills) = C.color {igraph=igraph, initial=Frame.tempMap, spillCost=(fn x => 1), registers=Frame.registers}
+      val (allocation, spills) = C.color {igraph=igraph, initial=C.F.tempMap, spillCost=(fn x => 1), registers=C.F.registers}
     in
       (instrs, allocation)
     end
