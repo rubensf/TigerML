@@ -1,23 +1,22 @@
 signature REGALLOC = 
 sig
-  structure Frame : FRAME
+  structure F : FRAME
   structure C : COLOR
   type allocation = C.allocation
-  val alloc : Assem.instr list * Frame.frame -> Assem.instr list * allocation
+  val alloc : Assem.instr list * F.frame -> Assem.instr list * allocation
 end
 
-structure RegAlloc :> REGALLOC = 
+functor RegAlloc(F: FRAME) :> REGALLOC = 
 struct
-  structure Frame = MipsFrame
-  structure T = Temp 
-  structure C = Color(Frame)
+  structure F = F
+  structure C = Color(F)
   type allocation = C.allocation
 
-  fun alloc (instrs, frame:Frame.frame) = 
+  fun alloc (instrs, frame) =
     let
       val flowgraph = MakeGraph.instrs2graph instrs
       val (igraph, liveOutMap) = Liveness.interferenceGraph flowgraph
-      val (allocation, spills) = C.color {igraph=igraph, initial=C.F.tempMap, spillCost=(fn x => 1), registers=C.F.registers}
+      val (allocation, spills) = C.color {igraph=igraph, initial=C.emptyAlloc, spillCost=(fn x => 1), registers=C.F.registers}
     in
       (instrs, allocation)
     end

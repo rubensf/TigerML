@@ -2,7 +2,10 @@ signature COLOR =
 sig
   structure F : FRAME
   structure FG : FUNCGRAPH
-  type allocation = F.register Temp.Map.map
+  type allocation
+
+  val emptyAlloc : allocation
+
   val color: {
     igraph: Liveness.igraph,
     initial: allocation,
@@ -11,12 +14,18 @@ sig
   } -> allocation * Temp.temp list
 end
 
-functor Color(F: FRAME) :> COLOR =
+functor Color(F: FRAME) : COLOR
+where
+  type allocation = F.register Temp.Map.map
+=
 struct
   structure F = F
   structure T = Temp
   structure FG = Liveness.FG
   type allocation = F.register Temp.Map.map
+
+  val emptyAlloc = Temp.Map.empty
+
   fun color {igraph, initial, spillCost, registers} =
     let
       val (graph, tnode, _, _) =

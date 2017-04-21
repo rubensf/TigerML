@@ -94,6 +94,8 @@ struct
     (T9, "$t9")
   ]
 
+  fun regToString r = r
+
   val tempMap =
     let
       fun map_add ((t,s), map) = Temp.Map.insert(map, t, s);
@@ -101,9 +103,10 @@ struct
       foldr map_add Temp.Map.empty (specialRegs @ argsRegs @ callerRegs @ calleeRegs)
     end
 
-  fun makestring (t:Temp.temp) = case Temp.Map.find(tempMap, t) of
-    SOME(s) => s
-  | NONE    => Temp.makestring t
+  fun makestring (t:Temp.temp) =
+    case Temp.Map.find(tempMap, t) of
+      SOME(s) => s
+    | NONE    => Temp.makestring t
   fun name (f: frame)       = #1 f
   fun formals (f: frame)    = #2 f
 

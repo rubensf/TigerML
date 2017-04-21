@@ -206,6 +206,9 @@ struct
         end
       fun regalloc instrflowigraphframelist = 
         let
+          val _ = if verbose >= 1
+                  then print "Coloring registers.\n"
+                  else ()
           fun f ((instrs, flow, igraph, gettemps, frame), ans) = 
             let
               val (alloc, spills) = CO.color {igraph=igraph, initial=CO.F.tempMap, spillCost=(fn x => 1), registers=CO.F.registers}
@@ -218,8 +221,9 @@ struct
           fun printCode {ins, alloc, spill} = 
             let
               (* should check for spill here *)
-              fun getRegister temp = Option.valOf(Temp.Map.find(alloc, temp))
-              val format = A.format(getRegister)
+              fun pickRegister temp = 
+                F.regToString (Option.valOf(Temp.Map.find(alloc, temp)))
+              val format = A.format(pickRegister)
             in
               List.app (fn x => TextIO.output(TextIO.stdOut, format x)) ins
             end
