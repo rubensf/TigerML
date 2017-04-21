@@ -94,6 +94,7 @@ struct
       fun allocate(map, stack) =
         let
           val actualSpills = ref []
+
           fun assignColor(node, allocation) =
             let
               fun availableColor(unavailable, color::rest) =
@@ -101,11 +102,12 @@ struct
                    SOME c => availableColor(unavailable, rest)
                  | NONE   => SOME color)
                 | availableColor(unavailable, []) = NONE
-              fun createUnavailable node =
+
+              val unavailableNodes =
                 List.mapPartial (fn x => Temp.Map.find(allocation, x))
                                 (FG.succs node)
             in
-              availableColor(createUnavailable node, registers)
+              availableColor(unavailableNodes, registers)
             end
 
           fun pushColorToMap(node, allocation) =
