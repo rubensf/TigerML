@@ -12,7 +12,7 @@ sig
   val getOffset  : frame -> int
   val formals    : frame -> access list
   val allocLocal : frame -> bool -> access
-
+  val registers : register list
   val resetFrame : frame -> unit
 
   val wordSize : int

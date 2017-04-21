@@ -20,6 +20,7 @@ mipsgen.sml
 parsetest.sml
 printtree.sml
 prabsyn.sml
+regalloc.sml
 semant.sml
 symbol.sml
 table.sig

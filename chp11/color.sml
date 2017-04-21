@@ -7,8 +7,8 @@ sig
     igraph: Liveness.igraph,
     initial: allocation,
     spillCost: Temp.temp FG.node -> int,
-    registers: F.register list,
-    moves: (Temp.temp FG.node * Temp.temp FG.node) list
+    registers: F.register list
+    (*moves: (Temp.temp FG.node * Temp.temp FG.node) list*)
   } -> allocation * Temp.temp list
 end
 
@@ -18,7 +18,7 @@ struct
   structure T = Temp
   structure FG = Liveness.FG
   type allocation = F.register Temp.Map.map
-  fun color {igraph, initial, spillCost, registers, moves} =
+  fun color {igraph, initial, spillCost, registers (*moves*)} =
     let
       val (graph, tnode, gtemp, _) = case igraph of Liveness.IGRAPH{graph=g, tnode=t, gtemp=gt, moves=m} => (g, t, gt, m)
       fun precolored n = (case Temp.Map.find(initial, FG.nodeInfo n) of
