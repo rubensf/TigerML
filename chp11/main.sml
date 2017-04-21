@@ -9,6 +9,7 @@ struct
   structure C = Canon
   structure A = Assem
   structure F = MipsFrame
+  structure CO = Color(F)
 
   fun compileverb file verbose =
     let
@@ -203,6 +204,30 @@ struct
                 else ();
                 (instrflowigraphframelist, !err))
         end
+      fun regalloc instrflowigraphframelist = 
+        let
+          fun f ((instrs, flow, igraph, gettemps, frame), ans) = 
+            let
+              val (alloc, spills) = CO.color {igraph=igraph, initial=CO.F.tempMap, spillCost=(fn x => 1), registers=CO.F.registers}
+              val didSpill = (List.length spills) <> 0
+            in
+              ans @ [{ins=instrs, alloc=alloc, spill=didSpill}]
+            end
+          val colorings = foldl f [] instrflowigraphframelist 
+          val _ = print "==========Printing Finalized Assembly==========\n"
+          fun printCode {ins, alloc, spill} = 
+            let
+              (* should check for spill here *)
+              fun getRegister temp = Option.valOf(Temp.Map.find(alloc, temp))
+              val format = A.format(getRegister)
+            in
+              List.app (fn x => TextIO.output(TextIO.stdOut, format x)) ins
+            end
+          val _ = List.app printCode colorings
+          val err = ErrorMsg.anyErrors
+        in
+          (colorings,!err)
+        end
     in
       case (parsefile file) of
         (abst, true) => false
@@ -224,7 +249,10 @@ struct
       | (instrflowframelist, false) =>
       case (liveness instrflowframelist) of
         (instrflowigraphframelist, true) => false
-      | (instrflowigraphframelist, false) => true
+      | (instrflowigraphframelist, false) => 
+      case (regalloc instrflowigraphframelist) of
+        (allocation, true)  => false
+      | (allocation, false) => true
     end
 
   fun compile file = compileverb file 0
