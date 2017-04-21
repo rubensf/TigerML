@@ -12,7 +12,6 @@ sig
   val getOffset  : frame -> int
   val formals    : frame -> access list
   val allocLocal : frame -> bool -> access
-  val registers : register list
   val resetFrame : frame -> unit
 
   val wordSize : int
@@ -35,7 +34,9 @@ sig
   val calleeRegs  : (Temp.temp * register) list
   val callerRegs  : (Temp.temp * register) list
 
-  val regToString : register -> string
+  val allRegisters   : register list
+  val colorRegisters : register list
+  val regToString    : register -> string
 
   (* Auxiliar, arch dependent functions *)
   val expFn        : access -> Tree.exp -> Tree.exp (* Get's the specific access function. *)
