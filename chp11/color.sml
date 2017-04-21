@@ -118,7 +118,7 @@ struct
                 List.mapPartial (fn x => Temp.Map.find(allocation, x))
                                 (FG.succs node)
             in
-              availableColor(unavailableNodes, registers)
+              availableColor(unavailableNodes, List.rev registers)
             end
 
           fun pushColorToMap(node, allocation) =
