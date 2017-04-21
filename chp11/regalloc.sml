@@ -1,7 +1,8 @@
 signature REGALLOC = 
 sig
   structure Frame : FRAME
-  type allocation = Frame.register Temp.Map.map
+  structure C : COLOR
+  type allocation = C.allocation
   val alloc : Assem.instr list * Frame.frame -> Assem.instr list * allocation
 end
 
@@ -10,7 +11,7 @@ struct
   structure Frame = MipsFrame
   structure T = Temp 
   structure C = Color(Frame)
-  type allocation = Frame.register T.Map.map
+  type allocation = C.allocation
 
   fun alloc (instrs, frame:Frame.frame) = 
     let
