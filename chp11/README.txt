@@ -3,7 +3,7 @@ Paul Cruz
 Rubens Farias 
 Mike Ma
 
-ECE553 Liveness Analysis Submission
+ECE553 Register Allocation Submission
 
 
 Compilation: Compile the project by writing the following commands in the SML window
@@ -24,9 +24,7 @@ Note that good_tests.sml and tests.sml rely on our directories to work properly,
 
 
 
-During this phase, we wrote most of the code in three significant files: flowgraph.sml, makegraph.sml, and liveness.sml. It should be noted that instead of using Appel's provided graph.sml module, we instead used Professor Hilton's funcgraph.sml. The first two modules we wrote (makegraph.sml and flowgraph.sml) are responsible for generating the control flow graph. This was done using basic blocks rather than creating a node for each instruction. The idea behind this implementation was that fact that canon.sml formats the insturctions nicely. Generally speaking, the assembly instructions should repeat the pattern label instruction, several operations, and then jump instruction (the only places where this is not the case are where an operation is listed, and the next assembly portion is a label, in which case we insert an artificial jump to the next label, which is equivalent). Since the instructions that occur between a label and a jump instruction must occur one after the other, these are all 1 predecessor/1 successor nodes that can be combined. Therefore we combine them into one node, and calculate the defs/uses for that node. Once defs/uses are calculated for each of the nodes, the result is passed to liveness.sml to generate the interference graph.
+The above compilations will provide you with the printing of the interference graph, as well as printing out MIPS assembly with registers allocated (we note that we are still missing the prologue and epilogue because we have yet to implement the procEntryExit functions). 
 
-When calculating intereference, the liveness module first computes live-in and live-out sets for each node in the control flow graph using equations from the book (the iteration method). Once live-in and live-out sets have been computed for each node, we can perform liveness at the instruction level within each block by using live-out for that block and working backwards. For each instruction, interference edges are added to the interference graph. This is done for each node in the control flow graph, thus giving us the produced interference graph. 
-
-We also wrote the show function in the liveness module, we prints out the interference graph. This is done by simply looking at each node in the interference graph (which represents a temp or special register), and then printing out the corresponding adjacent nodes. We did not create move edges for coalescing in this phase of the project.
+During this phase, worked on two main modules: Color and RegAlloc. The Color module takes in instructions and returns an allocation of registers to temps, as well as a list of temps that could not be colored. Spilling/Coalescing were mentioned to be extra credit, therefore we do not handle these cases at the moment. The RegAlloc module uses Color as a submodule, and applies an allocation to a list of instructions after using other modules in order to create the interference graph. However, this module was not used in Main.compile or Main.compileverb because spilling was not implemented, the interference graph is already computed in main.sml, and using RegAlloc to recompute the interference graph would have been redundant. 
 
