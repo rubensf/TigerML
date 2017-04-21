@@ -63,10 +63,12 @@ struct
           val spilledIDs = map FG.getNodeID alreadySpilled
 
           fun onStack node =
-            Option.isSome (List.find (fn x => x = (FG.getNodeID node)) stackIDs)
+            Option.isSome
+              (List.find (fn x => x = (FG.getNodeID node)) stackIDs)
 
           fun onSpilled node =
-            Option.isSome (List.find (fn x => x = (FG.getNodeID node)) spilledIDs)
+            Option.isSome
+              (List.find (fn x => x = (FG.getNodeID node)) spilledIDs)
         in
           List.find
             (fn node => (not (isPrecolored node)) andalso
