@@ -143,7 +143,27 @@ struct
   fun externCallFn (s, args) =
     CALL (NAME (Temp.namedlabel s), args)
 
-  fun procEntryExit (frame, treeExp) = treeExp (* TODO *)
+  fun procEntryExit (frame, treeExp) = 
+    let
+      val argTemps = getRegTemps argsRegs
+      fun exp (access, addr) = expFn access addr
+      fun moveArgs([], seq, offset) = seq
+        | moveArgs(a::access, seq, offset) =
+            if offset < 4
+            then Tree.MOVE(exp(a, Tree.TEMP fp), Tree.TEMP (List.nth(argTemps, offset)))::moveArgs(access, seq, offset + 1)
+            else 
+              let
+                val temp = Temp.newtemp()
+              in
+                case a of 
+                     InFrame off => moveArgs(access, seq, offset + 1)
+                   | InReg te => 
+                       Tree.MOVE(exp(a, Tree.TEMP fp), Tree.TEMP te)::moveArgs(access, seq, offset + 1)
+              end
+      val moveArgStms = moveArgs(formals frame, [], 0)
+    in
+      seq (moveArgStms @ [treeExp])
+    end
 
   fun procEntryExit2 (frame, body) =
     body @ [Assem.OPER {assem="jr      `s0\n",
