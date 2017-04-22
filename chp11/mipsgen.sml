@@ -35,11 +35,11 @@ struct
 
       fun munchError() =
             emit(A.OPER {assem="addi    `d0, `s0, 10\nsyscall\n",
-                         src=[F.r0],
-                         dst=[F.rv], jump=NONE}) (* TODO Print error message*)
+                         src=[F.getRegTemp "$r0"],
+                         dst=[F.getRegTemp "$rv"], jump=NONE}) (* TODO Print error message*)
       and munchExp(T.CONST i) =
             result(fn r => emit(A.OPER {assem="addi    `d0, `s0, " ^ (i2s i) ^ "\n",
-                                        src=[F.r0],
+                                        src=[F.getRegTemp "$r0"],
                                         dst=[r], jump=NONE}))
         | munchExp (T.BINOP(T.PLUS, T.CONST i1, T.CONST i2)) =
             munchExp (T.CONST (Word.toIntX (Word.+(Word.fromInt i1, Word.fromInt i2))))
@@ -175,9 +175,9 @@ struct
             (emit(A.OPER {
                   assem="jal     " ^ (Temp.labelToString n) ^ "\n",
                   src=munchArgs(0, args, 16),
-                  dst=F.ra::F.rv::(F.getRegTemps F.calleeRegs),
+                  dst=(F.getRegTemp "$ra")::(F.getRegTemp "$rv")::(List.map F.getRegTemp F.calleeRegs),
                   jump=NONE});
-             F.rv)
+             (F.getRegTemp "$rv"))
         | munchExp (T.CALL(_, _)) = (err 0 "Please supply NAME to T.CALL."; Temp.newtemp())
       and munchStm (T.SEQ(e1, e2)) = (munchStm e1; munchStm e2)
         | munchStm (T.EXP(e)) = (munchExp e; ())
@@ -203,7 +203,7 @@ struct
                          dst=[], jump=NONE})
         | munchStm (T.MOVE(T.TEMP t, T.CONST i)) =
             emit(A.OPER {assem="addi    `d0, `s0, " ^ i2s i ^ "\n",
-                         src=[F.r0],
+                         src=[F.getRegTemp "$r0"],
                          dst=[t], jump=NONE})
         | munchStm (T.MOVE(T.TEMP t, e)) =
             emit(A.MOVE {assem="move    `d0, `s0\n",
@@ -283,13 +283,13 @@ struct
             if i < 4
             then
               let
-                val temp = List.nth(F.getRegTemps F.argsRegs, i)
+                val temp = List.nth(List.map F.getRegTemp F.argsRegs, i)
               in
                 munchStm(T.MOVE(T.TEMP temp, arg));
                 temp::munchArgs(i + 1, l, offset)
               end
             else
-                (munchStm(T.MOVE(T.MEM(T.BINOP(T.PLUS, T.TEMP F.sp, T.CONST offset)), arg));
+                (munchStm(T.MOVE(T.MEM(T.BINOP(T.PLUS, T.TEMP (F.getRegTemp "$sp"), T.CONST offset)), arg));
                  munchArgs(i + 1, l, offset + 4))
     in
       munchStm stm;

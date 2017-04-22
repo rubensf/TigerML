@@ -114,14 +114,15 @@ struct
                     let
                       val usedTemp = (T.Set.exists (fn x => x = liveOutTemp) useSet)
                       val shouldAdd = (not isMove) orelse (isMove andalso (not usedTemp))
-                      val temps = map FG.nodeInfo (FG.nodes ans)
+
+                      val ans' = newNode (liveOutTemp, ans)
                     in
                       if shouldAdd
-                      then FG.doubleEdge(ans, def, liveOutTemp)
+                      then FG.doubleEdge(ans', def, liveOutTemp)
                       else ans
                     end
                 in
-                  T.Set.foldl handleLiveOutTemps ans live
+                  T.Set.foldr handleLiveOutTemps ans live
                 end
 
               val g = T.Set.foldl handleDefs g'' defSet

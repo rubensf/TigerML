@@ -1,39 +1,44 @@
 signature COLOR =
 sig
-  structure F : FRAME
-  structure FG : FUNCGRAPH
   type allocation
+  type registerlist
+  type node
 
   val emptyAlloc : allocation
 
   val color: {
     igraph: Liveness.igraph,
     initial: allocation,
-    spillCost: Temp.temp FG.node -> int,
-    registers: F.register list
+    spillCost: node -> int,
+    registers: registerlist
   } -> allocation * Temp.temp list
 end
 
-functor Color(F: FRAME) : COLOR
+functor Color(F: FRAME) :> COLOR
 where
-  type allocation = F.register Temp.Map.map
+  type allocation = F.register Temp.Map.map and
+  type registerlist = F.register list and
+  type node = Temp.temp Liveness.FG.node
 =
 struct
   structure F = F
   structure T = Temp
   structure FG = Liveness.FG
+
   type allocation = F.register Temp.Map.map
+  type registerlist = F.register list
+  type node = Temp.temp Liveness.FG.node
 
   val emptyAlloc = Temp.Map.empty
 
   fun color {igraph, initial, spillCost, registers} =
     let
-      val (graph, tnode, _, _) =
+      val (graph, tnode, gnode, moves) =
         case igraph of
           Liveness.IGRAPH{graph=g, tnode=t, gtemp=gt, moves=m} => (g, t, gt, m)
 
       fun isPrecolored n =
-        case Temp.Map.find (initial, FG.nodeInfo n) of
+        case F.getTempReg (FG.nodeInfo n) of
           SOME(r) => true
         | _       => false
 
@@ -118,7 +123,7 @@ struct
                 List.mapPartial (fn x => Temp.Map.find(allocation, x))
                                 (FG.succs node)
             in
-              availableColor(unavailableNodes, List.rev registers)
+              availableColor(unavailableNodes, registers)
             end
 
           fun pushColorToMap(node, allocation) =
@@ -137,7 +142,13 @@ struct
           (foldl pushColorToMap map nonPrecolored, !actualSpills)
         end
 
-      val (alloc, _) = allocate(initial, stack)
+      val initial' = if (Temp.Map.numItems initial) = 0
+                     then List.foldl
+                            (fn (x, m) =>
+                               (Temp.Map.insert (m, (F.getRegTemp x), x)))
+                          initial F.allRegisters
+                     else initial
+      val (alloc, _) = allocate(initial', stack)
       val (alloc', actualSpills) = allocate(alloc, spills)
       val spills' = map FG.nodeInfo actualSpills
     in

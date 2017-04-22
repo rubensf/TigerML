@@ -1,15 +1,15 @@
-structure Main =
+structure Main=
 struct
   structure CG = MipsGen
   structure MG = MakeGraph
   structure FG = Flow.FG
   structure TempSet = Flow.TempSet
-  structure R = Translate (MipsFrame)
+  structure F = MipsFrame
+  structure R = Translate (F)
   structure S = Semant (R)
+  structure CO = Color(F)
   structure C = Canon
   structure A = Assem
-  structure F = MipsFrame
-  structure CO = Color(F)
 
   val outStream = TextIO.stdOut
 
@@ -91,7 +91,7 @@ struct
                        ([], !err))
           else (if verbose >= 2
                 then (print "==========Printing IR==========\n";
-                      List.app (fn (frags'', _) => 
+                      List.app (fn (frags'', _) =>
                                   List.app (fn y =>
                                               Printtree.printtree(outStream, y))
                                            frags'')
@@ -105,11 +105,14 @@ struct
           val _ = if verbose >= 1
                   then print "Generating assembly.\n"
                   else ()
-          val instrs = List.foldl (fn ((frags, frame), ans) =>
-                                     ans@[(F.procEntryExit2(frame,
-                                                          List.concat (map (CG.codegen frame) frags)),
-                                           frame)])
-                                  [] fragsframelist
+          val instrs =
+            List.foldl (fn ((frags, frame), ans) =>
+                          ans@[(F.procEntryExit2(frame,
+                                                 List.concat
+                                                   (map (CG.codegen frame)
+                                                   frags)),
+                                frame)])
+                       [] fragsframelist
           val format = A.format (F.makestring) (* For printing below. *)
           val err = ErrorMsg.anyErrors
         in
@@ -119,8 +122,10 @@ struct
                 ([], !err))
           else (if verbose >= 2
                 then (print "==========Printing Pre-Register Allocation Assembly==========\n";
-                      List.app (fn (instrs', _) => List.app (fn y => TextIO.output(outStream, format y))
-                                                            instrs')
+                      List.app (fn (instrs', _) =>
+                                  List.app
+                                    (fn y => TextIO.output(outStream, format y))
+                                    instrs')
                                instrs)
                 else ();
                 (instrs, !err))
@@ -209,36 +214,49 @@ struct
                 else ();
                 (instrflowigraphframelist, !err))
         end
-      fun regalloc instrflowigraphframelist = 
+
+      fun regalloc instrflowigraphframelist =
         let
           val _ = if verbose >= 1
                   then print "Coloring registers.\n"
                   else ()
-          fun f ((instrs, flow, igraph, gettemps, frame), ans) = 
+          fun f ((instrs, flow, igraph, gettemps, frame), ans) =
             let
-              val (alloc, spills) = CO.color {igraph=igraph,
-              initial=CO.F.tempMap, spillCost=(fn x => 1), registers=F.colorRegisters}
+              val (alloc, spills) =
+                CO.color {igraph=igraph,
+                          initial=CO.emptyAlloc,
+                          spillCost=(fn x => 1),
+                          registers=F.colorRegisters}
               val didSpill = (List.length spills) <> 0
             in
               ans @ [{ins=instrs, alloc=alloc, spill=didSpill}]
             end
-          val colorings = foldl f [] instrflowigraphframelist 
-          val _ = print "==========Printing Finalized Assembly==========\n"
-          fun printCode {ins, alloc, spill} = 
+          val colorings = foldl f [] instrflowigraphframelist
+          val err = ErrorMsg.anyErrors
+
+          fun printCode {ins, alloc, spill} =
             let
               (* should check for spill here *)
-              fun pickRegister temp = 
+              fun pickRegister temp =
                 F.regToString (Option.valOf(Temp.Map.find(alloc, temp)))
               val format = A.format(pickRegister)
             in
               List.app (fn x => TextIO.output(outStream, format x)) ins
             end
-          val _ = List.app printCode colorings
-          val err = ErrorMsg.anyErrors
         in
-          (colorings,!err)
+          if !ErrorMsg.anyErrors
+          then (print ("Errors with making coloring registers. " ^
+                       "Stopping compilation.\n");
+                ([], !err))
+          else (if verbose > 1
+                then (print "==========Printing Final Assembly==========\n";
+                      List.app printCode colorings)
+                else ();
+                (colorings, !err))
         end
     in
+      F.resetRegs();
+      Temp.reset();
       case (parsefile file) of
         (abst, true) => false
       | (abst, false) =>
@@ -259,7 +277,7 @@ struct
       | (instrflowframelist, false) =>
       case (liveness instrflowframelist) of
         (instrflowigraphframelist, true) => false
-      | (instrflowigraphframelist, false) => 
+      | (instrflowigraphframelist, false) =>
       case (regalloc instrflowigraphframelist) of
         (allocation, true)  => false
       | (allocation, false) => true

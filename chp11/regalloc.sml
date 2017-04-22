@@ -16,9 +16,7 @@ struct
     let
       val flowgraph = MakeGraph.instrs2graph instrs
       val (igraph, liveOutMap) = Liveness.interferenceGraph flowgraph
-      val (allocation, spills) = C.color {igraph=igraph, initial=C.emptyAlloc,
-      spillCost=(fn x => 1), registers=C.F.colorRegisters}
     in
-      (instrs, allocation)
+      (instrs, C.emptyAlloc)
     end
 end
