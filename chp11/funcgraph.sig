@@ -57,7 +57,6 @@ val removeEdge': 'a graph * 'a edge -> 'a graph
 (* update the data associated with a node (keeping the edges the same)
  * raises NoSuchNode if the node does not exist
  *)
-
 val changeNodeData: 'a graph * nodeID * 'a -> 'a graph
 
 

@@ -1,15 +1,13 @@
 structure Main=
 struct
-  structure CG = MipsGen
-  structure MG = MakeGraph
   structure FG = Flow.FG
-  structure TempSet = Flow.TempSet
+
   structure F = MipsFrame
+  structure CG = MipsGen
+
   structure R = Translate (F)
   structure S = Semant (R)
-  structure CO = Color(F)
-  structure C = Canon
-  structure A = Assem
+  structure C = Color (F)
 
   val outStream = TextIO.stdOut
 
@@ -79,7 +77,10 @@ struct
                   then print "Simplifying Intermediate Representation.\n"
                   else ()
           fun liner (F.PROC{body, frame}, ans) =
-                ans@[(C.traceSchedule(C.basicBlocks (C.linearize body)), frame)]
+                ans@[(Canon.traceSchedule
+                        (Canon.basicBlocks
+                           (Canon.linearize body)),
+                      frame)]
             | liner (F.STRING(lab, str), ans) =
                 ans
           val frags' = List.foldl liner [] frags
@@ -113,7 +114,7 @@ struct
                                                    frags)),
                                 frame)])
                        [] fragsframelist
-          val format = A.format (F.makestring) (* For printing below. *)
+          val format = Assem.format (F.makestring) (* For printing below. *)
           val err = ErrorMsg.anyErrors
         in
           if !ErrorMsg.anyErrors
@@ -139,10 +140,10 @@ struct
           val instrflowframelist =
             List.foldl (fn ((instrs, frame), ans) =>
                           ans@[(instrs,
-                                MG.instrs2graph(instrs),
+                                MakeGraph.instrs2graph(instrs),
                                 frame)])
                        [] instrframelist
-          val format = A.format (F.makestring) (* For printing below. *)
+          val format = Assem.format (F.makestring) (* For printing below. *)
           val err = ErrorMsg.anyErrors
         in
           if !ErrorMsg.anyErrors
@@ -169,12 +170,16 @@ struct
                                    print "Printing defs and uses::\n";
                                    List.app (fn x =>
       print ("Frame: " ^ (Temp.labelToString x) ^ "\n" ^
-             "Defs: " ^ (TempSet.foldl (fn (x, ans) => ans ^ (F.makestring x) ^
-             ", ") "" (Option.valOf(Flow.NodeMap.find(def, x)))) ^ "\n" ^
-             "Uses: " ^ (TempSet.foldl (fn (x, ans) => ans ^ (F.makestring x) ^
-             ", ") "" (Option.valOf(Flow.NodeMap.find(use, x)))) ^ "\n"))
-                                            (map FG.getNodeID (FG.nodes
-                                                 control))))
+             "Defs: " ^ (Flow.TempSet.foldl
+                           (fn (x, ans) =>
+                              ans ^ (F.makestring x) ^ ", ")
+                           "" (Option.valOf(Flow.NodeMap.find(def, x)))) ^ "\n" ^
+             "Uses: " ^ (Flow.TempSet.foldl
+                           (fn (x, ans) =>
+                              ans ^ (F.makestring x) ^ ", ")
+                           "" (Option.valOf(Flow.NodeMap.find(use, x)))) ^ "\n"))
+                                            (map FG.getNodeID
+                                                 (FG.nodes control))))
                                instrflowframelist)
                 else ();
                 (instrflowframelist, !err))
@@ -223,10 +228,10 @@ struct
           fun f ((instrs, flow, igraph, gettemps, frame), ans) =
             let
               val (alloc, spills) =
-                CO.color {igraph=igraph,
-                          initial=CO.emptyAlloc,
-                          spillCost=(fn x => 1),
-                          registers=F.colorRegisters}
+                C.color {igraph=igraph,
+                         initial=C.emptyAlloc,
+                         spillCost=(fn x => 1),
+                         registers=F.colorRegisters}
               val didSpill = (List.length spills) <> 0
             in
               ans @ [{ins=instrs, alloc=alloc, spill=didSpill}]
@@ -239,7 +244,7 @@ struct
               (* should check for spill here *)
               fun pickRegister temp =
                 F.regToString (Option.valOf(Temp.Map.find(alloc, temp)))
-              val format = A.format(pickRegister)
+              val format = Assem.format(pickRegister)
             in
               List.app (fn x => TextIO.output(outStream, format x)) ins
             end

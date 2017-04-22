@@ -30,6 +30,10 @@ struct
   type node = Temp.temp Liveness.FG.node
 
   val emptyAlloc = Temp.Map.empty
+  val precoloredNodes = List.foldl
+                          (fn (x, m) =>
+                             (Temp.Map.insert (m, (F.getRegTemp x), x)))
+                          Temp.Map.empty F.allRegisters
 
   fun color {igraph, initial, spillCost, registers} =
     let
@@ -97,11 +101,15 @@ struct
           val nodeToSpill = needToSpill(stack, alreadySpilled)
 
           val graph' = if Option.isSome nodeToSpill
-                       then FG.removeNode(graph, FG.getNodeID (Option.valOf nodeToSpill))
+                       then FG.removeNode
+                              (graph,
+                               FG.getNodeID (Option.valOf nodeToSpill))
                        else graph
         in
           if Option.isSome nodeToSpill
-          then simplifySpill(stack', graph', (Option.valOf nodeToSpill)::alreadySpilled)
+          then simplifySpill(stack',
+                             graph',
+                             (Option.valOf nodeToSpill)::alreadySpilled)
           else (stack', alreadySpilled)
         end
 
@@ -137,7 +145,11 @@ struct
               newAllocation
             end
 
-          val nonPrecolored = (List.filter (fn node => not (Option.isSome (Temp.Map.find(map, FG.nodeInfo node)))) stack)
+          val nonPrecolored =
+            (List.filter
+               (fn node =>
+                  not (Option.isSome (Temp.Map.find(map, FG.nodeInfo node))))
+             stack)
         in
           (foldl pushColorToMap map nonPrecolored, !actualSpills)
         end
@@ -146,7 +158,7 @@ struct
                      then List.foldl
                             (fn (x, m) =>
                                (Temp.Map.insert (m, (F.getRegTemp x), x)))
-                          initial F.allRegisters
+                            precoloredNodes F.allRegisters
                      else initial
       val (alloc, _) = allocate(initial', stack)
       val (alloc', actualSpills) = allocate(alloc, spills)
