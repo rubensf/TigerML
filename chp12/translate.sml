@@ -131,7 +131,7 @@ struct
 
   fun staticLinking (Level deflevel, Level curlevel) =
     if lvEqual (Level deflevel, Level curlevel)
-    then T.TEMP F.fp
+    then T.TEMP (F.getRegTemp F.fp)
     else T.MEM (T.BINOP (T.PLUS,
                          T.CONST (F.getOffset (#frame (#1 curlevel))),
                          staticLinking (Level deflevel, (#parent (#1 curlevel)))))
@@ -285,7 +285,9 @@ struct
       val link = staticLinking (parent, curlevel)
       val expCalls = map unEx exps
     in
-      Ex (T.ESEQ(T.MOVE ((T.TEMP F.rv), (T.CALL (T.NAME label, link::expCalls))), T.TEMP(F.rv)))
+      Ex (T.ESEQ(T.MOVE ((T.TEMP (F.getRegTemp F.rv)), 
+                         (T.CALL (T.NAME label, link::expCalls))), 
+                 T.TEMP(F.getRegTemp F.rv)))
     end
     | callExp _ = (error 0 "Top Level Exception"; Ex (T.CONST 0))
   fun packExps(exps, mainexp) = Ex (T.ESEQ ((seq (map unNx exps)), (unEx mainexp)))

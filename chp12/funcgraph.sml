@@ -5,12 +5,14 @@ type nodeID = Key.ord_key
 structure NodeSet = SplaySetFn(Key)
 structure NodeMap = SplayMapFn(Key)
 
-structure EdgeKey = struct type ord_key = {from:nodeID,to:nodeID}
+structure EdgeKey =
+          struct
+            type ord_key = {from:nodeID,to:nodeID}
             fun compare({from=f1,to=t1},{from=f2,to=t2}) =
-            case Key.compare(f1,f2) of
+              case Key.compare(f1,f2) of
                 EQUAL => Key.compare(t1,t2)
               | x => x
-            end
+          end
 structure EdgeSet = SplaySetFn(EdgeKey)
 
 type 'a node = (nodeID * 'a * NodeSet.set * NodeSet.set)
@@ -113,18 +115,30 @@ fun isAdjacent ((n1,_,s1,p1),(n2,_,s2,p2)) =
   NodeSet.member(NodeSet.union(s1,p1),n2) orelse
   NodeSet.member(NodeSet.union(s2,p2),n1)
 
+fun mergeNodes g (n1 as (id1,v1,s1,p1), n2 as (id2,_,s2,p2)) =
+  if not (isAdjacent (n1, n2))
+  then g
+  else let
+         val n = (id1,v1,NodeSet.union(s1,p1),NodeSet.union(s2,p2))
+         val g' = removeNode (g , id1)
+         val g' = removeNode (g', id2)
+         val g'' = addNode (g', id1, v1)
+       in
+         g''
+       end
+
 fun printGraph stringify g =
-    let 
+    let
       fun println x = print(x ^"\n")
       fun stringNid nid =
-          let 
+          let
             val (_,data,_,_) = getNode(g,nid)
           in
             "   "^ stringify(nid,data)
           end
       fun prSet s = NodeSet.app (println o stringNid) s
       fun prOneNode(nid,data,succs,preds) =
-          let 
+          let
             val s = stringify(nid,data)
             val () = println("Node: " ^ s)
             val () = println(" -> Successors:")

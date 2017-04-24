@@ -1,8 +1,8 @@
 signature FRAME =
 sig
+  eqtype register
   type access
   type frame
-  eqtype register
 
   datatype frag = PROC of {body: Tree.stm, frame: frame}
                 | STRING of Temp.label * string
@@ -16,27 +16,23 @@ sig
 
   val wordSize : int
 
-  (* Special registers *)
-  val r0        : Temp.temp
-  val at        : Temp.temp
-  val rv        : Temp.temp
-  val v1        : Temp.temp
-  val k0        : Temp.temp
-  val k1        : Temp.temp
-  val gp        : Temp.temp
-  val sp        : Temp.temp
-  val fp        : Temp.temp
-  val ra        : Temp.temp
+  val fp          : register
+  val rv          : register
+  val ra          : register
 
-  (* General registers *)
-  val specialRegs : (Temp.temp * register) list
-  val argsRegs    : (Temp.temp * register) list
-  val calleeRegs  : (Temp.temp * register) list
-  val callerRegs  : (Temp.temp * register) list
+  val specialRegs : register list
+  val argsRegs    : register list
+  val calleeRegs  : register list
+  val callerRegs  : register list
 
   val allRegisters   : register list
   val colorRegisters : register list
   val regToString    : register -> string
+  val getRegTemp     : register -> Temp.temp
+  val getTempReg     : Temp.temp -> register option
+
+  (* MUST be called after a Temp reset *)
+  val resetRegs      : unit -> unit
 
   (* Auxiliar, arch dependent functions *)
   val expFn        : access -> Tree.exp -> Tree.exp (* Get's the specific access function. *)
@@ -48,7 +44,5 @@ sig
      ones are "live" at the end of a function execution. *)
   val procEntryExit2 : frame * Assem.instr list -> Assem.instr list
 
-  val tempMap     : register Temp.Map.map
   val makestring  : Temp.temp -> string
-  val getRegTemps : (Temp.temp * register) list -> Temp.temp list
 end

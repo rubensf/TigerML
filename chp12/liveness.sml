@@ -5,8 +5,6 @@ sig
   structure T: TEMP
   datatype igraph =
     IGRAPH of {graph: T.temp FG.graph,
-               tnode: T.temp -> T.temp FG.node,
-               gtemp: T.temp FG.node -> T.temp,
                moves: (T.temp FG.node * T.temp FG.node) list}
   val interferenceGraph: Flow.flowgraph -> igraph * (Assem.instr list Flow.FG.node -> T.Set.set)
   val show: TextIO.outstream * igraph -> unit
@@ -20,13 +18,14 @@ struct
   structure T = Temp
   datatype igraph =
     IGRAPH of {graph: T.temp FG.graph,
-               tnode: T.temp -> T.temp FG.node,
-               gtemp: T.temp FG.node -> T.temp,
-               moves: (T.temp FG.node * T.temp FG.node) list }
+               moves: (T.temp FG.node * T.temp FG.node) list}
   (* Set of live variables *)
   type liveSet = T.Set.set
   (* Map from flow graph node to live temporaries at that node *)
   type liveMap = liveSet NodeMap.map
+
+  (* All the moves *)
+  val moves : (T.temp FG.node * T.temp FG.node) list ref = ref []
 
   fun computeLiveSets(Flow.FGRAPH{control, def, use}) =
     let
@@ -76,54 +75,63 @@ struct
       fun f (x, ans: T.temp FG.graph) =
         let
           val live = Option.valOf(NodeMap.find(liveOut, Flow.FG.getNodeID x))
-          val instrs:Assem.instr list = Flow.FG.nodeInfo x
+          val instrs = Flow.FG.nodeInfo x
           fun handleInstr(instr, {live, graph}) =
             let
-              val deflist = case instr of
+              val deflist =
+                case instr of
                   Assem.OPER{assem=_, src=_, dst=d, jump=_} => d
                 | Assem.LABEL l => []
                 | Assem.MOVE{assem=_, src=_, dst=d} => [d]
-              val uselist = case instr of
+              val uselist =
+                case instr of
                   Assem.OPER{assem=_, src=s, dst=_, jump=_} => s
                 | Assem.LABEL l => []
                 | Assem.MOVE{assem=_, src=s, dst=_} => [s]
-              val ismove = case instr of
-                  Assem.MOVE m => true
-                | _            => false
+              val isMove =
+                case instr of
+                  Assem.MOVE{assem=_, src=s, dst=d} => true
+                | _                                 => false
               val defSet = T.Set.addList(T.Set.empty, deflist)
               val useSet = T.Set.addList(T.Set.empty, uselist)
               val liveBefore = T.Set.union(useSet, T.Set.difference(live, defSet))
+
+              fun newNode (x, ans) =
+                if List.exists (fn y => x = y)
+                   (List.map FG.getNodeID (FG.nodes ans))
+                then ans
+                else FG.addNode(ans, x, x)
+
+              val g' = List.foldl newNode graph deflist
+              val g'' = List.foldl newNode g' uselist
               fun handleDefs (def, ans) =
                 let
-                  fun tempEqual(t1, t2) = case T.compare(t1, t2) of
-                    EQUAL => true
-                  | _     => false
                   fun handleLiveOutTemps(liveOutTemp, ans) =
                     let
-                      val usedTemp = (T.Set.exists (fn x => tempEqual(x, liveOutTemp)) useSet)
-                      val shouldAdd = (not ismove) orelse (ismove andalso (not usedTemp))
-                      val temps = map FG.nodeInfo (FG.nodes ans)
-                      fun addEdge(graph, t1, t2) =
-                        let
-                          val g' = case List.exists (fn x => tempEqual(x, t1)) temps of
-                            true => graph
-                          | false => FG.addNode(graph, t1, t1)
-                          val g'' = case List.exists (fn x => tempEqual(x, t2)) temps of
-                            true => g'
-                          | false => FG.addNode(g', t2, t2)
-                        in
-                          FG.doubleEdge(g'', t1, t2)
-                        end
-                      val result = case shouldAdd of
-                        false => ans
-                      | true  => addEdge(ans, def, liveOutTemp)
+                      val usedTemp = (T.Set.exists (fn x => x = liveOutTemp) useSet)
+                      val shouldAdd = (not isMove) orelse (isMove andalso (not usedTemp))
+
+                      val ans' = newNode (liveOutTemp, ans)
                     in
-                      result
+                      if shouldAdd
+                      then FG.doubleEdge(ans', def, liveOutTemp)
+                      else ans
                     end
                 in
-                  T.Set.foldl handleLiveOutTemps ans live
+                  T.Set.foldr handleLiveOutTemps ans live
                 end
-                val g = T.Set.foldl handleDefs graph defSet
+
+              val g = T.Set.foldl handleDefs g'' defSet
+              val _ =
+                case instr of
+                  Assem.MOVE{assem=_, src=s, dst=d} => 
+                    let
+                      val s' = FG.getNode(g, s)
+                      val d' = FG.getNode(g, d)
+                    in
+                      moves := (s', d')::(!moves)
+                    end
+                | _                                 => ()
             in
               {live=liveBefore, graph=g}
             end
@@ -135,28 +143,39 @@ struct
       foldl f FG.empty nodes
     end
 
-  fun show(outstream, IGRAPH {graph = graph, tnode = tnode, gtemp = gtemp, moves = moves}) =
+  fun show(outstream, IGRAPH {graph = graph, moves = moves}) =
     let
       val nodes = FG.nodes graph
       fun printNode node =
         let
-          val _ = TextIO.output(outstream, MipsFrame.makestring(gtemp node) ^  " => ")
+          val _ = TextIO.output(outstream, MipsFrame.makestring(FG.getNodeID node) ^  " => ")
           fun f n =
             case FG.isAdjacent(node, n) of
-              true => TextIO.output(outstream, MipsFrame.makestring(gtemp n) ^ ", ")
+              true => TextIO.output(outstream, MipsFrame.makestring(FG.getNodeID n) ^ ", ")
             | false => ()
           val _ = List.app f nodes
         in
           TextIO.output(outstream, "\n")
         end
-      val _ = TextIO.output(outstream, "=========================Adjacent Nodes=========================\n")
+      fun printMove (move: Temp.temp FG.node * Temp.temp FG.node) =
+        let
+          val v1 = FG.getNodeID (#1 move)
+          val v1' = Temp.makestring v1
+          val v2 = FG.getNodeID (#2 move)
+          val v2' = Temp.makestring v2
+        in
+          TextIO.output(outstream, v1' ^ "-" ^ v2' ^ "\n")
+        end
     in
-      (*FG.printGraph (fn (id,node)=>MipsFrame.makestring(id)) graph*)
-      List.app printNode nodes
+      TextIO.output(outstream, "==========Adjacent Nodes==========\n");
+      List.app printNode nodes;
+      TextIO.output(outstream, "==========Moves==========\n");
+      List.app printMove moves
     end
 
   fun interferenceGraph(f as Flow.FGRAPH{control, def, use}) =
     let
+      val _ = (moves := [])
       val liveSets = computeLiveSets(f)
       val liveIn = #inMap liveSets
       val liveOut = #outMap liveSets
@@ -165,9 +184,7 @@ struct
         case NodeMap.find(liveOut, Flow.FG.getNodeID node) of
           NONE => T.Set.empty (* should not happen *)
         | SOME set => set
-      fun tnode t = FG.getNode(ig, t)
-      fun gtemp n = FG.getNodeID(n)
-      val igrph = IGRAPH{graph=ig, tnode=tnode, gtemp=gtemp, moves=[]}
+      val igrph = IGRAPH{graph=ig, moves=(!moves)}
     in
       (igrph, mapping)
     end
