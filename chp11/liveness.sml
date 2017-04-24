@@ -5,8 +5,6 @@ sig
   structure T: TEMP
   datatype igraph =
     IGRAPH of {graph: T.temp FG.graph,
-               tnode: T.temp -> T.temp FG.node,
-               gtemp: T.temp FG.node -> T.temp,
                moves: (T.temp FG.node * T.temp FG.node) list}
   val interferenceGraph: Flow.flowgraph -> igraph * (Assem.instr list Flow.FG.node -> T.Set.set)
   val show: TextIO.outstream * igraph -> unit
@@ -20,8 +18,6 @@ struct
   structure T = Temp
   datatype igraph =
     IGRAPH of {graph: T.temp FG.graph,
-               tnode: T.temp -> T.temp FG.node,
-               gtemp: T.temp FG.node -> T.temp,
                moves: (T.temp FG.node * T.temp FG.node) list}
   (* Set of live variables *)
   type liveSet = T.Set.set
@@ -147,15 +143,15 @@ struct
       foldl f FG.empty nodes
     end
 
-  fun show(outstream, IGRAPH {graph = graph, tnode = tnode, gtemp = gtemp, moves = moves}) =
+  fun show(outstream, IGRAPH {graph = graph, moves = moves}) =
     let
       val nodes = FG.nodes graph
       fun printNode node =
         let
-          val _ = TextIO.output(outstream, MipsFrame.makestring(gtemp node) ^  " => ")
+          val _ = TextIO.output(outstream, MipsFrame.makestring(FG.getNodeID node) ^  " => ")
           fun f n =
             case FG.isAdjacent(node, n) of
-              true => TextIO.output(outstream, MipsFrame.makestring(gtemp n) ^ ", ")
+              true => TextIO.output(outstream, MipsFrame.makestring(FG.getNodeID n) ^ ", ")
             | false => ()
           val _ = List.app f nodes
         in
@@ -163,9 +159,9 @@ struct
         end
       fun printMove (move: Temp.temp FG.node * Temp.temp FG.node) =
         let
-          val v1 = gtemp (#1 move)
+          val v1 = FG.getNodeID (#1 move)
           val v1' = Temp.makestring v1
-          val v2 = gtemp (#2 move)
+          val v2 = FG.getNodeID (#2 move)
           val v2' = Temp.makestring v2
         in
           TextIO.output(outstream, v1' ^ "-" ^ v2' ^ "\n")
@@ -188,9 +184,7 @@ struct
         case NodeMap.find(liveOut, Flow.FG.getNodeID node) of
           NONE => T.Set.empty (* should not happen *)
         | SOME set => set
-      fun tnode t = FG.getNode(ig, t)
-      fun gtemp n = FG.getNodeID(n)
-      val igrph = IGRAPH{graph=ig, tnode=tnode, gtemp=gtemp, moves=(!moves)}
+      val igrph = IGRAPH{graph=ig, moves=(!moves)}
     in
       (igrph, mapping)
     end

@@ -9,6 +9,8 @@ struct
     exception NoLink
     fun new n = N {content=n, prev=ref NONE, next=ref NONE}
 
+    fun getValue (N {content,...}) = content
+
     fun getPrev (N {prev,...}) = (!prev)
     fun getNext (N {next,...}) = (!next)
 
@@ -40,6 +42,14 @@ struct
       | foldR f ans (N {content, prev=ref (SOME p),...}) =
           (foldR f (f (content, ans)) p)
 
+    fun searchL (n as N {content, next=ref NONE,...}) v =
+          if (v = content)
+          then SOME n
+          else NONE
+      | searchL (n as N {content, next=ref (SOME nx),...}) v =
+          if (v = content)
+          then SOME n
+          else searchL nx v
   end
 
   exception EmptyLinkedList
@@ -70,7 +80,7 @@ struct
     | peekFirst EMPTY = raise EmptyLinkedList
 
   fun popFirst (T {first,last}) =
-    if first = last
+    if (!first) = (!last)
     then EMPTY
     else (Node.clearPrev (Node.getNextV (!first));
           T {first=ref (Node.getNextV (!first)),
@@ -95,7 +105,7 @@ struct
     | peekLast EMPTY = raise EmptyLinkedList
 
   fun popLast (T {first, last}) =
-    if first = last
+    if (!first) = (!last)
     then EMPTY
     else (Node.clearNext (Node.getPrevV (!last));
           T {first=first,
@@ -115,6 +125,38 @@ struct
   fun foldr f init (T {last,...}) =
     Node.foldR f init (!last)
     | foldr f init EMPTY = init
+
+  fun has (T {first,...}) v =
+    (case (Node.searchL (!first) v) of
+       SOME r => true
+     | NONE   => false)
+    | has EMPTY v =
+      false
+
+  fun remove (T {first,last}) v =
+        if (!first) = (!last) andalso v = (Node.getValue (!first))
+        then EMPTY
+        else if v = (Node.getValue (!first))
+        then let val next = Node.getNextV (!first)
+             in Node.clearPrev (next);
+                T{first=ref next, last=last}
+             end
+        else if v = (Node.getValue (!last))
+        then let val prev = Node.getPrevV (!last)
+             in Node.clearNext (prev);
+                T{first=first, last=ref prev}
+             end
+        else (case (Node.searchL (!first) v) of
+                NONE   => T{first=first, last=last}
+              | SOME n => let
+                            val prevV = Node.getPrevV n
+                            val nextV = Node.getNextV n
+                          in
+                            Node.setNext (prevV, nextV);
+                            Node.setPrev (nextV, prevV);
+                            T{first=first, last=last}
+                          end)
+    | remove EMPTY v = EMPTY
 
   fun fromList l =
     List.foldl

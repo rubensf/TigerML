@@ -1,6 +1,6 @@
 signature FUNCGRAPH =
 sig
-type nodeID
+eqtype nodeID
 type 'a node
 type 'a edge = {from: nodeID, to: nodeID}
 type 'a graph
@@ -97,6 +97,10 @@ val foldPreds: ((nodeID * 'b) -> 'b) -> 'b -> 'a node -> 'b
 val foldPreds':'a graph -> (('a node * 'b) -> 'b) -> 'b -> 'a node -> 'b
 
 val isAdjacent: 'a node * 'a node -> bool
+
+(* Returns false if either node doesn't exist, or if they don't have
+ * an edge between them. *)
+val mergeNodes: 'a graph -> ('a node * 'a node) -> 'a graph
 
 (* debugging*)
 

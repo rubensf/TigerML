@@ -1,7 +1,5 @@
 structure Main=
 struct
-  structure FG = Flow.FG
-
   structure F = MipsFrame
   structure CG = MipsGen
 
@@ -153,34 +151,11 @@ struct
           else (if verbose = 2
                 then print "For printing the flow graph, please use verbose 3.\n"
                 else if verbose > 2
-                then (print "==========Printing Flow Graph==========\n";
-                      List.app (fn (_, Flow.FGRAPH {control, def, use}, _) =>
-                                  (print "Printing new frame::\n";
-                                   List.app (fn blockData =>
-                                               (print ("Printing new block::\n" ^
-                                                       (List.foldl
-                                                          (fn (ist, ans) =>
-                                                             ans ^ (format ist))
-                                                          "" blockData))))
-                                            (map FG.nodeInfo
-                                                (FG.nodes control));
-                                   FG.printGraph (fn (id, data) =>
-                                                    Temp.labelToString id)
-                                                 control;
-                                   print "Printing defs and uses::\n";
-                                   List.app (fn x =>
-      print ("Frame: " ^ (Temp.labelToString x) ^ "\n" ^
-             "Defs: " ^ (Flow.TempSet.foldl
-                           (fn (x, ans) =>
-                              ans ^ (F.makestring x) ^ ", ")
-                           "" (Option.valOf(Flow.NodeMap.find(def, x)))) ^ "\n" ^
-             "Uses: " ^ (Flow.TempSet.foldl
-                           (fn (x, ans) =>
-                              ans ^ (F.makestring x) ^ ", ")
-                           "" (Option.valOf(Flow.NodeMap.find(use, x)))) ^ "\n"))
-                                            (map FG.getNodeID
-                                                 (FG.nodes control))))
-                               instrflowframelist)
+                then (print "==========Printing Flow Graphs==========\n";
+                      List.app Flow.printFlow
+                               (map (fn (instr, flow, frame) =>
+                                       (flow, format, F.makestring))
+                                    instrflowframelist))
                 else ();
                 (instrflowframelist, !err))
         end
@@ -229,7 +204,6 @@ struct
             let
               val (alloc, spills) =
                 C.color {igraph=igraph,
-                         initial=C.emptyAlloc,
                          spillCost=(fn x => 1),
                          registers=F.colorRegisters}
               val didSpill = (List.length spills) <> 0
@@ -243,7 +217,9 @@ struct
             let
               (* should check for spill here *)
               fun pickRegister temp =
-                F.regToString (Option.valOf(Temp.Map.find(alloc, temp)))
+                case Temp.Map.find (alloc, temp) of
+                  SOME r => F.regToString r
+                | NONE   => F.makestring temp
               val format = Assem.format(pickRegister)
             in
               List.app (fn x => TextIO.output(outStream, format x)) ins

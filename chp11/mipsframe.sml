@@ -69,8 +69,10 @@ struct
                                   val compare = String.compare
                            end
   structure StringMap = SplayMapFn(StringKeyOrd)
+
   val regTempMap : Temp.temp StringMap.map ref = ref StringMap.empty
   val tempRegMap : register Temp.Map.map ref = ref Temp.Map.empty
+  val init = ref false
 
   fun resetRegs () =
     let
@@ -78,6 +80,7 @@ struct
         let
           val t = Temp.newtemp ()
         in
+          init := true;
           (StringMap.insert(regTemp, reg, t),
            Temp.Map.insert(tempReg, t, reg))
         end
@@ -90,7 +93,9 @@ struct
     end
 
   (* TODO: This mail fail >_> *)
-  fun getRegTemp reg = Option.valOf (StringMap.find (!regTempMap, reg))
+  fun getRegTemp reg = if (!init)
+                       then Option.valOf (StringMap.find (!regTempMap, reg))
+                       else (resetRegs(); Option.valOf (StringMap.find (!regTempMap, reg)))
   fun getTempReg temp = Temp.Map.find (!tempRegMap, temp)
 
   fun makestring t =

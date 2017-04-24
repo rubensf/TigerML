@@ -115,6 +115,18 @@ fun isAdjacent ((n1,_,s1,p1),(n2,_,s2,p2)) =
   NodeSet.member(NodeSet.union(s1,p1),n2) orelse
   NodeSet.member(NodeSet.union(s2,p2),n1)
 
+fun mergeNodes g (n1 as (id1,v1,s1,p1), n2 as (id2,_,s2,p2)) =
+  if not (isAdjacent (n1, n2))
+  then g
+  else let
+         val n = (id1,v1,NodeSet.union(s1,p1),NodeSet.union(s2,p2))
+         val g' = removeNode (g , id1)
+         val g' = removeNode (g', id2)
+         val g'' = addNode (g', id1, v1)
+       in
+         g''
+       end
+
 fun printGraph stringify g =
     let
       fun println x = print(x ^"\n")
