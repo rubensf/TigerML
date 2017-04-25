@@ -15,6 +15,7 @@ sig
   val parameters : frame -> access list
   val getOffset  : frame -> int
   val allocLocal : frame -> bool -> access
+  val newCall    : frame * int -> unit
   val resetFrame : frame -> unit
 
   (* Default common-place registers *)
@@ -41,13 +42,18 @@ sig
   val resetRegs : unit -> unit
 
   (* Auxiliar, arch dependent functions *)
-  val expFn        : access -> Tree.exp -> Tree.exp (* Get's the specific access function. *)
-  val externCallFn : string * Tree.exp list -> Tree.exp (* Calls an external function, such as C heap management. *)
+  (* Get's the specific access function. *)
+  val expFn        : access -> Tree.exp -> Tree.exp
+  (* Calls an external function, such as C heap management. *)
+  val externCallFn : string * Tree.exp list -> Tree.exp
 
   (* Function "decorators" - add prologue and epilogue standard mumbo jumbo *)
   val procEntryExit  : frame * Tree.stm -> Tree.stm
   (* Insert a final "instruction" to make sure that special registers and callee saved
      ones are "live" at the end of a function execution. *)
   val procEntryExit2 : frame * Assem.instr list -> Assem.instr list
-
+  (* Including prologue and epilogue of frames - ie moving around the $sp and
+   * house keeping of the sort. *)
+  val procEntryExit3 : frame * Assem.instr list ->
+      {prologue: string, body: Assem.instr list, epilogue: string}
 end

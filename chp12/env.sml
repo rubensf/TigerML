@@ -37,7 +37,7 @@ struct
   val base_label = Temp.newlabel ()
   val predef_funcs = [("print",     FunEntry {level=R.outermost, label=base_label, parameters=[T.STRING], result=T.UNIT}),
                       ("flush",     FunEntry {level=R.outermost, label=base_label, parameters=[], result=T.UNIT}),
-                      ("getchar",   FunEntry {level=R.outermost, label=base_label, parameters=[], result=T.STRING}),
+                      ("getchr",    FunEntry {level=R.outermost, label=base_label, parameters=[], result=T.STRING}),
                       ("ord",       FunEntry {level=R.outermost, label=base_label, parameters=[T.STRING], result=T.INT}),
                       ("chr",       FunEntry {level=R.outermost, label=base_label, parameters=[T.INT], result=T.STRING}),
                       ("size",      FunEntry {level=R.outermost, label=base_label, parameters=[T.STRING], result=T.INT}),

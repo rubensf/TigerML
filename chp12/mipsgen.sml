@@ -9,6 +9,7 @@ struct
   fun codegen frame stm =
     let
       val instrlist = ref (nil: A.instr list)
+      val frame = ref frame
 
       val err = ErrorMsg.error
 
@@ -37,7 +38,8 @@ struct
             emit(A.OPER {assem="addi    `d0, `s0, 10\nsyscall\n",
                          src=[F.getRegTemp "$r0"],
                          dst=[F.getRegTemp F.rv], jump=NONE}) (* TODO Print error message*)
-      and munchExp(T.CONST i) =
+      and munchExp(T.CONST 0) = F.getRegTemp "$r0"
+        | munchExp(T.CONST i) =
             result(fn r => emit(A.OPER {assem="addi    `d0, `s0, " ^ (i2s i) ^ "\n",
                                         src=[F.getRegTemp "$r0"],
                                         dst=[r], jump=NONE}))
@@ -177,7 +179,8 @@ struct
                   src=munchArgs(0, args, (List.length F.argsRegs) * F.wordSize),
                   dst=(F.getRegTemp F.ra)::(F.getRegTemp F.rv)::(List.map F.getRegTemp F.calleeRegs),
                   jump=NONE});
-             (F.getRegTemp F.rv))
+             F.newCall (!frame, List.length args);
+             F.getRegTemp F.rv)
         | munchExp (T.CALL(_, _)) = (err 0 "Please supply NAME to T.CALL."; Temp.newtemp())
       and munchStm (T.SEQ(e1, e2)) = (munchStm e1; munchStm e2)
         | munchStm (T.EXP(e)) = (munchExp e; ())

@@ -7,7 +7,8 @@ struct
                     InReg of Temp.temp
   type frame      = {name: Temp.label,
                      parameters: access list,
-                     localsOffset: int ref}
+                     localsOffset: int ref,
+                     maxArgsCall: int ref}
   datatype frag   = PROC of {body: Tree.stm, frame: frame}
                   | STRING of Temp.label * string
   type register   = string
@@ -25,14 +26,17 @@ struct
     in
       {name=name,
        parameters=buildFrame(0, parameters),
-       localsOffset=emptyAddr}
+       localsOffset=emptyAddr,
+       maxArgsCall=ref 0}
     end
 
   fun name       (f: frame) = #name f
   fun parameters (f: frame) = #parameters f
   fun getOffset  (f: frame) = !(#localsOffset f)
+  fun newCall ({name, parameters, localsOffset, maxArgsCall}: frame, n) =
+    maxArgsCall := Int.max((!maxArgsCall), n)
 
-  fun allocLocal ({name, parameters, localsOffset}: frame) esc =
+  fun allocLocal ({name, parameters, localsOffset, maxArgsCall}: frame) esc =
     if esc
     then (localsOffset := (!localsOffset)-wordSize;
           InFrame (!localsOffset))
@@ -114,7 +118,8 @@ struct
       tempRegMap := tempRegMap'
     end
 
-  fun resetFrame {name, parameters, localsOffset} = localsOffset := 0
+  fun resetFrame {name, parameters, localsOffset, maxArgsCall} =
+    localsOffset := 0
 
   fun regToString r = r
   (* TODO: This mail fail >_> *)
@@ -183,13 +188,54 @@ struct
     end
 
   fun procEntryExit2 (frame, body) =
-    body @ [Assem.OPER {assem="jr      `s0\n",
-                        src=[getRegTemp ra]@List.map getRegTemp (specialRegs @ calleeRegs),
-                        dst=[],jump=SOME[]}]
+    body @ [Assem.OPER {assem="",
+                        src=(List.map getRegTemp (specialRegs @ calleeRegs)),
+                        dst=[],jump=NONE}]
 
-  fun procEntryExit3 ({name, params, locals}, body) = {
-    prolog = "PROCEDURE " ^ Symbol.name name ^ "\n",
-    body = body,
-    epilog = "END " ^ Symbol.name name ^ "\n"
-  }
+  (* We don't need to store registers since we already do that if spilling. *)
+  fun procEntryExit3 ({name, parameters, localsOffset, maxArgsCall}: frame,
+                      body) =
+    let
+      val label = [Assem.LABEL {assem=Symbol.name name ^ ":\n", lab=name}]
+
+      val fpToStack = [Assem.OPER {assem="sw      `s0, -4(`s1)\n",
+                                   src=[getRegTemp "$fp", getRegTemp "$sp"],
+                                   dst=[], jump=NONE}]
+      val fpFromStack = [Assem.OPER {assem="lw      `d0, -4(`s0)\n",
+                                     src=[getRegTemp "$sp"],
+                                     dst=[getRegTemp "$fp"], jump=NONE}]
+
+      val newFp = [Assem.MOVE {assem="move    `d0, `s0\n",
+                               src=getRegTemp "$sp",
+                               dst=getRegTemp "$fp"}]
+      val oldFp = [Assem.MOVE {assem="move    `d0, `s0\n",
+                               src=getRegTemp "$fp",
+                               dst=getRegTemp "$sp"}]
+
+      val stackOffset = (!localsOffset) + ((!maxArgsCall) * wordSize)
+      val pushStack = [Assem.OPER {assem="addi    `d0, `s0, -" ^
+                                         (Int.toString stackOffset) ^ "\n",
+                                   src=[getRegTemp "$sp"],
+                                   dst=[getRegTemp "$sp"], jump=NONE}]
+      val popStack = [Assem.OPER {assem="addi    `d0, `s0, " ^
+                                        (Int.toString stackOffset) ^ "\n",
+                                  src=[getRegTemp "$sp"],
+                                  dst=[getRegTemp "$sp"], jump=NONE}]
+
+      val return = [Assem.OPER {assem="jr      `s0\n",
+                                src=[getRegTemp "$ra"],
+                                dst=[], jump=NONE}]
+    in
+      {prologue = "PROCEDURE " ^ Symbol.name name ^ "\n",
+       body = label@
+              fpToStack@
+              newFp@
+              pushStack@
+              body@
+              popStack@
+              oldFp@
+              fpFromStack@
+              return,
+       epilogue = "END " ^ Symbol.name name ^ "\n"}
+    end
 end

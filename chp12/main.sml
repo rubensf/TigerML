@@ -206,8 +206,11 @@ struct
                 C.color {igraph=igraph,
                          spillCost=(fn x => 1)}
               val didSpill = (List.length spills) <> 0
+              val {prologue, body, epilogue} = F.procEntryExit3(frame, instrs)
             in
-              ans @ [{ins=instrs, alloc=alloc, spill=didSpill}]
+              ans @ [{ins=body,
+                      alloc=alloc,
+                      spill=didSpill}]
             end
           val colorings = foldl f [] instrflowigraphframelist
           val err = ErrorMsg.anyErrors
