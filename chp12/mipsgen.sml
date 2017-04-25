@@ -36,7 +36,7 @@ struct
       fun munchError() =
             emit(A.OPER {assem="addi    `d0, `s0, 10\nsyscall\n",
                          src=[F.getRegTemp "$r0"],
-                         dst=[F.getRegTemp "$rv"], jump=NONE}) (* TODO Print error message*)
+                         dst=[F.getRegTemp F.rv], jump=NONE}) (* TODO Print error message*)
       and munchExp(T.CONST i) =
             result(fn r => emit(A.OPER {assem="addi    `d0, `s0, " ^ (i2s i) ^ "\n",
                                         src=[F.getRegTemp "$r0"],
@@ -174,10 +174,10 @@ struct
         | munchExp (T.CALL(T.NAME n, args)) =
             (emit(A.OPER {
                   assem="jal     " ^ (Temp.labelToString n) ^ "\n",
-                  src=munchArgs(0, args, 16),
-                  dst=(F.getRegTemp "$ra")::(F.getRegTemp "$rv")::(List.map F.getRegTemp F.calleeRegs),
+                  src=munchArgs(0, args, (List.length F.argsRegs) * F.wordSize),
+                  dst=(F.getRegTemp F.ra)::(F.getRegTemp F.rv)::(List.map F.getRegTemp F.calleeRegs),
                   jump=NONE});
-             (F.getRegTemp "$rv"))
+             (F.getRegTemp F.rv))
         | munchExp (T.CALL(_, _)) = (err 0 "Please supply NAME to T.CALL."; Temp.newtemp())
       and munchStm (T.SEQ(e1, e2)) = (munchStm e1; munchStm e2)
         | munchStm (T.EXP(e)) = (munchExp e; ())
@@ -280,7 +280,7 @@ struct
             munchError ()
       and munchArgs(i, [], offset) = []
         | munchArgs(i, arg::l, offset) =
-            if i < 4
+            if i < (List.length F.argsRegs)
             then
               let
                 val temp = List.nth(List.map F.getRegTemp F.argsRegs, i)
@@ -289,8 +289,8 @@ struct
                 temp::munchArgs(i + 1, l, offset)
               end
             else
-                (munchStm(T.MOVE(T.MEM(T.BINOP(T.PLUS, T.TEMP (F.getRegTemp "$sp"), T.CONST offset)), arg));
-                 munchArgs(i + 1, l, offset + 4))
+                (munchStm(T.MOVE(T.MEM(T.BINOP(T.PLUS, T.TEMP (F.getRegTemp F.sp), T.CONST offset)), arg));
+                 munchArgs(i + 1, l, offset + F.wordSize))
     in
       munchStm stm;
       List.rev (!instrlist)

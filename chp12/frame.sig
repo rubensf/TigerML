@@ -19,6 +19,7 @@ sig
 
   (* Default common-place registers *)
   val fp          : register
+  val sp          : register
   val rv          : register
   val ra          : register
 
@@ -44,7 +45,7 @@ sig
   val externCallFn : string * Tree.exp list -> Tree.exp (* Calls an external function, such as C heap management. *)
 
   (* Function "decorators" - add prologue and epilogue standard mumbo jumbo *)
-  val procEntryExit  : frame * Tree.exp -> Tree.exp
+  val procEntryExit  : frame * Tree.stm -> Tree.stm
   (* Insert a final "instruction" to make sure that special registers and callee saved
      ones are "live" at the end of a function execution. *)
   val procEntryExit2 : frame * Assem.instr list -> Assem.instr list

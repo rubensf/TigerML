@@ -285,17 +285,15 @@ struct
                             unNx then',
                             T.LABEL done])
     end
+
   fun callExp(deflevel as Level ({parent=parent,...}, uniqref), curlevel, label, exps) =
     let
       val link = staticLinking (parent, curlevel)
       val expCalls = map unEx exps
     in
-      Ex (T.ESEQ(T.MOVE ((T.TEMP (F.getRegTemp F.rv)), 
-                         (T.CALL (T.NAME label, link::expCalls))), 
-                 T.TEMP(F.getRegTemp F.rv)))
+      Ex (T.CALL (T.NAME label, link::expCalls))
     end
     | callExp _ = (error 0 "Top Level Exception"; Ex (T.CONST 0))
-  fun packExps(exps, mainexp) = Ex (T.ESEQ ((seq (map unNx exps)), (unEx mainexp)))
 
   fun simpleVarAccess (Access ac, Level l) = Ex (F.expFn (#2 ac) (staticLinking ((#1 ac), Level l)))
     | simpleVarAccess (_, _) = (error 0 "Internal Failure: simpleVarAccess."; Ex (T.CONST 0))
@@ -343,18 +341,20 @@ struct
                                            T.CONST F.wordSize)))))
     end
 
-  fun procEntryExit({level = level, body = body}) =
+  fun procEntryExit({level=level, body=body}) =
     let
       val frame' = case level of
         Outermost => (error 0 "Top Level Exception";
                       F.newFrame {name=Temp.newlabel(), parameters=[]})
         | Level l => (#frame (#1 l))
-      val body' = unNx body
-      val frag' = F.PROC({body = body', frame = frame'})
+      val body'  = T.MOVE(T.TEMP (F.getRegTemp F.rv), unEx body)
+      val body'' = F.procEntryExit (frame', body')
+      val frag'  = F.PROC({body = body'', frame = frame'})
     in
       frags := frag'::(!frags)
     end
 
+  fun packExps(exps, mainexp) = Ex(T.ESEQ ((seq (map unNx exps)), (unEx mainexp)))
   fun resetFrags () = (F.resetFrame (frame outermost); frags := [])
   fun getResult () = !frags
 

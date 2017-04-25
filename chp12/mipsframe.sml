@@ -16,7 +16,7 @@ struct
 
   fun newFrame {name, parameters} =
     let
-      val emptyAddr = ref (Int.~ wordSize)
+      val emptyAddr = ref 0
       fun buildFrame (addr, nil) = (emptyAddr := addr; nil)
         | buildFrame (addr, f::l) =
             case f of
@@ -38,8 +38,9 @@ struct
           InFrame (!localsOffset))
     else InReg (Temp.newtemp ())
 
-  val rv = "$rv"
   val fp = "$fp"
+  val sp = "$sp"
+  val rv = "$rv"
   val ra = "$ra"
 
   val specialRegs = [
@@ -130,7 +131,56 @@ struct
   fun externCallFn (s, args) =
     CALL (NAME (Temp.namedlabel s), args)
 
-  fun procEntryExit (frame, treeExp) = treeExp (* TODO *)
+  fun seq (l: stm list) =
+    case List.length l of
+      0 => EXP (CONST 0)
+    | 1 => (hd l)
+    | 2 => SEQ ((hd l), (hd (tl l)))
+    | _ => SEQ ((hd l), seq (tl l))
+
+  fun numberList [] = []
+    | numberList l =
+        List.tl (List.foldl (fn (x, (v, i)::rest) =>
+                               (x, i+1)::(v, i)::rest
+                              | (x, []) =>
+                               [((hd l), 0)])
+                            [] l)
+
+  fun procEntryExit (f: frame, treeExp) =
+    let
+      val argTemps = List.map getRegTemp argsRegs
+      val nArgTemps = List.length argsRegs
+
+      val fpTemp = getRegTemp "$fp"
+      val spTemp = getRegTemp "$sp"
+
+      val frameParams = #parameters f
+      val firstNArgParams = if List.length frameParams >= nArgTemps
+                            then List.take (frameParams, nArgTemps)
+                            else frameParams
+      val remainingParams = if List.length frameParams >= nArgTemps
+                            then List.drop (frameParams, nArgTemps)
+                            else []
+
+      val firstNArgsExp = List.map expFn firstNArgParams
+      val numbFirstNArgsExp = numberList firstNArgsExp
+      val stmFirstNArgs =
+        List.map (fn (f, i) => MOVE(f (TEMP fpTemp),
+                                    TEMP (List.nth (argTemps, i))))
+                 numbFirstNArgsExp
+
+      val remainingArgsExp = List.map expFn remainingParams
+      val numbRemainingArgsExp = numberList remainingArgsExp
+      val stmRemainingArgs =
+        List.map (fn (f, i) =>
+                    MOVE(f (TEMP fpTemp),
+                         MEM (BINOP (PLUS,
+                                     TEMP spTemp,
+                                     CONST (((i + nArgTemps) * wordSize))))))
+                 numbRemainingArgsExp
+    in
+      SEQ(seq (stmFirstNArgs@stmRemainingArgs), treeExp)
+    end
 
   fun procEntryExit2 (frame, body) =
     body @ [Assem.OPER {assem="jr      `s0\n",
