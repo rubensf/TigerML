@@ -6,7 +6,7 @@ sig
   val reset         : unit -> unit
   val newtemp       : unit -> temp
   val compare       : temp * temp -> order
-  val makestring    : temp -> string
+  val makeString    : temp -> string
   val newlabel      : unit -> label
   val namedlabel    : string -> label
   val labelToString : label -> string

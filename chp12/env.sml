@@ -7,7 +7,7 @@ sig
   datatype enventry = VarEntry of {access: access, ty: ty}
                     | FunEntry of {level: level,
                                    label: Temp.label,
-                                   formals: ty list, result: ty}
+                                   parameters: ty list, result: ty}
 
   val base_tenv : ty Symbol.table
   val base_venv : enventry Symbol.table
@@ -26,7 +26,7 @@ struct
   datatype enventry = VarEntry of {access: access, ty: ty}
                     | FunEntry of {level: level,
                                    label: Temp.label,
-                                   formals: ty list, result: ty}
+                                   parameters: ty list, result: ty}
 
   val predef_types = [("int", T.INT),
                       ("string", T.STRING)]
@@ -35,16 +35,16 @@ struct
   val base_tenv = foldl fillTypeFn S.empty predef_types
 
   val base_label = Temp.newlabel ()
-  val predef_funcs = [("print",     FunEntry {level=R.outermost, label=base_label, formals=[T.STRING], result=T.UNIT}),
-                      ("flush",     FunEntry {level=R.outermost, label=base_label, formals=[], result=T.UNIT}),
-                      ("getchar",   FunEntry {level=R.outermost, label=base_label, formals=[], result=T.STRING}),
-                      ("ord",       FunEntry {level=R.outermost, label=base_label, formals=[T.STRING], result=T.INT}),
-                      ("chr",       FunEntry {level=R.outermost, label=base_label, formals=[T.INT], result=T.STRING}),
-                      ("size",      FunEntry {level=R.outermost, label=base_label, formals=[T.STRING], result=T.INT}),
-                      ("substring", FunEntry {level=R.outermost, label=base_label, formals=[T.STRING,T.INT,T.INT], result=T.STRING}),
-                      ("concat",    FunEntry {level=R.outermost, label=base_label, formals=[T.STRING,T.STRING], result=T.STRING}),
-                      ("not",       FunEntry {level=R.outermost, label=base_label, formals=[T.INT], result=T.INT}),
-                      ("exit",      FunEntry {level=R.outermost, label=base_label, formals=[T.INT], result=T.UNIT})]
+  val predef_funcs = [("print",     FunEntry {level=R.outermost, label=base_label, parameters=[T.STRING], result=T.UNIT}),
+                      ("flush",     FunEntry {level=R.outermost, label=base_label, parameters=[], result=T.UNIT}),
+                      ("getchar",   FunEntry {level=R.outermost, label=base_label, parameters=[], result=T.STRING}),
+                      ("ord",       FunEntry {level=R.outermost, label=base_label, parameters=[T.STRING], result=T.INT}),
+                      ("chr",       FunEntry {level=R.outermost, label=base_label, parameters=[T.INT], result=T.STRING}),
+                      ("size",      FunEntry {level=R.outermost, label=base_label, parameters=[T.STRING], result=T.INT}),
+                      ("substring", FunEntry {level=R.outermost, label=base_label, parameters=[T.STRING,T.INT,T.INT], result=T.STRING}),
+                      ("concat",    FunEntry {level=R.outermost, label=base_label, parameters=[T.STRING,T.STRING], result=T.STRING}),
+                      ("not",       FunEntry {level=R.outermost, label=base_label, parameters=[T.INT], result=T.INT}),
+                      ("exit",      FunEntry {level=R.outermost, label=base_label, parameters=[T.INT], result=T.UNIT})]
 
   fun fillFuncFn ((name, entry), ans) = S.enter(ans, S.symbol name, entry)
   val base_venv = foldl fillFuncFn S.empty predef_funcs

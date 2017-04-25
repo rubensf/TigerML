@@ -18,7 +18,7 @@ struct
     in
       t
     end
-  fun makestring t = "t" ^ Int.toString t
+  fun makeString t = "t" ^ Int.toString t
   type label = Symbol.symbol
   structure TempOrd =
   struct

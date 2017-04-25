@@ -148,10 +148,10 @@ struct
       val nodes = FG.nodes graph
       fun printNode node =
         let
-          val _ = TextIO.output(outstream, MipsFrame.makestring(FG.getNodeID node) ^  " => ")
+          val _ = TextIO.output(outstream, MipsFrame.makeString(FG.getNodeID node) ^  " => ")
           fun f n =
             case FG.isAdjacent(node, n) of
-              true => TextIO.output(outstream, MipsFrame.makestring(FG.getNodeID n) ^ ", ")
+              true => TextIO.output(outstream, MipsFrame.makeString(FG.getNodeID n) ^ ", ")
             | false => ()
           val _ = List.app f nodes
         in
@@ -160,9 +160,9 @@ struct
       fun printMove (move: Temp.temp FG.node * Temp.temp FG.node) =
         let
           val v1 = FG.getNodeID (#1 move)
-          val v1' = Temp.makestring v1
+          val v1' = Temp.makeString v1
           val v2 = FG.getNodeID (#2 move)
-          val v2' = Temp.makestring v2
+          val v2' = Temp.makeString v2
         in
           TextIO.output(outstream, v1' ^ "-" ^ v2' ^ "\n")
         end

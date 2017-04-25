@@ -6,10 +6,10 @@ struct
 
   val error = ErrorMsg.error
 
-  datatype level = Level of {parent: level,
-                             name: Temp.label,
-                             formals: bool list,
-                             frame: F.frame} * unit ref
+  datatype level = Level of {parent    : level,
+                             name      : Temp.label,
+                             parameters: bool list,
+                             frame     : F.frame} * unit ref
                  | Outermost
   datatype access = Access of level * F.access
                   | NilAccess (* Not sure if necessary *)
@@ -21,24 +21,29 @@ struct
   val outername = Temp.newlabel ()
   val outermost = Level ({parent=Outermost,
                           name=outername,
-                          formals=[],
-                          frame=F.newFrame {name=outername, formals=[]}},
+                          parameters=[],
+                          frame=F.newFrame {name=outername, parameters=[]}},
                          ref ())
   val frags = ref ([] : F.frag list)
 
-  fun newLevel {parent: level, name: Temp.label, formals: bool list} =
-    Level ({parent=parent, name=name, formals=formals, frame=F.newFrame {name=name, formals=formals}}, ref ())
+  fun newLevel {parent: level, name: Temp.label, parameters: bool list} =
+    Level ({parent=parent,
+            name=name,
+            parameters=parameters,
+            frame=F.newFrame {name=name, parameters=parameters}},
+           ref ())
 
-  fun formals (lev: level) =
+  fun parameters (lev: level) =
     case lev of
       Level l   => foldl (fn (formal, ans) => (Access (lev, formal))::ans)
-                     [] (F.formals (#frame (#1 l)))
+                     [] (F.parameters (#frame (#1 l)))
     | Outermost => (error 0 "Internal Failure: cannot get formals of outermost level."; [])
 
   fun frame (lev: level) =
     case lev of
       Level l   => (#frame (#1 l))
-    | Outermost => (error 0 "Internal Failure: cannot get frame of outermost level."; F.newFrame {name=outername, formals=[]})
+    | Outermost => (error 0 "Internal Failure: cannot get frame of outermost level.";
+                    F.newFrame {name=outername, parameters=[]})
 
   fun seq (l: T.stm list) =
     case List.length l of
@@ -342,7 +347,7 @@ struct
     let
       val frame' = case level of
         Outermost => (error 0 "Top Level Exception";
-                      F.newFrame {name = Temp.newlabel(), formals = []})
+                      F.newFrame {name=Temp.newlabel(), parameters=[]})
         | Level l => (#frame (#1 l))
       val body' = unNx body
       val frag' = F.PROC({body = body', frame = frame'})

@@ -5,9 +5,9 @@ sig
   type exp
   type frag
 
-  val newLevel   : {parent: level, name: Temp.label, formals: bool list} -> level
+  val newLevel   : {parent: level, name: Temp.label, parameters: bool list} -> level
   val outermost  : level
-  val formals    : level -> access list
+  val parameters : level -> access list
   val allocLocal : level -> bool -> access
 
   val intOpExp : Absyn.oper * exp * exp -> exp

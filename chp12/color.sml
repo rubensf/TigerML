@@ -6,8 +6,7 @@ sig
 
   val color: {
     igraph: Liveness.igraph,
-    spillCost: node -> int,
-    registers: registerlist
+    spillCost: node -> int
   } -> allocation * Temp.temp list
 end
 
@@ -67,7 +66,7 @@ struct
   type registerlist = F.register list
   type node = Temp.temp Liveness.FG.node
 
-  fun color {igraph as Liveness.IGRAPH {graph, moves}, spillCost, registers} =
+  fun color {igraph as Liveness.IGRAPH {graph, moves}, spillCost} =
     let
       val avalRegs = F.allRegisters
 

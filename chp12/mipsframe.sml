@@ -5,12 +5,38 @@ struct
 
   datatype access = InFrame of int |
                     InReg of Temp.temp
-  type frame      = Temp.label * access list * int ref
+  type frame      = {name: Temp.label,
+                     parameters: access list,
+                     localsOffset: int ref}
   datatype frag   = PROC of {body: Tree.stm, frame: frame}
                   | STRING of Temp.label * string
   type register   = string
 
   val wordSize = 4
+
+  fun newFrame {name, parameters} =
+    let
+      val emptyAddr = ref (Int.~ wordSize)
+      fun buildFrame (addr, nil) = (emptyAddr := addr; nil)
+        | buildFrame (addr, f::l) =
+            case f of
+              true  => (InFrame addr)::buildFrame(addr-wordSize, l)
+            | false => (InReg (Temp.newtemp()))::buildFrame(addr, l)
+    in
+      {name=name,
+       parameters=buildFrame(0, parameters),
+       localsOffset=emptyAddr}
+    end
+
+  fun name       (f: frame) = #name f
+  fun parameters (f: frame) = #parameters f
+  fun getOffset  (f: frame) = !(#localsOffset f)
+
+  fun allocLocal ({name, parameters, localsOffset}: frame) esc =
+    if esc
+    then (localsOffset := (!localsOffset)-wordSize;
+          InFrame (!localsOffset))
+    else InReg (Temp.newtemp ())
 
   val rv = "$rv"
   val fp = "$fp"
@@ -60,10 +86,7 @@ struct
     "$t9"
   ]
 
-  fun regToString r = r
-
   val allRegisters = specialRegs @ argsRegs @ callerRegs @ calleeRegs
-  val colorRegisters = callerRegs @ calleeRegs
 
   structure StringKeyOrd = struct type ord_key = string
                                   val compare = String.compare
@@ -90,38 +113,16 @@ struct
       tempRegMap := tempRegMap'
     end
 
+  fun resetFrame {name, parameters, localsOffset} = localsOffset := 0
+
+  fun regToString r = r
   (* TODO: This mail fail >_> *)
   fun getRegTemp reg = Option.valOf (StringMap.find (!regTempMap, reg))
-
   fun getTempReg temp = Temp.Map.find (!tempRegMap, temp)
-
-  fun makestring t =
+  fun makeString t =
     case Temp.Map.find(!tempRegMap, t) of
       SOME(s) => s
-    | NONE    => Temp.makestring t
-  fun name (f: frame)       = #1 f
-  fun formals (f: frame)    = #2 f
-
-  fun newFrame {name: Temp.label, formals: bool list} =
-    let
-      val empty_addr = ref ~4
-      fun acc_create (addr, nil) = (empty_addr:=addr;nil)
-        | acc_create (addr, f::l) =
-            case f of
-              true  => (InFrame addr)::acc_create(addr-4, l)
-            | false => (InReg (Temp.newtemp()))::acc_create(addr, l)
-    in
-      (name, acc_create(0, formals), empty_addr)
-    end
-
-  fun getOffset (f: frame) = !(#3 f)
-
-  fun allocLocal (f: frame) (esc: bool) =
-    case esc of
-      true  => ((#3 f) := !(#3 f)-wordSize;InFrame (!(#3 f)+wordSize))
-    | false => (InReg (Temp.newtemp()))
-
-  fun resetFrame (f: frame) = (#3 f) := 0
+    | NONE    => Temp.makeString t
 
   fun expFn (InFrame offset) = (fn fptr => MEM(BINOP(PLUS, fptr, CONST offset)))
     | expFn (InReg reg) = (fn fptr => TEMP reg)

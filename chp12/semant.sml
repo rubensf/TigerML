@@ -133,8 +133,8 @@ struct
              end)
         | trexp (A.CallExp {func, args, pos}) =
             (case S.look(venv, func) of
-               SOME (E.FunEntry {level=declevel, label, formals, result}) =>
-                 if (length formals) = (length args)
+               SOME (E.FunEntry {level=declevel, label, parameters, result}) =>
+                 if (length parameters) = (length args)
                    then ((foldl (fn (x, ans) =>
                                    let
                                      val defty   = (hd ans)
@@ -143,7 +143,7 @@ struct
                                      checkTypeMatch(defty, giventy, tenv, pos, "Function Call");
                                      tl ans
                                    end)
-                              formals args);
+                              parameters args);
                             {exp=R.callExp(declevel, level, label, map #exp (map trexp args)), ty=result})
                    else (error pos "Function args length differ from defined.";
                          {exp=R.errExp(), ty=result})
@@ -443,9 +443,9 @@ struct
 
                     val escList = foldl (fn (x, ans) => !(#escape x)::ans) [] params
                     val trLevelName = Temp.newlabel ()
-                    val trNewLevel = R.newLevel {parent=level, name=trLevelName, formals=escList}
+                    val trNewLevel = R.newLevel {parent=level, name=trLevelName, parameters=escList}
                   in
-                    S.enter(venv, name, E.FunEntry{level=trNewLevel, label=trLevelName, formals=params', result=result_ty})
+                    S.enter(venv, name, E.FunEntry{level=trNewLevel, label=trLevelName, parameters=params', result=result_ty})
                   end
 
                   val venv' = foldl processDec venv fundecs

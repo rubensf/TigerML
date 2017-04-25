@@ -112,7 +112,7 @@ struct
                                                    frags)),
                                 frame)])
                        [] fragsframelist
-          val format = Assem.format (F.makestring) (* For printing below. *)
+          val format = Assem.format (F.makeString) (* For printing below. *)
           val err = ErrorMsg.anyErrors
         in
           if !ErrorMsg.anyErrors
@@ -141,7 +141,7 @@ struct
                                 MakeGraph.instrs2graph(instrs),
                                 frame)])
                        [] instrframelist
-          val format = Assem.format (F.makestring) (* For printing below. *)
+          val format = Assem.format (F.makeString) (* For printing below. *)
           val err = ErrorMsg.anyErrors
         in
           if !ErrorMsg.anyErrors
@@ -154,7 +154,7 @@ struct
                 then (print "==========Printing Flow Graphs==========\n";
                       List.app Flow.printFlow
                                (map (fn (instr, flow, frame) =>
-                                       (flow, format, F.makestring))
+                                       (flow, format, F.makeString))
                                     instrflowframelist))
                 else ();
                 (instrflowframelist, !err))
@@ -204,8 +204,7 @@ struct
             let
               val (alloc, spills) =
                 C.color {igraph=igraph,
-                         spillCost=(fn x => 1),
-                         registers=F.colorRegisters}
+                         spillCost=(fn x => 1)}
               val didSpill = (List.length spills) <> 0
             in
               ans @ [{ins=instrs, alloc=alloc, spill=didSpill}]
@@ -219,7 +218,7 @@ struct
               fun pickRegister temp =
                 case Temp.Map.find (alloc, temp) of
                   SOME r => F.regToString r
-                | NONE   => F.makestring temp
+                | NONE   => F.makeString temp
               val format = Assem.format(pickRegister)
             in
               List.app (fn x => TextIO.output(outStream, format x)) ins

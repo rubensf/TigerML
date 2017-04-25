@@ -28,7 +28,7 @@ struct
         and exp(T.BINOP(p,a,b),d) = (indent d; say "BINOP("; binop p; sayln ",";
                                      exp(a,d+1); sayln ","; exp(b,d+1); say ")")
           | exp(T.MEM(e),d)       = (indent d; sayln "MEM("; exp(e,d+1); say ")")
-          | exp(T.TEMP t, d)      = (indent d; say "TEMP "; say(Temp.makestring t))
+          | exp(T.TEMP t, d)      = (indent d; say "TEMP "; say(Temp.makeString t))
           | exp(T.ESEQ(s,e),d)    = (indent d; sayln "ESEQ("; stm(s,d+1); sayln ",";
                                      exp(e,d+1); say ")")
           | exp(T.NAME lab, d)    = (indent d; say "NAME "; say (Temp.labelToString lab))
