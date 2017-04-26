@@ -34,17 +34,17 @@ struct
   fun fillTypeFn ((name, ty), ans) = S.enter(ans, S.symbol name, ty)
   val base_tenv = foldl fillTypeFn S.empty predef_types
 
-  val base_label = Temp.newlabel ()
-  val predef_funcs = [("print",     FunEntry {level=R.outermost, label=base_label, parameters=[T.STRING], result=T.UNIT}),
-                      ("flush",     FunEntry {level=R.outermost, label=base_label, parameters=[], result=T.UNIT}),
-                      ("getchr",    FunEntry {level=R.outermost, label=base_label, parameters=[], result=T.STRING}),
-                      ("ord",       FunEntry {level=R.outermost, label=base_label, parameters=[T.STRING], result=T.INT}),
-                      ("chr",       FunEntry {level=R.outermost, label=base_label, parameters=[T.INT], result=T.STRING}),
-                      ("size",      FunEntry {level=R.outermost, label=base_label, parameters=[T.STRING], result=T.INT}),
-                      ("substring", FunEntry {level=R.outermost, label=base_label, parameters=[T.STRING,T.INT,T.INT], result=T.STRING}),
-                      ("concat",    FunEntry {level=R.outermost, label=base_label, parameters=[T.STRING,T.STRING], result=T.STRING}),
-                      ("not",       FunEntry {level=R.outermost, label=base_label, parameters=[T.INT], result=T.INT}),
-                      ("exit",      FunEntry {level=R.outermost, label=base_label, parameters=[T.INT], result=T.UNIT})]
+  fun nLbl x = Temp.namedlabel x
+  val predef_funcs = [("print",     FunEntry {level=R.outermost, label=nLbl "tig_print", parameters=[T.STRING], result=T.UNIT}),
+                      ("flush",     FunEntry {level=R.outermost, label=nLbl "tig_flush", parameters=[], result=T.UNIT}),
+                      ("getchar",   FunEntry {level=R.outermost, label=nLbl "tig_getchar", parameters=[], result=T.STRING}),
+                      ("ord",       FunEntry {level=R.outermost, label=nLbl "tig_ord", parameters=[T.STRING], result=T.INT}),
+                      ("chr",       FunEntry {level=R.outermost, label=nLbl "tig_chr", parameters=[T.INT], result=T.STRING}),
+                      ("size",      FunEntry {level=R.outermost, label=nLbl "tig_size", parameters=[T.STRING], result=T.INT}),
+                      ("substring", FunEntry {level=R.outermost, label=nLbl "tig_substring", parameters=[T.STRING,T.INT,T.INT], result=T.STRING}),
+                      ("concat",    FunEntry {level=R.outermost, label=nLbl "tig_concat", parameters=[T.STRING,T.STRING], result=T.STRING}),
+                      ("not",       FunEntry {level=R.outermost, label=nLbl "tig_not", parameters=[T.INT], result=T.INT}),
+                      ("exit",      FunEntry {level=R.outermost, label=nLbl "tig_exit", parameters=[T.INT], result=T.UNIT})]
 
   fun fillFuncFn ((name, entry), ans) = S.enter(ans, S.symbol name, entry)
   val base_venv = foldl fillFuncFn S.empty predef_funcs

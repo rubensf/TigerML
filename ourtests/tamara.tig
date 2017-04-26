@@ -1,0 +1,12 @@
+
+let
+var a:=0
+
+function g(a:int, b:int, c:string, d:string, e:int, f:int):int = 
+let var  h := f
+in
+  if e > 2 then a else (if c="Hello" then b else f )
+end   
+in
+ g(2, 3, "Hello", "world" , 4, a)
+end

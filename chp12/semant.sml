@@ -459,21 +459,27 @@ struct
                                                             | NONE   => T.UNIT)
                                       | NONE => T.UNIT
 
-                      fun transparam ({name, escape, typ, pos} : A.field) =
-                        case S.look(tenv, typ) of
-                          SOME t => (name, escape, actual_ty (tenv, t))
-                        | NONE   => (name, escape, T.UNIT)
-                      (* Arguments for new functions go in the current function frame. *)
-                      fun enterparam ((name, escape, ty), venv) =
-                         S.enter(venv, name, E.VarEntry {access=R.allocLocal level (!escape),
-                                                         ty=ty})
-                      val venv'' = foldl enterparam venv' (map transparam params)
-
                       val funcTrLevel =
                         case S.look(venv', name) of
                           SOME (E.FunEntry t) => (#level t)
                         | SOME (E.VarEntry _) => ((error pos "Internal error processing functions var."); level)
                         | NONE                => ((error pos "Internal error processing functions none."); level)
+
+                      fun transparam ({name, escape, typ, pos} : A.field) =
+                        case S.look(tenv, typ) of
+                          SOME t => (name, actual_ty (tenv, t))
+                        | NONE   => (name, T.UNIT)
+                      (* Arguments for new functions go in the current function frame. *)
+
+                      fun attachAcc ((n, t), (ans, accs)) =
+                        ((n, t, List.hd accs)::ans, List.tl accs)
+
+                      val params' = #1 (List.foldr attachAcc ([], R.parameters funcTrLevel) (List.map transparam params))
+
+                      fun enterparam ((name, ty, acc), venv) =
+                         S.enter(venv, name, E.VarEntry {access=acc,
+                                                         ty=ty})
+                      val venv'' = foldl enterparam venv' params'
 
                       val funcExp = transExp(venv'', tenv, funcTrLevel, body, break)
                       val retTypeFound = (#ty funcExp)

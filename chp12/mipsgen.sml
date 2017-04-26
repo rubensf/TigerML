@@ -36,12 +36,12 @@ struct
 
       fun munchError() =
             emit(A.OPER {assem="addi    `d0, `s0, 10\nsyscall\n",
-                         src=[F.getRegTemp "$r0"],
+                         src=[F.getRegTemp "$0"],
                          dst=[F.getRegTemp F.rv], jump=NONE}) (* TODO Print error message*)
-      and munchExp(T.CONST 0) = F.getRegTemp "$r0"
+      and munchExp(T.CONST 0) = F.getRegTemp "$0"
         | munchExp(T.CONST i) =
             result(fn r => emit(A.OPER {assem="addi    `d0, `s0, " ^ (i2s i) ^ "\n",
-                                        src=[F.getRegTemp "$r0"],
+                                        src=[F.getRegTemp "$0"],
                                         dst=[r], jump=NONE}))
         | munchExp (T.BINOP(T.PLUS, T.CONST i1, T.CONST i2)) =
             munchExp (T.CONST (Word.toIntX (Word.+(Word.fromInt i1, Word.fromInt i2))))
@@ -206,7 +206,7 @@ struct
                          dst=[], jump=NONE})
         | munchStm (T.MOVE(T.TEMP t, T.CONST i)) =
             emit(A.OPER {assem="addi    `d0, `s0, " ^ i2s i ^ "\n",
-                         src=[F.getRegTemp "$r0"],
+                         src=[F.getRegTemp "$0"],
                          dst=[t], jump=NONE})
         | munchStm (T.MOVE(T.TEMP t, e)) =
             emit(A.MOVE {assem="move    `d0, `s0\n",

@@ -22,7 +22,7 @@ struct
         | buildFrame (addr, f::l) =
             case f of
               true  => (InFrame addr)::buildFrame(addr-wordSize, l)
-            | false => (InReg (Temp.newtemp()))::buildFrame(addr, l)
+            | false => (InReg (Temp.newtemp ()))::buildFrame(addr, l)
     in
       {name=name,
        parameters=buildFrame(0, parameters),
@@ -44,13 +44,13 @@ struct
 
   val fp = "$fp"
   val sp = "$sp"
-  val rv = "$rv"
+  val rv = "$v0"
   val ra = "$ra"
 
   val specialRegs = [
-    "$r0",
+    "$0",
     "$at",
-    "$rv",
+    "$v0",
     "$v1",
     "$k0",
     "$k1",
@@ -92,6 +92,7 @@ struct
   ]
 
   val allRegisters = specialRegs @ argsRegs @ callerRegs @ calleeRegs
+  val colorRegisters = callerRegs  @ calleeRegs @ argsRegs
 
   structure StringKeyOrd = struct type ord_key = string
                                   val compare = String.compare
@@ -145,11 +146,11 @@ struct
 
   fun numberList [] = []
     | numberList l =
-        List.tl (List.foldl (fn (x, (v, i)::rest) =>
-                               (x, i+1)::(v, i)::rest
-                              | (x, []) =>
-                               [((hd l), 0)])
-                            [] l)
+        (List.foldr (fn (x, (v, i)::rest) =>
+                       (x, i-1)::(v, i)::rest
+                      | (x, []) =>
+                       [(x, (List.length l) - 1)])
+                    [] l)
 
   fun procEntryExit (f: frame, treeExp) =
     let

@@ -50,7 +50,6 @@ struct
           val _ = if verbose >= 1
                   then print "Runing Semantic analysis.\n"
                   else ()
-          val _ = R.resetFrags()
           val frags = S.transProg abst
           val err = ErrorMsg.anyErrors
         in
@@ -200,6 +199,12 @@ struct
           val _ = if verbose >= 1
                   then print "Coloring registers.\n"
                   else ()
+
+          fun pickRegister alloc temp =
+            case Temp.Map.find (alloc, temp) of
+              SOME r => F.regToString r
+            | NONE   => F.makeString temp
+
           fun f ((instrs, flow, igraph, gettemps, frame), ans) =
             let
               val (alloc, spills) =
@@ -207,8 +212,16 @@ struct
                          spillCost=(fn x => 1)}
               val didSpill = (List.length spills) <> 0
               val {prologue, body, epilogue} = F.procEntryExit3(frame, instrs)
+              val noMove = List.filter
+                             (fn x => case x of
+                                        Assem.LABEL l   => true
+                                      | Assem.OPER oper => true
+                                      | Assem.MOVE {assem, src, dst} =>
+                                          pickRegister alloc src <>
+                                          pickRegister alloc dst)
+                             body
             in
-              ans @ [{ins=body,
+              ans @ [{ins=noMove,
                       alloc=alloc,
                       spill=didSpill}]
             end
@@ -218,11 +231,8 @@ struct
           fun printCode {ins, alloc, spill} =
             let
               (* should check for spill here *)
-              fun pickRegister temp =
-                case Temp.Map.find (alloc, temp) of
-                  SOME r => F.regToString r
-                | NONE   => F.makeString temp
-              val format = Assem.format(pickRegister)
+              val tmpStr = pickRegister alloc
+              val format = Assem.format(tmpStr)
             in
               List.app (fn x => TextIO.output(outStream, format x)) ins
             end
@@ -238,6 +248,7 @@ struct
                 (colorings, !err))
         end
     in
+      R.resetFrags();
       F.resetRegs();
       Temp.reset();
       case (parsefile file) of

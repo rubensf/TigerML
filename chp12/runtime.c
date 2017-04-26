@@ -1,14 +1,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-int *initArray(int size, int init) {
+int *tig_initArray(int size, int init) {
   int i;
   int *a = (int *)malloc(size*sizeof(int));
   for(i=0;i<size;i++) a[i]=init;
   return a;
 }
 
-int *allocRecord(int size) {
+int *tig_allocRecord(int size) {
   int i;
   int *p, *a;
   p = a = (int *)malloc(size);
@@ -18,7 +18,7 @@ int *allocRecord(int size) {
 
 struct string {int length; unsigned char chars[1];};
 
-int stringEqual(struct string *s, struct string *t) {
+int tig_stringEqual(struct string *s, struct string *t) {
   int i;
   if (s==t) return 1;
   if (s->length!=t->length) return 0;
@@ -26,7 +26,7 @@ int stringEqual(struct string *s, struct string *t) {
   return 1;
 }
 
-int mystrcmp(struct string *s1, struct string* s2, int flag) {
+int tig_strcmp(struct string *s1, struct string* s2, int flag) {
   int i;
   if (flag < 0 || flag > 5) return 0; // TODO error
   if (flag == 0 || flag == 1) {
@@ -55,14 +55,14 @@ int mystrcmp(struct string *s1, struct string* s2, int flag) {
   }
 }
 
-void print(struct string *s) {
+void tig_print(struct string *s) {
   int i;
   unsigned char *p=s->chars;
   for (i=0; i < s->length; i++,p++)
     putchar(*p);
 }
 
-void flush() {
+void tig_flush() {
   fflush(stdout);
 }
 
@@ -78,24 +78,24 @@ int main() {
   return (0 /* static link!? */);
 }
 
-int ord(struct string *s) {
+int tig_ord(struct string *s) {
   if (s->length==0)
     return -1;
   else
     return s->chars[0];
 }
 
-struct string *chr(int i) {
+struct string *tig_chr(int i) {
   if (i < 0 || i >= 256) {
     printf("chr(%d) out of range\n",i); exit(1);}
   return consts+i;
 }
 
-int size(struct string *s) {
+int tig_size(struct string *s) {
   return s->length;
 }
 
-struct string *substring(struct string *s, int first, int n) {
+struct string *tig_substring(struct string *s, int first, int n) {
   if (first<0 || first+n>s->length) {
     printf("substring([%d],%d,%d) out of range\n",s->length,first,n);
     exit(1);
@@ -111,7 +111,7 @@ struct string *substring(struct string *s, int first, int n) {
   }
 }
 
-struct string *concat(struct string *a, struct string *b) {
+struct string *tig_concat(struct string *a, struct string *b) {
   if (a->length==0) return b;
   else if (b->length==0) return a;
   else {
@@ -126,11 +126,11 @@ struct string *concat(struct string *a, struct string *b) {
   }
 }
 
-int not(int x) {
+int tig_not(int x) {
   return !x;
 }
 
-struct string *getchr() {
+struct string *tig_getchar() {
   int i=getc(stdin);
   if (i==EOF)
     return &empty;

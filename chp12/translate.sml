@@ -113,12 +113,12 @@ struct
     | intOpExp (oper as A.GeOp, l, r) =
         Cx (fn (t, f) => T.CJUMP((convertAopTrelop oper), unEx l, unEx r, t, f))
 
-  fun strOpExp (A.EqOp,  l, r) = Ex (F.externCallFn("mystrcmp", [unEx l] @ [unEx r] @ [T.CONST 0]))
-    | strOpExp (A.NeqOp, l, r) = Ex (F.externCallFn("mystrcmp", [unEx l] @ [unEx r] @ [T.CONST 1]))
-    | strOpExp (A.LtOp,  l, r) = Ex (F.externCallFn("mystrcmp", [unEx l] @ [unEx r] @ [T.CONST 2]))
-    | strOpExp (A.LeOp,  l, r) = Ex (F.externCallFn("mystrcmp", [unEx l] @ [unEx r] @ [T.CONST 3]))
-    | strOpExp (A.GtOp,  l, r) = Ex (F.externCallFn("mystrcmp", [unEx l] @ [unEx r] @ [T.CONST 4]))
-    | strOpExp (A.GeOp,  l, r) = Ex (F.externCallFn("mystrcmp", [unEx l] @ [unEx r] @ [T.CONST 5]))
+  fun strOpExp (A.EqOp,  l, r) = Ex (F.externCallFn("tig_strcmp", [unEx l] @ [unEx r] @ [T.CONST 0]))
+    | strOpExp (A.NeqOp, l, r) = Ex (F.externCallFn("tig_strcmp", [unEx l] @ [unEx r] @ [T.CONST 1]))
+    | strOpExp (A.LtOp,  l, r) = Ex (F.externCallFn("tig_strcmp", [unEx l] @ [unEx r] @ [T.CONST 2]))
+    | strOpExp (A.LeOp,  l, r) = Ex (F.externCallFn("tig_strcmp", [unEx l] @ [unEx r] @ [T.CONST 3]))
+    | strOpExp (A.GtOp,  l, r) = Ex (F.externCallFn("tig_strcmp", [unEx l] @ [unEx r] @ [T.CONST 4]))
+    | strOpExp (A.GeOp,  l, r) = Ex (F.externCallFn("tig_strcmp", [unEx l] @ [unEx r] @ [T.CONST 5]))
     | strOpExp _               = (error 0 "Internal Failure: strOpExp."; Ex (T.CONST 0))
 
   fun intExp i = Ex (T.CONST i)
@@ -152,7 +152,7 @@ struct
       val size' = case (unEx size) of
                     T.CONST x => T.CONST (x + 1)
                   | e         => T.BINOP(T.PLUS, e, T.CONST 1)
-      val arr = F.externCallFn ("initArray", [size']@[(unEx init)])
+      val arr = F.externCallFn ("tig_initArray", [size']@[(unEx init)])
       val tmp = T.TEMP (Temp.newtemp ())
       val save = T.MOVE (tmp, arr)
       val savesize = T.MOVE (T.MEM tmp, (unEx size))
@@ -164,7 +164,7 @@ struct
       val argsSize = List.length args
 
       val r = Temp.newtemp ()
-      val alloc = T.MOVE (T.TEMP r, F.externCallFn ("allocRecord", [T.CONST argsSize]))
+      val alloc = T.MOVE (T.TEMP r, F.externCallFn ("tig_allocRecord", [T.CONST argsSize]))
 
       val posArgs = foldr (fn (arg, ans) => ans @ [(arg, length ans)]) [] args
       fun pushArg ((arg, off), res) =

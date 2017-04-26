@@ -68,19 +68,18 @@ struct
 
   fun color {igraph as Liveness.IGRAPH {graph, moves}, spillCost} =
     let
-      val avalRegs = F.allRegisters
+      val avalRegs = F.colorRegisters
 
       val nColors = (List.length avalRegs)
 
       val precoloredNodes = List.foldl
                               (fn (x, m) =>
                                  (Temp.Map.insert (m, (F.getRegTemp x), x)))
-                              Temp.Map.empty avalRegs
+                              Temp.Map.empty F.allRegisters
 
       val allColors = Temp.Set.addList(
                         Temp.Set.empty,
-                        List.map (fn (k, v) => k)
-                                 (Temp.Map.listItemsi precoloredNodes))
+                        List.map F.getRegTemp avalRegs)
 
       fun addToMap (mMap, v1, v2) =
         let val assocMove = TNM.find (mMap, v1)
@@ -130,7 +129,7 @@ struct
                                (fn (x, m) =>
                                   (Temp.Map.insert (m, (F.getRegTemp x),
                                                        (F.getRegTemp x))))
-                               Temp.Map.empty avalRegs)
+                               Temp.Map.empty F.allRegisters)
 
       fun adjacents node =
         TNS.difference(TNS.addList(TNS.empty, FG.adj' (!graph) node),

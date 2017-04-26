@@ -31,6 +31,7 @@ sig
   val callerRegs  : register list
 
   val allRegisters   : register list
+  val colorRegisters : register list
 
   (* Register Utilities *)
   val regToString : register -> string
