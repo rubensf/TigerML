@@ -443,7 +443,8 @@ struct
 
                     val escList = foldl (fn (x, ans) => !(#escape x)::ans) [] params
                     val trLevelName = Temp.newlabel ()
-                    val trNewLevel = R.newLevel {parent=level, name=trLevelName, parameters=escList}
+                    (* Accounting for static link *)
+                    val trNewLevel = R.newLevel {parent=level, name=trLevelName, parameters=true::escList}
                   in
                     S.enter(venv, name, E.FunEntry{level=trNewLevel, label=trLevelName, parameters=params', result=result_ty})
                   end
