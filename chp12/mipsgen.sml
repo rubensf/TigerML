@@ -208,6 +208,10 @@ struct
             emit(A.OPER {assem="addi    `d0, `s0, " ^ i2s i ^ "\n",
                          src=[F.getRegTemp "$0"],
                          dst=[t], jump=NONE})
+        | munchStm (T.MOVE(T.TEMP t, T.NAME l)) =
+            emit(A.OPER {assem="la      `d0, " ^ (Temp.labelToString l) ^ "\n",
+                         src=[],
+                         dst=[t], jump=NONE})
         | munchStm (T.MOVE(T.TEMP t, e)) =
             emit(A.MOVE {assem="move    `d0, `s0\n",
                          src=(munchExp e),
