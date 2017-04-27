@@ -5,6 +5,7 @@ assem.sml
 canon.sml
 codegen.sig
 color.sml
+double_linked_list.sml
 errormsg.sml
 env.sml
 findescape.sml
@@ -12,6 +13,7 @@ flowgraph.sml
 funcgraph.sig
 funcgraph.sml
 frame.sig
+linked_list.sig
 liveness.sml
 main.sml
 makegraph.sml
@@ -20,7 +22,6 @@ mipsgen.sml
 parsetest.sml
 printtree.sml
 prabsyn.sml
-regalloc.sml
 semant.sml
 symbol.sml
 table.sig

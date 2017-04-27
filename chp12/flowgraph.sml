@@ -14,8 +14,6 @@ struct
           def: TempSet.set NodeMap.map,
           use: TempSet.set NodeMap.map}
 
-  val aaaa = 0
-
   fun makeDefUse g =
     let
       fun handleBlock block =
@@ -42,7 +40,9 @@ struct
             | step (A.MOVE mov, defUse) = 
                 doThing([#src mov], [#dst mov], defUse)
         in
-          List.foldl step {def=TempSet.empty, use=TempSet.empty} (FG.nodeInfo block)
+          List.foldl step
+                     {def=TempSet.empty, use=TempSet.empty}
+                     (FG.nodeInfo block)
         end
     in
       List.foldl (fn (x, {def, use}) =>
@@ -56,7 +56,7 @@ struct
                  {def=NodeMap.empty, use=NodeMap.empty}
                  (FG.nodes g)
     end
-  
+
   fun printFlow (FGRAPH {control, def, use}, format, makestr) =
     (print "Printing new frame:\n";
      List.app (fn blockData =>

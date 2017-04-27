@@ -47,6 +47,13 @@ struct
   val T8 = Temp.newtemp ()
   val T9 = Temp.newtemp ()
 
+  val registers1 = ["$r0", "$at", "$rv", "$v1", "$k0", "$k1", "$gp", "$sp", "$fp", "$ra", "$a0", "$a1", "$a2", "$a3"]
+  val registers2 = ["$s0","$s1","$s2","$s3","$s4","$s5","$s6","$s7"]
+  val registers3 = ["$t0","$t1","$t2","$t3","$t4","$t5","$t6","$t7","$t8","$t9"]
+  
+  val allRegisters = (registers1 @ registers2) @ registers3
+  val colorRegisters = registers2 @ registers3
+
   val specialRegs = [
     (r0, "$r0"),
     (at, "$at"),
@@ -91,6 +98,8 @@ struct
     (T9, "$t9")
   ]
 
+  fun regToString r = r
+
   val tempMap =
     let
       fun map_add ((t,s), map) = Temp.Map.insert(map, t, s);
@@ -98,9 +107,10 @@ struct
       foldr map_add Temp.Map.empty (specialRegs @ argsRegs @ callerRegs @ calleeRegs)
     end
 
-  fun makestring (t:Temp.temp) = case Temp.Map.find(tempMap, t) of
-    SOME(s) => s
-  | NONE    => Temp.makestring t
+  fun makestring (t:Temp.temp) =
+    case Temp.Map.find(tempMap, t) of
+      SOME(s) => s
+    | NONE    => Temp.makestring t
   fun name (f: frame)       = #1 f
   fun formals (f: frame)    = #2 f
 

@@ -1,0 +1,599 @@
+local
+  basis l4 =
+    bas
+      (* $/basis.cm ====> *) $(SML_LIB)/basis/basis.mlb
+    end
+  basis l14 =
+    bas
+      (* $/smlnj-lib.cm ====> *) $(SML_LIB)/smlnj-lib/Util/smlnj-lib.mlb
+    end
+  basis l127 =
+    bas
+      (* $/ml-yacc-lib.cm ====> *) $(SML_LIB)/mlyacc-lib/mlyacc-lib.mlb
+    end
+in
+local
+   $(SML_LIB)/basis/pervasive.mlb
+   local
+      open l4
+   in
+      structure gs_0 = TextIO
+   end
+   local
+      open l4
+   in
+      structure gs_1 = List
+   end
+   local
+      open l14
+   in
+      structure gs_2 = HashTable
+   end
+   local
+      open l14
+   in
+      structure gs_3 = HashString
+   end
+   local
+      open l4
+   in
+      structure gs_4 = String
+   end
+   local
+      open l14
+   in
+      structure gs_5 = IntBinaryMap
+   end
+   local
+      table.sig
+   in
+      signature gs_6 = TABLE
+   end
+   local
+      structure IntBinaryMap = gs_5
+      signature TABLE = gs_6
+      table.sml
+   in
+      functor gs_7 = IntMapTable
+   end
+   local
+      structure HashString = gs_3
+      structure HashTable = gs_2
+      functor IntMapTable = gs_7
+      structure String = gs_4
+      symbol.sml
+   in
+      signature gs_8 = SYMBOL
+      structure gs_9 = Symbol
+   end
+   local
+      signature SYMBOL = gs_8
+      structure Symbol = gs_9
+      absyn.sml
+   in
+      structure gs_10 = Absyn
+   end
+   local
+      open l14
+   in
+      functor gs_11 = SplayMapFn
+   end
+   local
+      open l14
+   in
+      functor gs_12 = SplaySetFn
+   end
+   local
+      open l4
+   in
+      structure gs_13 = Int
+   end
+   local
+      open l14
+   in
+      signature gs_14 = ORD_MAP
+   end
+   local
+      open l14
+   in
+      signature gs_15 = ORD_SET
+   end
+   local
+      signature ORD_MAP = gs_14
+      signature ORD_SET = gs_15
+      signature SYMBOL = gs_8
+      structure Symbol = gs_9
+      temp.sig
+   in
+      signature gs_16 = TEMP
+   end
+   local
+      structure Int = gs_13
+      signature SYMBOL = gs_8
+      functor SplayMapFn = gs_11
+      functor SplaySetFn = gs_12
+      structure Symbol = gs_9
+      signature TEMP = gs_16
+      temp.sml
+   in
+      structure gs_17 = Temp
+   end
+   local
+      structure Temp = gs_17
+      tree.sml
+   in
+      signature gs_18 = TREE
+      structure gs_19 = Tree
+   end
+   local
+      structure Absyn = gs_10
+      signature TREE = gs_18
+      structure Temp = gs_17
+      structure Tree = gs_19
+      translate.sig
+   in
+      signature gs_20 = TRANSLATE
+   end
+   local
+      structure Int = gs_13
+      structure TextIO = gs_0
+      errormsg.sml
+   in
+      signature gs_21 = ERRORMSG
+      structure gs_22 = ErrorMsg
+   end
+   local
+      signature ERRORMSG = gs_21
+      structure ErrorMsg = gs_22
+      signature SYMBOL = gs_8
+      structure Symbol = gs_9
+      signature TREE = gs_18
+      structure Temp = gs_17
+      structure Tree = gs_19
+      canon.sml
+   in
+      signature gs_23 = CANON
+      structure gs_24 = Canon
+   end
+   local
+      structure Int = gs_13
+      signature TREE = gs_18
+      structure Temp = gs_17
+      structure TextIO = gs_0
+      structure Tree = gs_19
+      printtree.sml
+   in
+      structure gs_25 = Printtree
+   end
+   local
+      signature ERRORMSG = gs_21
+      structure ErrorMsg = gs_22
+      structure List = gs_1
+      signature SYMBOL = gs_8
+      structure Symbol = gs_9
+      structure Temp = gs_17
+      assem.sml
+   in
+      structure gs_26 = Assem
+   end
+   local
+      structure Assem = gs_26
+      signature TREE = gs_18
+      structure Temp = gs_17
+      structure Tree = gs_19
+      frame.sig
+   in
+      signature gs_27 = FRAME
+   end
+   local
+      structure Absyn = gs_10
+      signature CANON = gs_23
+      structure Canon = gs_24
+      signature ERRORMSG = gs_21
+      structure ErrorMsg = gs_22
+      signature FRAME = gs_27
+      structure List = gs_1
+      structure Printtree = gs_25
+      signature TRANSLATE = gs_20
+      signature TREE = gs_18
+      structure Temp = gs_17
+      structure TextIO = gs_0
+      structure Tree = gs_19
+      translate.sml
+   in
+      functor gs_28 = Translate
+   end
+   local
+      open l4
+   in
+      structure gs_29 = Bool
+   end
+   local
+      structure Absyn = gs_10
+      structure Bool = gs_29
+      structure Int = gs_13
+      signature SYMBOL = gs_8
+      structure Symbol = gs_9
+      structure TextIO = gs_0
+      prabsyn.sml
+   in
+      structure gs_30 = PrintAbsyn
+   end
+   local
+      open l4
+   in
+      structure gs_31 = Word
+   end
+   local
+      structure Assem = gs_26
+      signature TREE = gs_18
+      structure Tree = gs_19
+      codegen.sig
+   in
+      signature gs_32 = CODEGEN
+   end
+   local
+      structure Assem = gs_26
+      signature FRAME = gs_27
+      signature SYMBOL = gs_8
+      structure Symbol = gs_9
+      signature TREE = gs_18
+      structure Temp = gs_17
+      structure Tree = gs_19
+      mipsframe.sml
+   in
+      structure gs_33 = MipsFrame
+   end
+   local
+      structure Assem = gs_26
+      signature CODEGEN = gs_32
+      signature ERRORMSG = gs_21
+      structure ErrorMsg = gs_22
+      structure Int = gs_13
+      structure List = gs_1
+      structure MipsFrame = gs_33
+      signature TREE = gs_18
+      structure Temp = gs_17
+      structure Tree = gs_19
+      structure Word = gs_31
+      mipsgen.sml
+   in
+      structure gs_34 = MipsGen
+   end
+   local
+      open l127
+   in
+      signature gs_35 = ARG_LEXER
+      signature gs_36 = ARG_PARSER
+      signature gs_37 = LEXER
+      signature gs_38 = LR_PARSER
+      signature gs_39 = LR_TABLE
+      signature gs_40 = PARSER
+      signature gs_41 = PARSER_DATA
+      signature gs_42 = STREAM
+      signature gs_43 = TOKEN
+   end
+   local
+      signature ARG_LEXER = gs_35
+      signature ARG_PARSER = gs_36
+      signature LEXER = gs_37
+      signature LR_PARSER = gs_38
+      signature LR_TABLE = gs_39
+      signature PARSER = gs_40
+      signature PARSER_DATA = gs_41
+      signature STREAM = gs_42
+      signature TOKEN = gs_43
+      tiger.grm.sig
+   in
+      signature gs_44 = Tiger_LRVALS
+      signature gs_45 = Tiger_TOKENS
+   end
+   local
+      structure Absyn = gs_10
+      signature SYMBOL = gs_8
+      structure Symbol = gs_9
+      findescape.sml
+   in
+      structure gs_46 = FindEscape
+   end
+   local
+      open l14
+   in
+      signature gs_47 = ORD_KEY
+   end
+   local
+      open l4
+   in
+      structure gs_48 = Option
+   end
+   local
+      funcgraph.sig
+   in
+      signature gs_49 = FUNCGRAPH
+   end
+   local
+      signature FUNCGRAPH = gs_49
+      signature ORD_KEY = gs_47
+      functor SplayMapFn = gs_11
+      functor SplaySetFn = gs_12
+      funcgraph.sml
+   in
+      functor gs_50 = FuncGraph
+   end
+   local
+      structure Assem = gs_26
+      functor FuncGraph = gs_50
+      structure List = gs_1
+      signature SYMBOL = gs_8
+      functor SplayMapFn = gs_11
+      structure Symbol = gs_9
+      structure Temp = gs_17
+      flowgraph.sml
+   in
+      structure gs_51 = Flow
+   end
+   local
+      structure Assem = gs_26
+      signature FUNCGRAPH = gs_49
+      structure Flow = gs_51
+      functor FuncGraph = gs_50
+      structure List = gs_1
+      structure MipsFrame = gs_33
+      signature ORD_KEY = gs_47
+      structure Option = gs_48
+      signature TEMP = gs_16
+      structure Temp = gs_17
+      structure TextIO = gs_0
+      liveness.sml
+   in
+      structure gs_52 = Liveness
+   end
+   local
+      structure Assem = gs_26
+      signature ERRORMSG = gs_21
+      structure ErrorMsg = gs_22
+      structure Flow = gs_51
+      structure List = gs_1
+      structure Temp = gs_17
+      makegraph.sml
+   in
+      structure gs_53 = MakeGraph
+   end
+   local
+      signature FRAME = gs_27
+      structure List = gs_1
+      structure Liveness = gs_52
+      structure Option = gs_48
+      structure Temp = gs_17
+      color.sml
+   in
+      signature gs_54 = COLOR
+      functor gs_55 = Color
+   end
+   local
+      structure Assem = gs_26
+      signature COLOR = gs_54
+      functor Color = gs_55
+      signature FRAME = gs_27
+      structure Liveness = gs_52
+      structure MakeGraph = gs_53
+      regalloc.sml
+   in
+      signature gs_56 = REGALLOC
+      functor gs_57 = RegAlloc
+   end
+   local
+      open l4
+   in
+      structure gs_58 = Math
+   end
+   local
+      open l4
+   in
+      structure gs_59 = IO
+   end
+   local
+      open l4
+   in
+      structure gs_60 = TextPrimIO
+   end
+   local
+      open l4
+   in
+      structure gs_61 = Vector
+   end
+   local
+      open l4
+   in
+      structure gs_62 = Char
+   end
+   local
+      structure Char = gs_62
+      signature ERRORMSG = gs_21
+      structure ErrorMsg = gs_22
+      structure IO = gs_59
+      structure Int = gs_13
+      structure List = gs_1
+      structure Math = gs_58
+      structure Option = gs_48
+      structure String = gs_4
+      structure TextIO = gs_0
+      structure TextPrimIO = gs_60
+      signature Tiger_LRVALS = gs_44
+      signature Tiger_TOKENS = gs_45
+      structure Vector = gs_61
+      tiger.lex.sml
+   in
+      functor gs_63 = TigerLexFun
+   end
+   local
+      signature SYMBOL = gs_8
+      structure Symbol = gs_9
+      types.sml
+   in
+      structure gs_64 = Types
+   end
+   local
+      open l127
+   in
+      functor gs_65 = Join
+      functor gs_66 = JoinWithArg
+   end
+   local
+      open l127
+   in
+      structure gs_67 = LrParser
+   end
+   local
+      open l4
+   in
+      structure gs_68 = Array
+   end
+   local
+      open l4
+   in
+      structure gs_69 = General
+   end
+   local
+      signature ARG_LEXER = gs_35
+      signature ARG_PARSER = gs_36
+      structure Absyn = gs_10
+      structure Array = gs_68
+      structure Char = gs_62
+      structure General = gs_69
+      signature LEXER = gs_37
+      signature LR_PARSER = gs_38
+      signature LR_TABLE = gs_39
+      structure List = gs_1
+      signature PARSER = gs_40
+      signature PARSER_DATA = gs_41
+      signature STREAM = gs_42
+      signature SYMBOL = gs_8
+      structure String = gs_4
+      structure Symbol = gs_9
+      signature TOKEN = gs_43
+      signature Tiger_LRVALS = gs_44
+      signature Tiger_TOKENS = gs_45
+      tiger.grm.sml
+   in
+      functor gs_70 = TigerLrValsFun
+   end
+   local
+      structure Absyn = gs_10
+      signature ERRORMSG = gs_21
+      structure ErrorMsg = gs_22
+      structure Int = gs_13
+      functor Join = gs_65
+      functor JoinWithArg = gs_66
+      structure LrParser = gs_67
+      structure PrintAbsyn = gs_30
+      structure TextIO = gs_0
+      functor TigerLexFun = gs_63
+      functor TigerLrValsFun = gs_70
+      parsetest.sml
+   in
+      structure gs_71 = Parse
+   end
+   local
+      signature SYMBOL = gs_8
+      structure Symbol = gs_9
+      signature TRANSLATE = gs_20
+      structure Temp = gs_17
+      structure Types = gs_64
+      env.sml
+   in
+      signature gs_72 = ENV
+      functor gs_73 = Env
+   end
+   local
+      structure Absyn = gs_10
+      signature ENV = gs_72
+      signature ERRORMSG = gs_21
+      functor Env = gs_73
+      structure ErrorMsg = gs_22
+      structure List = gs_1
+      structure PrintAbsyn = gs_30
+      signature SYMBOL = gs_8
+      structure Symbol = gs_9
+      signature TRANSLATE = gs_20
+      structure Temp = gs_17
+      structure Types = gs_64
+      semant.sml
+   in
+      signature gs_74 = SEMANT
+      functor gs_75 = Semant
+   end
+   local
+      structure Assem = gs_26
+      signature CANON = gs_23
+      signature COLOR = gs_54
+      structure Canon = gs_24
+      functor Color = gs_55
+      signature ERRORMSG = gs_21
+      structure ErrorMsg = gs_22
+      structure FindEscape = gs_46
+      structure Flow = gs_51
+      structure List = gs_1
+      structure Liveness = gs_52
+      structure MakeGraph = gs_53
+      structure MipsFrame = gs_33
+      structure MipsGen = gs_34
+      structure Option = gs_48
+      structure Parse = gs_71
+      structure PrintAbsyn = gs_30
+      structure Printtree = gs_25
+      signature SEMANT = gs_74
+      functor Semant = gs_75
+      structure Temp = gs_17
+      structure TextIO = gs_0
+      functor Translate = gs_28
+      main.sml
+   in
+      structure gs_76 = Main
+   end
+in
+   structure Absyn = gs_10
+   structure Assem = gs_26
+   signature CANON = gs_23
+   signature CODEGEN = gs_32
+   signature COLOR = gs_54
+   structure Canon = gs_24
+   functor Color = gs_55
+   signature ENV = gs_72
+   signature ERRORMSG = gs_21
+   functor Env = gs_73
+   structure ErrorMsg = gs_22
+   signature FRAME = gs_27
+   signature FUNCGRAPH = gs_49
+   structure FindEscape = gs_46
+   structure Flow = gs_51
+   functor FuncGraph = gs_50
+   functor IntMapTable = gs_7
+   structure Liveness = gs_52
+   structure Main = gs_76
+   structure MakeGraph = gs_53
+   structure MipsFrame = gs_33
+   structure MipsGen = gs_34
+   structure Parse = gs_71
+   structure PrintAbsyn = gs_30
+   structure Printtree = gs_25
+   signature REGALLOC = gs_56
+   functor RegAlloc = gs_57
+   signature SEMANT = gs_74
+   signature SYMBOL = gs_8
+   functor Semant = gs_75
+   structure Symbol = gs_9
+   signature TABLE = gs_6
+   signature TEMP = gs_16
+   signature TRANSLATE = gs_20
+   signature TREE = gs_18
+   structure Temp = gs_17
+   functor TigerLexFun = gs_63
+   functor TigerLrValsFun = gs_70
+   signature Tiger_LRVALS = gs_44
+   signature Tiger_TOKENS = gs_45
+   functor Translate = gs_28
+   structure Tree = gs_19
+   structure Types = gs_64
+end
+end

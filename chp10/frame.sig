@@ -35,6 +35,8 @@ sig
   val calleeRegs  : (Temp.temp * register) list
   val callerRegs  : (Temp.temp * register) list
 
+  val regToString : register -> string
+
   (* Auxiliar, arch dependent functions *)
   val expFn        : access -> Tree.exp -> Tree.exp (* Get's the specific access function. *)
   val externCallFn : string * Tree.exp list -> Tree.exp (* Calls an external function, such as C heap management. *)
@@ -45,7 +47,6 @@ sig
      ones are "live" at the end of a function execution. *)
   val procEntryExit2 : frame * Assem.instr list -> Assem.instr list
 
-  val tempMap : register Temp.Map.map
-  val makestring : Temp.temp -> string
+  val makestring  : Temp.temp -> string
   val getRegTemps : (Temp.temp * register) list -> Temp.temp list
 end
