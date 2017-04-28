@@ -20,18 +20,15 @@ struct
   structure F = F
   structure T = Temp
   structure FG = Liveness.FG
-  structure DLL = DoubleLinkedList
 
   val gnID = FG.getNodeID
 
-  structure DoubleTempNodeOrdKey =
-    struct type ord_key = (Temp.temp FG.node * Temp.temp FG.node)
+  structure DoubleTempOrdKey =
+    struct type ord_key = (Temp.temp * Temp.temp)
            val compare = (fn ((v11, v12), (v21, v22)) =>
                             let
-                              val c1 = Temp.compare (gnID v11,
-                                                     gnID v21)
-                              val c2 = Temp.compare (gnID v12,
-                                                     gnID v22)
+                              val c1 = Temp.compare (v11, v21)
+                              val c2 = Temp.compare (v12, v22)
                             in
                               case (c1, c2) of
                                 (LESS, _)      => LESS
@@ -41,28 +38,20 @@ struct
                             end)
     end
 
-  structure TempNodeOrdKey =
-    struct type ord_key = Temp.temp FG.node
-           val compare = (fn (v1, v2) =>
-                            Temp.compare (gnID v1, gnID v2))
-    end
-
-  structure TempNodeMap = SplayMapFn(TempNodeOrdKey)
-  structure TempNodeSet = SplaySetFn(TempNodeOrdKey)
-  structure DoubleTempNodeSet = SplaySetFn(DoubleTempNodeOrdKey)
+  structure DoubleTempSet = SplaySetFn(DoubleTempOrdKey)
 
   (* Shortcuts *)
-  structure TNM = TempNodeMap
-  structure TNS = TempNodeSet
-  structure DTNS = DoubleTempNodeSet
+  structure TM = Temp.Map
+  structure TS = Temp.Set
+  structure DTS = DoubleTempSet
 
   fun reorderNodes (v1, v2) =
-    case Temp.compare (gnID v1, gnID v2) of
+    case Temp.compare (v1, v2) of
       LESS    => (v1, v2)
     | EQUAL   => (v1, v2)
     | GREATER => (v2, v1)
 
-  type allocation = F.register Temp.Map.map
+  type allocation = F.register TM.map
   type registerlist = F.register list
   type node = Temp.temp Liveness.FG.node
 
@@ -74,34 +63,36 @@ struct
 
       val precoloredNodes = List.foldl
                               (fn (x, m) =>
-                                 (Temp.Map.insert (m, (F.getRegTemp x), x)))
-                              Temp.Map.empty F.allRegisters
+                                 (TM.insert (m, (F.getRegTemp x), x)))
+                              TM.empty F.allRegisters
 
-      val allColors = Temp.Set.addList(
-                        Temp.Set.empty,
+      val allColors = TS.addList(
+                        TS.empty,
                         List.map F.getRegTemp avalRegs)
 
       fun addToMap (mMap, v1, v2) =
-        let val assocMove = TNM.find (mMap, v1)
+        let val assocMove = TM.find (mMap, v1)
         in case assocMove of
-             SOME nodeSet => TNM.insert(mMap, v1, TNS.add(nodeSet, v2))
-           | NONE         => TNM.insert(mMap, v1, TNS.add(TNS.empty, v2))
+             SOME nodeSet => TM.insert(mMap, v1, TS.add(nodeSet, v2))
+           | NONE         => TM.insert(mMap, v1, TS.add(TS.empty, v2))
         end
 
       val (movesSet, movesMap) =
         List.foldl (
           fn ((v1, v2), (mSet, mMap)) =>
             let
+              val v1 = (gnID v1)
+              val v2 = (gnID v2)
               val mMap'  = addToMap(mMap , v1, v2)
               val mMap'' = addToMap(mMap', v2, v1)
-              val mSet'  = DTNS.add (mSet, (reorderNodes (v1, v2)))
+              val mSet'  = DTS.add (mSet, (reorderNodes (v1, v2)))
             in
               (mSet', mMap'')
             end)
-          (DTNS.empty, TNM.empty) moves
+          (DTS.empty, TM.empty) moves
 
-      fun isPrecolored n =
-        case F.getTempReg (FG.nodeInfo n) of
+      fun isPrecolored nID =
+        case F.getTempReg nID of
           SOME(r) => true
         | _       => false
 
@@ -110,201 +101,207 @@ struct
 
       val movesMap = ref movesMap
 
-      val spillWL = ref DLL.empty
-      val freezeWL = ref DLL.empty
-      val simplifyWL = ref DLL.empty
+      val spillWL = ref []
+      val freezeWL = ref []
+      val simplifyWL = ref []
 
       val movesWL = ref movesSet
-      val movesActive = ref DTNS.empty
-      val movesFrozen = ref DTNS.empty
-      val movesConstrained = ref DTNS.empty
-      val movesCoalesced = ref DTNS.empty
+      val movesActive = ref DTS.empty
+      val movesFrozen = ref DTS.empty
+      val movesConstrained = ref DTS.empty
+      val movesCoalesced = ref DTS.empty
 
       val selectStack = ref []
-      val coalescedNodes = ref TNS.empty
-      val spilledNodes = ref TNS.empty
+      val coalescedNodes = ref TS.empty
+      val spilledNodes = ref TS.empty
 
-      val alias = ref TNM.empty
+      val alias = ref TM.empty
       val colors = ref (List.foldl
                                (fn (x, m) =>
-                                  (Temp.Map.insert (m, (F.getRegTemp x),
+                                  (TM.insert (m, (F.getRegTemp x),
                                                        (F.getRegTemp x))))
-                               Temp.Map.empty F.allRegisters)
+                               TM.empty F.allRegisters)
 
-      fun adjacents node =
-        TNS.difference(TNS.addList(TNS.empty, FG.adj' (!graph) node),
-                       TNS.union(TNS.addList(TNS.empty, (!selectStack)),
+      fun adjacents nodeID =
+        TS.difference(TS.addList(
+                         TS.empty,
+                         (List.map gnID (FG.adj' (!graph) (gNode nodeID)))),
+                       TS.union(TS.addList(TS.empty, (!selectStack)),
                                  (!coalescedNodes)))
 
-      fun adjacents' nodeID =
-        adjacents (gNode nodeID)
-
-      fun filterMoves movesDTNS nID =
-        DTNS.filter
+      fun filterMoves movesDTS nID =
+        DTS.filter
           (fn (v1, v2) =>
-             ((gnID v1) = nID orelse (gnID v2) = nID))
-          movesDTNS
+             (v1 = nID orelse v2 = nID))
+          movesDTS
 
-      fun toFilteredMove movesDTNS nID =
-        TNS.addList
-          (TNS.empty,
+      fun toFilteredMove movesDTS nID =
+        TS.addList
+          (TS.empty,
            List.map
-             (fn (v1, v2) => if (gnID v1) = nID
+             (fn (v1, v2) => if v1 = nID
                              then v2
                              else v1)
-             (DTNS.listItems (filterMoves movesDTNS nID)))
+             (DTS.listItems (filterMoves movesDTS nID)))
 
-      fun nodeMoves node =
+      fun nodeMoves nID =
         let
-          val nID = gnID node
-          val mvs = TNM.find ((!movesMap), node)
+          val mvs = TM.find ((!movesMap), nID)
           val mvsWL = toFilteredMove (!movesWL) nID
           val mvsAt = toFilteredMove (!movesActive) nID
-          val mvsUnion = TNS.union (mvsWL, mvsAt)
+          val mvsUnion = TS.union (mvsWL, mvsAt)
         in
           case mvs of
-            SOME m => TNS.intersection (m, mvsUnion)
-          | NONE   => TNS.empty
+            SOME m => TS.intersection (m, mvsUnion)
+          | NONE   => TS.empty
         end
 
-      fun moveRelated node =
-        not (TNS.isEmpty (nodeMoves node))
+      fun moveRelated nodeID =
+        not (TS.isEmpty (nodeMoves nodeID))
 
       fun makeWLs node =
-        if (isPrecolored node)
-        then ()
-        else if FG.outDegree (node) >= nColors
-        then spillWL := DLL.addLast ((!spillWL), (gnID node))
-        else if moveRelated node
-        then freezeWL := DLL.addLast ((!freezeWL), (gnID node))
-        else simplifyWL := DLL.addLast ((!simplifyWL), (gnID node))
+        let val nID = (gnID node)
+        in
+          if (isPrecolored nID)
+          then ()
+          else if FG.outDegree (node) >= nColors
+          then spillWL := nID::(!spillWL)
+          else if moveRelated nID
+          then freezeWL := nID::(!freezeWL)
+          else simplifyWL := nID::(!simplifyWL)
+        end
 
-      fun enableMoves nodes =
-        TNS.app
-          (fn n =>
-             TNS.app
+      fun enableMoves nIDs =
+        TS.app
+          (fn nID =>
+             TS.app
                (fn x =>
                   let
-                    val nodeActiveMoves = filterMoves (!movesActive) (gnID n)
+                    val nodeActiveMoves = filterMoves (!movesActive) nID
                   in
-                    if (not (DTNS.isEmpty nodeActiveMoves))
-                    then (movesActive := DTNS.difference ((!movesActive),
+                    if (not (DTS.isEmpty nodeActiveMoves))
+                    then (movesActive := DTS.difference ((!movesActive),
                                                           nodeActiveMoves);
-                          movesWL := DTNS.union ((!movesWL), nodeActiveMoves))
+                          movesWL := DTS.union ((!movesWL), nodeActiveMoves))
                     else ()
                   end)
-               (nodeMoves n))
-          nodes
+               (nodeMoves nID))
+          nIDs
 
-      fun decrementoutDegreeEffects node =
-          if FG.outDegree node = nColors
-          then (enableMoves (TNS.add ((adjacents node), node));
-                spillWL := DLL.remove (!spillWL) (gnID node);
-                if (moveRelated node)
-                then freezeWL := DLL.addLast ((!freezeWL), (gnID node))
-                else simplifyWL := DLL.addLast ((!simplifyWL), (gnID node)))
+      fun decrementoutDegreeEffects nID =
+          if (FG.outDegree (gNode nID) = nColors) andalso
+              not (isPrecolored nID)
+          then (enableMoves (TS.add ((adjacents nID), nID));
+                spillWL := List.filter (fn x => x <> nID) (!spillWL);
+                if (moveRelated nID)
+                then freezeWL := nID::(!freezeWL)
+                else simplifyWL := nID::(!simplifyWL))
           else ()
 
       fun simplify () =
-        let val nodeID = DLL.peekFirst (!simplifyWL)
+        let val nodeID = List.hd (!simplifyWL)
         in
-          simplifyWL := DLL.popFirst (!simplifyWL);
-          selectStack := (gNode nodeID)::(!selectStack);
-          TNS.app decrementoutDegreeEffects (adjacents' nodeID)
+          simplifyWL := List.tl (!simplifyWL);
+          selectStack := nodeID::(!selectStack);
+          TS.app decrementoutDegreeEffects (adjacents nodeID)
         end
 
-      fun getNodeAlias node =
-        case TNM.find ((!alias), node) of
+      fun getNodeAlias nID =
+        case TM.find ((!alias), nID) of
           SOME n => getNodeAlias(n)
-        | NONE   => node
+        | NONE   => nID
 
-      fun freezeMoves node =
-        TNS.app
+      fun freezeMoves nID =
+        TS.app
           (fn x => let val v = getNodeAlias x
-                       val nodeMovesActive = filterMoves (!movesActive) (gnID x)
+                       val nodeMovesActive = filterMoves (!movesActive) x
+                       fun filt x = v <> x
                    in
-                     movesActive := DTNS.difference ((!movesActive),
+                     movesActive := DTS.difference ((!movesActive),
                                                      nodeMovesActive);
-                     movesFrozen := DTNS.union ((!movesFrozen),
+                     movesFrozen := DTS.union ((!movesFrozen),
                                                 nodeMovesActive);
-                     if TNS.isEmpty (nodeMoves v) andalso
-                        (FG.outDegree v) < nColors
-                     then (freezeWL := DLL.remove (!freezeWL) (gnID v);
-                           simplifyWL := DLL.addLast ((!simplifyWL), (gnID v)))
+                     if TS.isEmpty (nodeMoves v) andalso
+                        (FG.outDegree (gNode v)) < nColors
+                     then (freezeWL := List.filter filt (!freezeWL);
+                           simplifyWL := v::(!simplifyWL))
                      else ()
                    end)
-          (nodeMoves node)
+          (nodeMoves nID)
 
       fun freeze () =
-        let val nodeID = DLL.peekFirst (!freezeWL)
+        let val nodeID = List.hd (!freezeWL)
         in
-          freezeWL := DLL.popFirst (!freezeWL);
-          simplifyWL := DLL.addLast ((!simplifyWL), nodeID);
-          freezeMoves (gNode nodeID)
+          freezeWL := List.tl (!freezeWL);
+          simplifyWL := nodeID::(!simplifyWL);
+          freezeMoves nodeID
         end
 
       fun pickSpill () =
-        let val nodeID = DLL.peekFirst (!spillWL)
+        let val nodeID = List.hd (!spillWL)
         in
-          spillWL := DLL.popFirst (!spillWL);
-          simplifyWL := DLL.addLast ((!simplifyWL), nodeID);
-          freezeMoves (gNode nodeID)
+          spillWL := List.tl (!spillWL);
+          simplifyWL := nodeID::(!simplifyWL);
+          freezeMoves nodeID
         end
 
       fun combine (u, v) =
         let
-          val mvU = Option.valOf (TNM.find ((!movesMap), u))
-          val mvV = Option.valOf (TNM.find ((!movesMap), v))
+          val mvU = Option.valOf (TM.find ((!movesMap), u))
+          val mvV = Option.valOf (TM.find ((!movesMap), v))
 
-          val adjsV = List.map (fn x => (gnID x))
-                               (TNS.listItems (adjacents v))
+          val nU = gNode u
+          val nV = gNode v
+
+          val adjsV = TS.listItems (adjacents v)
+          fun matchU x = x <> u
+          fun matchV x = x <> v
         in
-          if DLL.has (!freezeWL) (gnID v)
-          then freezeWL := DLL.remove (!freezeWL) (gnID v)
-          else simplifyWL := DLL.remove (!simplifyWL) (gnID v);
-          coalescedNodes := TNS.add((!coalescedNodes), v);
-          alias := TNM.insert ((!alias), v, u);
-          movesMap := TNM.insert ((!movesMap), u, TNS.union(mvU, mvV));
+          if List.exists matchV (!freezeWL)
+          then freezeWL := List.filter matchV (!freezeWL)
+          else simplifyWL := List.filter matchV (!simplifyWL);
+          coalescedNodes := TS.add((!coalescedNodes), v);
+          alias := TM.insert ((!alias), v, u);
+          movesMap := TM.insert ((!movesMap), u, TS.union(mvU, mvV));
+          enableMoves (adjacents v);
+          graph := FG.mergeNodes (!graph) (nU, nV);
+          List.app decrementoutDegreeEffects adjsV;
 
-          graph := FG.mergeNodes (!graph) (u, v);
-          List.app decrementoutDegreeEffects
-                   (List.map gNode adjsV);
-
-          if (FG.outDegree u) >= nColors andalso
-             (DLL.has (!freezeWL) (gnID u))
-          then (freezeWL := DLL.remove (!freezeWL) (gnID u);
-                spillWL := DLL.addLast ((!simplifyWL), (gnID u)))
+          if (FG.outDegree nU) >= nColors andalso
+             (List.exists matchU (!freezeWL))
+          then (freezeWL := List.filter matchU (!freezeWL);
+                spillWL := u::(!spillWL))
           else ()
         end
 
       fun ok (u, v)=
-        (FG.outDegree u) < nColors orelse
+        (FG.outDegree (gNode u)) < nColors orelse
         (isPrecolored u) orelse
-        (FG.isAdjacent (u, v))
+        (FG.isAdjacent ((gNode u), (gNode v)))
 
-      fun addWorkList node =
-        if not (isPrecolored node) andalso
-           not (moveRelated node) andalso
-           ((FG.outDegree node) < nColors)
-        then (freezeWL := DLL.remove (!freezeWL) (gnID node);
-              simplifyWL := DLL.addLast((!simplifyWL), (gnID node)))
+      fun addWorkList nID =
+        if not (isPrecolored nID) andalso
+           not (moveRelated nID) andalso
+           ((FG.outDegree (gNode nID)) < nColors)
+        then (freezeWL := List.filter (fn x => x <> nID) (!freezeWL);
+              simplifyWL := nID::(!simplifyWL))
         else ()
 
       fun briggs (u, v) =
-        (TNS.numItems (TNS.union((adjacents u),
-                                 (adjacents v))))
+        (TS.numItems (TS.union((adjacents u),
+                               (adjacents v))))
         < nColors
 
       fun george (u, v) =
-        (TNS.numItems
-          (TNS.filter
-             (fn x => (FG.outDegree x) >= nColors)
-             (TNS.union ((adjacents u), (adjacents v)))))
+        (TS.numItems
+          (TS.filter
+             (fn x => (FG.outDegree (gNode x)) >= nColors)
+             (TS.union ((adjacents u), (adjacents v)))))
         < nColors
 
       fun coalesce () =
         let
-          val mv = (List.hd (DTNS.listItems (!movesWL)))
+          val mv = (List.hd (DTS.listItems (!movesWL)))
           val (u, v) = mv
           val x = getNodeAlias u
           val y = getNodeAlias v
@@ -314,61 +311,71 @@ struct
                        else (x, y)
 
         in
-          movesWL := DTNS.delete ((!movesWL), mv);
+          movesWL := DTS.delete ((!movesWL), mv);
 
-          if (gnID u) = (gnID v)
-          then (movesCoalesced := DTNS.add ((!movesCoalesced), mv);
+          if u = v
+          then (movesCoalesced := DTS.add ((!movesCoalesced), mv);
                 addWorkList u)
-          else if (isPrecolored v) orelse FG.isAdjacent (u, v)
-          then (movesConstrained := DTNS.add ((!movesConstrained), mv);
+          else if (isPrecolored v) orelse FG.isAdjacent ((gNode u), (gNode v))
+          then (movesConstrained := DTS.add ((!movesConstrained), mv);
                 addWorkList u; addWorkList v)
           else if ((isPrecolored u) andalso
-                   (List.all (fn x => ok (x, u)) (TNS.listItems (adjacents v))))
+                   (List.all (fn x => ok (x, u)) (TS.listItems (adjacents v))))
                   orelse (george (u, v))
-          then (movesCoalesced := DTNS.add((!movesCoalesced), mv);
+          then (movesCoalesced := DTS.add((!movesCoalesced), mv);
                 combine(u, v);
                 addWorkList u)
-          else movesActive := DTNS.add ((!movesActive), mv)
+          else movesActive := DTS.add ((!movesActive), mv)
         end
 
       fun assignColors () =
         if not (List.null (!selectStack))
         then (let
-                val node = List.last (!selectStack)
-                val actualAdjs = List.map getNodeAlias (FG.adj' (!graph) node)
-                val actualAdjs = List.map gnID actualAdjs
+                val nID = List.last (!selectStack)
+                val actualAdjs = List.map getNodeAlias
+                                          (FG.adj (gNode nID))
                 val unavColors =
-                  Temp.Set.addList(
-                    Temp.Set.empty,
-                    List.mapPartial (fn x => Temp.Map.find((!colors), x))
+                  TS.addList(
+                    TS.empty,
+                    List.mapPartial (fn x => TM.find((!colors), x))
                                     actualAdjs);
-                val avalColors = Temp.Set.difference(allColors, unavColors)
+                val avalColors = TS.difference(allColors, unavColors)
               in
                 selectStack := List.rev (List.tl (List.rev (!selectStack)));
-                if Temp.Set.isEmpty avalColors
-                then spilledNodes := TNS.add((!spilledNodes), node)
+                if TS.isEmpty avalColors
+                then spilledNodes := TS.add((!spilledNodes), nID)
                 else colors :=
-                       Temp.Map.insert(
+                       TM.insert(
                          (!colors),
-                         (gnID node),
-                         (List.hd (Temp.Set.listItems avalColors)));
+                         nID,
+                         (List.hd (TS.listItems avalColors)));
                 assignColors ()
               end)
         else ()
 
+      fun printWLs () =
+        (print "simplify:\n";
+         List.app (fn x => print ((F.makeString x) ^ " - ")) (!simplifyWL);
+         print "\nfreeze:\n";
+         List.app (fn x => print ((Temp.makeString x) ^ " - ")) (!freezeWL);
+         print "\nspill:\n";
+         List.app (fn x => print ((Temp.makeString x) ^ " - ")) (!spillWL);
+         print "\n"
+        )
+
       fun bodyLoop () =
-        if (DLL.isEmpty (!simplifyWL) andalso
-            DLL.isEmpty (!freezeWL) andalso
-            DLL.isEmpty (!spillWL) andalso
-            DTNS.isEmpty (!movesWL))
+        if (List.null (!simplifyWL) andalso
+            List.null (!freezeWL) andalso
+            List.null (!spillWL) andalso
+            DTS.isEmpty (!movesWL))
         then ()
-        else if not (DLL.isEmpty (!simplifyWL))
+        else if not (List.null (!simplifyWL))
         then (simplify (); bodyLoop ())
-        else if not (DTNS.isEmpty (!movesWL))
+        else if not (DTS.isEmpty (!movesWL))
         then (coalesce (); bodyLoop ())
-        else if not (DLL.isEmpty (!freezeWL))
+        else if not (List.null (!freezeWL))
         then (freeze (); bodyLoop ())
-        else if not (DLL.isEmpty (!spillWL))
+        else if not (List.null (!spillWL))
         then (pickSpill (); bodyLoop ())
         else ()
     in
@@ -376,13 +383,13 @@ struct
       bodyLoop ();
       assignColors ();
       colors :=
-        TNS.foldl
+        TS.foldl
           (fn (x, c) =>
-             Temp.Map.insert(
-               c, gnID x,
-               Option.valOf (Temp.Map.find ((!colors), (gnID (getNodeAlias x))))))
+             TM.insert(
+               c, x,
+               Option.valOf (TM.find ((!colors), (getNodeAlias x)))))
           (!colors) (!coalescedNodes);
-      ((Temp.Map.map (fn k => Option.valOf (F.getTempReg k)) (!colors)),
-       (List.map gnID (TNS.listItems (!spilledNodes))))
+      ((TM.map (fn k => Option.valOf (F.getTempReg k)) (!colors)),
+               TS.listItems (!spilledNodes))
     end
 end

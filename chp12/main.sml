@@ -188,7 +188,9 @@ struct
                 else if verbose > 2
                 then (print "==========Printing Interference Graph==========\n";
                       List.app (fn (_, _, igraph, _, _) =>
-                                  Liveness.show(outStream, igraph))
+                                  Liveness.show(outStream,
+                                                igraph,
+                                                F.makeString))
                                instrflowigraphframelist)
                 else ();
                 (instrflowigraphframelist, !err))

@@ -7,7 +7,7 @@ sig
     IGRAPH of {graph: T.temp FG.graph,
                moves: (T.temp FG.node * T.temp FG.node) list}
   val interferenceGraph: Flow.flowgraph -> igraph * (Assem.instr list Flow.FG.node -> T.Set.set)
-  val show: TextIO.outstream * igraph -> unit
+  val show: TextIO.outstream * igraph * (FG.nodeID -> string) -> unit
 end =
 struct
   structure TempOrdKey = struct type ord_key = Temp.temp
@@ -27,7 +27,7 @@ struct
   (* All the moves *)
   val moves : (T.temp FG.node * T.temp FG.node) list ref = ref []
 
-  fun computeLiveSets(Flow.FGRAPH{control, def, use}) =
+  fun computeLiveSets (Flow.FGRAPH{control, def, use}) =
     let
       val nodes = Flow.FG.nodes control
       val liveIn = foldl (fn (x,ans) => NodeMap.insert(ans, Flow.FG.getNodeID x, T.Set.empty)) NodeMap.empty nodes
@@ -124,7 +124,7 @@ struct
               val g = T.Set.foldl handleDefs g'' defSet
               val _ =
                 case instr of
-                  Assem.MOVE{assem=_, src=s, dst=d} => 
+                  Assem.MOVE{assem=_, src=s, dst=d} =>
                     let
                       val s' = FG.getNode(g, s)
                       val d' = FG.getNode(g, d)
@@ -143,15 +143,15 @@ struct
       foldl f FG.empty nodes
     end
 
-  fun show(outstream, IGRAPH {graph = graph, moves = moves}) =
+  fun show(outstream, IGRAPH {graph = graph, moves = moves}, makeStrF) =
     let
       val nodes = FG.nodes graph
       fun printNode node =
         let
-          val _ = TextIO.output(outstream, MipsFrame.makeString(FG.getNodeID node) ^  " => ")
+          val _ = TextIO.output(outstream, makeStrF (FG.getNodeID node) ^  " => ")
           fun f n =
             case FG.isAdjacent(node, n) of
-              true => TextIO.output(outstream, MipsFrame.makeString(FG.getNodeID n) ^ ", ")
+              true => TextIO.output(outstream, makeStrF (FG.getNodeID n) ^ ", ")
             | false => ()
           val _ = List.app f nodes
         in
@@ -159,12 +159,10 @@ struct
         end
       fun printMove (move: Temp.temp FG.node * Temp.temp FG.node) =
         let
-          val v1 = FG.getNodeID (#1 move)
-          val v1' = Temp.makeString v1
-          val v2 = FG.getNodeID (#2 move)
-          val v2' = Temp.makeString v2
+          val v1 = makeStrF (FG.getNodeID (#1 move))
+          val v2 = makeStrF (FG.getNodeID (#2 move))
         in
-          TextIO.output(outstream, v1' ^ "-" ^ v2' ^ "\n")
+          TextIO.output(outstream, v1 ^ "-" ^ v2 ^ "\n")
         end
     in
       TextIO.output(outstream, "==========Adjacent Nodes==========\n");
@@ -176,7 +174,7 @@ struct
   fun interferenceGraph(f as Flow.FGRAPH{control, def, use}) =
     let
       val _ = (moves := [])
-      val liveSets = computeLiveSets(f)
+      val liveSets = computeLiveSets f
       val liveIn = #inMap liveSets
       val liveOut = #outMap liveSets
       val ig = createInterferenceGraph(liveOut, def, control)

@@ -27,18 +27,18 @@ struct
     fun clearPrev (N {prev,...}) = prev := NONE
     fun clearNext (N {next,...}) = next := NONE
 
-    fun appL f (N {content, next=ref NONE,...}) = ()
+    fun appL f (N {content, next=ref NONE,...}) = (f content)
       | appL f (N {content, next=ref (SOME n),...}) =
           (f content; appL f n)
 
-    fun appR f (N {content, prev=ref NONE,...}) = ()
+    fun appR f (N {content, prev=ref NONE,...}) = (f content)
       | appR f (N {content, prev=ref (SOME p),...}) =
           (f content; appR f p)
 
-    fun foldL f ans (N {content, next=ref NONE,...}) = ans
+    fun foldL f ans (N {content, next=ref NONE,...}) = f (content, ans)
       | foldL f ans (N {content, next=ref (SOME n),...}) =
           (foldL f (f (content, ans)) n)
-    fun foldR f ans (N {content, prev=ref NONE,...}) = ans
+    fun foldR f ans (N {content, prev=ref NONE,...}) = f (content, ans)
       | foldR f ans (N {content, prev=ref (SOME p),...}) =
           (foldR f (f (content, ans)) p)
 
