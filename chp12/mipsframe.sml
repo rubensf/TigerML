@@ -17,7 +17,7 @@ struct
 
   fun newFrame {name, parameters} =
     let
-      val emptyAddr = ref 0
+      val emptyAddr = ref ~4
       fun buildFrame (addr, nil) = (emptyAddr := addr; nil)
         | buildFrame (addr, f::l) =
             case f of
@@ -25,7 +25,7 @@ struct
             | false => (InReg (Temp.newtemp ()))::buildFrame(addr, l)
     in
       {name=name,
-       parameters=buildFrame(0, parameters),
+       parameters=buildFrame((!emptyAddr), parameters),
        localsOffset=emptyAddr,
        maxArgsCall=ref 0}
     end
@@ -120,7 +120,7 @@ struct
     end
 
   fun resetFrame {name, parameters, localsOffset, maxArgsCall} =
-    localsOffset := 0
+    (localsOffset := ~4; maxArgsCall := 0)
 
   fun regToString r = r
   (* TODO: This mail fail >_> *)
@@ -144,6 +144,7 @@ struct
 
   fun externCallFn (s, args) =
     CALL (NAME (Temp.namedlabel s), args)
+
 
   fun seq (l: stm list) =
     case List.length l of
@@ -220,42 +221,64 @@ struct
     let
       val label = [Assem.LABEL {assem=Symbol.name name ^ ":\n", lab=name}]
 
-      val fpToStack = [Assem.OPER {assem="sw      `s0, -4(`s1)\n",
-                                   src=[getRegTemp "$fp", getRegTemp "$sp"],
-                                   dst=[], jump=NONE}]
-      val fpFromStack = [Assem.OPER {assem="lw      `d0, -4(`s0)\n",
-                                     src=[getRegTemp "$sp"],
-                                     dst=[getRegTemp "$fp"], jump=NONE}]
+      (* An extra wordsize for the frame pointer *)
+      val stackOffset = Int.~(!localsOffset) + ((!maxArgsCall) * wordSize) +
+                        wordSize
 
-      val newFp = [Assem.MOVE {assem="move    `d0, `s0\n",
-                               src=getRegTemp "$sp",
-                               dst=getRegTemp "$fp"}]
-      val oldFp = [Assem.MOVE {assem="move    `d0, `s0\n",
-                               src=getRegTemp "$fp",
-                               dst=getRegTemp "$sp"}]
-
-      val stackOffset = Int.~(!localsOffset) + ((!maxArgsCall) * wordSize)
       val pushStack = [Assem.OPER {assem="addiu   `d0, `s0, -" ^
                                          (Int.toString stackOffset) ^ "\n",
-                                   src=[getRegTemp "$sp"],
-                                   dst=[getRegTemp "$sp"], jump=NONE}]
+                                   src=[getRegTemp sp],
+                                   dst=[getRegTemp sp], jump=NONE}]
       val popStack = [Assem.OPER {assem="addiu   `d0, `s0, " ^
                                         (Int.toString stackOffset) ^ "\n",
-                                  src=[getRegTemp "$sp"],
-                                  dst=[getRegTemp "$sp"], jump=NONE}]
+                                  src=[getRegTemp sp],
+                                  dst=[getRegTemp sp], jump=NONE}]
+
+      val fpOffset = stackOffset - wordSize
+      val fpOffset' = Int.toString fpOffset
+      val fpToStack = [Assem.OPER {assem="sw      `s0, " ^ fpOffset' ^ "(`s1)\n",
+                                   src=[getRegTemp fp, getRegTemp sp],
+                                   dst=[], jump=NONE}]
+      val fpFromStack = [Assem.OPER {assem="lw      `d0, " ^ fpOffset' ^ "(`s0)\n",
+                                     src=[getRegTemp sp],
+                                     dst=[getRegTemp fp], jump=NONE}]
+
+      val raOffset = fpOffset - wordSize
+      val raOffset' = Int.toString raOffset
+      val raToStack = if (!maxArgsCall) > 0
+                      then [Assem.OPER {
+                              assem="sw      `s0, " ^ raOffset' ^ "(`s1)\n",
+                              src=[getRegTemp ra, getRegTemp sp],
+                              dst=[], jump=NONE}]
+                      else []
+      val raFromStack = if (!maxArgsCall) > 0
+                        then [Assem.OPER {
+                                assem="lw      `d0, " ^ raOffset' ^ "(`s0)\n",
+                                src=[getRegTemp sp],
+                                dst=[getRegTemp ra], jump=NONE}]
+                        else []
+
+      val newFp = [Assem.MOVE {assem="move    `d0, `s0\n",
+                               src=getRegTemp sp,
+                               dst=getRegTemp fp}]
+      val oldFp = [Assem.MOVE {assem="move    `d0, `s0\n",
+                               src=getRegTemp fp,
+                               dst=getRegTemp sp}]
 
       val return = [Assem.OPER {assem="jr      `s0\n",
-                                src=[getRegTemp "$ra"],
+                                src=[getRegTemp ra],
                                 dst=[], jump=NONE}]
     in
       label@
-      fpToStack@
-      newFp@
       pushStack@
+      fpToStack@
+      raToStack@
+      newFp@
       body@
-      popStack@
       oldFp@
+      raFromStack@
       fpFromStack@
+      popStack@
       return
     end
 end

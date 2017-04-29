@@ -175,18 +175,12 @@ struct
         | munchExp (T.ESEQ(s, e)) = (munchStm s; munchExp e)
         | munchExp (T.CALL(T.NAME n, args)) =
             (emit(A.OPER {
-                  assem="sw      `s0, 0(`s1)\n",
-                  src=[F.getRegTemp F.ra, F.getRegTemp F.sp],
-                  dst=[], jump=NONE});
-             emit(A.OPER {
                   assem="jal     " ^ (Temp.labelToString n) ^ "\n",
                   src=munchArgs(0, args, (List.length F.argsRegs) * F.wordSize),
-                  dst=(F.getRegTemp F.ra)::(F.getRegTemp F.rv)::(List.map F.getRegTemp F.callerRegs),
+                  dst=(F.getRegTemp F.ra)::
+                      (F.getRegTemp F.rv)::
+                      (List.map F.getRegTemp F.callerRegs),
                   jump=NONE});
-             emit(A.OPER {
-                  assem="lw      `d0, 0(`s0)\n",
-                  src=[F.getRegTemp F.sp],
-                  dst=[F.getRegTemp F.ra], jump=NONE});
              F.newCall (!frame, (List.length args) + 1); (* Account for $ra *)
              F.getRegTemp F.rv)
         | munchExp (T.CALL(_, _)) = (err 0 "Please supply NAME to T.CALL."; Temp.newtemp())
