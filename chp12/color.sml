@@ -267,7 +267,7 @@ struct
           then freezeWL := List.filter filtrV (!freezeWL)
           else if List.exists matchV (!simplifyWL)
           then simplifyWL := List.filter filtrV (!simplifyWL)
-          else ErrorMsg.error 0 "combined node wasn't on lists.";
+          else ();
 
           coalescedNodes := TS.add((!coalescedNodes), v);
           alias := TM.insert ((!alias), v, u);
@@ -279,7 +279,7 @@ struct
           if not (isPrecolored u) andalso
              (FG.outDegree nU) >= nColors andalso
              (List.exists matchU (!freezeWL))
-          then (freezeWL := List.filter matchU (!freezeWL);
+          then (freezeWL := List.filter filtrU (!freezeWL);
                 spillWL := u::(!spillWL))
           else ()
         end
@@ -297,12 +297,7 @@ struct
               simplifyWL := nID::(!simplifyWL))
         else ()
 
-      fun briggs (u, v) =
-        (TS.numItems (TS.union((adjacents u),
-                               (adjacents v))))
-        < nColors
-
-      fun george (u, v) =
+      fun conservative (u, v) =
         (TS.numItems
           (TS.filter
              (fn x => (FG.outDegree (gNode x)) >= nColors)
@@ -333,7 +328,7 @@ struct
                 addWorkList u; addWorkList v)
           else if ((isPrecolored u) andalso
                    (List.all (fn x => ok (x, u)) (TS.listItems (adjacents v))))
-                  orelse (george (u, v))
+                  orelse (conservative (u, v))
           then (movesCoalesced := DTS.add((!movesCoalesced), mv);
                 combine(u, v);
                 addWorkList u)

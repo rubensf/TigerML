@@ -59,16 +59,32 @@ struct
         end
     in
       case (makeflowgraph instrs) of
-        (flow, true) => NONE
+        (flow, true) => (print "failed flow\n"; NONE)
       | (flow, false) =>
       case (makeigraph flow) of
-        (igraph, true) => NONE
+        (igraph, true) => (print "failed igrpah\n"; NONE)
       | (igraph, false) =>
       case (color igraph) of
-        ((alloc, spills), true) => NONE
+        ((alloc, spills), true) => (print "alloc failed\n"; NONE)
       | ((alloc, spills), false) =>
       if List.null spills
-      then SOME {ins=instrs, alloc=alloc, frame=frame}
+      then let
+             fun pickRegister alloc temp =
+               case Temp.Map.find (alloc, temp) of
+                 SOME r => F.regToString r
+               | NONE   => (ErrorMsg.error 0 "Couldn't alloc registers."; "")
+             val body = F.procEntryExit3(frame, instrs)
+             val noMove = List.filter
+                            (fn x => case x of
+                                       Assem.LABEL l   => true
+                                     | Assem.OPER oper => true
+                                     | Assem.MOVE {assem, src, dst} =>
+                                         pickRegister alloc src <>
+                                         pickRegister alloc dst)
+                            body
+           in
+             SOME {ins=noMove, alloc=alloc, frame=frame}
+           end
       else let
         val _ = print ("doing again? " ^ Int.toString (List.length spills) ^ "!!\n")
         val _ = print ("spilled " ^ Temp.makeString (List.hd spills) ^ "!!\n")
