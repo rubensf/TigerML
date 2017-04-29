@@ -254,9 +254,9 @@ struct
                 (colorings, !err))
         end
     in
+      Temp.reset();
       R.resetFrags();
       F.resetRegs();
-      Temp.reset();
       case (parsefile file) of
         (abst, true) => false
       | (abst, false) =>
