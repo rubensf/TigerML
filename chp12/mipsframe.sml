@@ -131,6 +131,14 @@ struct
       SOME(s) => s
     | NONE    => Temp.makeString t
 
+  fun strAssembly (PROC p) =
+        (ErrorMsg.error 0 "Internal error: frame cant make proc string."; "")
+    | strAssembly (STRING (l, str)) =
+        (Temp.labelToString l) ^ ": .asciiz " ^ str ^ "\n"
+
+  fun getTextHdr () = ".text\n"
+  fun getDataHdr () = ".data\n"
+
   fun expFn (InFrame offset) = (fn fptr => MEM(BINOP(PLUS, fptr, CONST offset)))
     | expFn (InReg reg) = (fn fptr => TEMP reg)
 
@@ -214,11 +222,11 @@ struct
                                dst=getRegTemp "$sp"}]
 
       val stackOffset = (!localsOffset) + ((!maxArgsCall) * wordSize)
-      val pushStack = [Assem.OPER {assem="addi    `d0, `s0, -" ^
+      val pushStack = [Assem.OPER {assem="addiu   `d0, `s0, -" ^
                                          (Int.toString stackOffset) ^ "\n",
                                    src=[getRegTemp "$sp"],
                                    dst=[getRegTemp "$sp"], jump=NONE}]
-      val popStack = [Assem.OPER {assem="addi    `d0, `s0, " ^
+      val popStack = [Assem.OPER {assem="addiu   `d0, `s0, " ^
                                         (Int.toString stackOffset) ^ "\n",
                                   src=[getRegTemp "$sp"],
                                   dst=[getRegTemp "$sp"], jump=NONE}]
@@ -227,16 +235,14 @@ struct
                                 src=[getRegTemp "$ra"],
                                 dst=[], jump=NONE}]
     in
-      {prologue = "PROCEDURE " ^ Symbol.name name ^ "\n",
-       body = label@
-              fpToStack@
-              newFp@
-              pushStack@
-              body@
-              popStack@
-              oldFp@
-              fpFromStack@
-              return,
-       epilogue = "END " ^ Symbol.name name ^ "\n"}
+      label@
+      fpToStack@
+      newFp@
+      pushStack@
+      body@
+      popStack@
+      oldFp@
+      fpFromStack@
+      return
     end
 end

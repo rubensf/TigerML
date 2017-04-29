@@ -26,6 +26,11 @@ struct
                          ref ())
   val frags = ref ([] : F.frag list)
 
+  structure StringMap = SplayMapFn(struct type ord_key = string
+                                          val compare = String.compare
+                                   end)
+  val strs : Temp.label StringMap.map ref = ref StringMap.empty
+
   fun newLevel {parent: level, name: Temp.label, parameters: bool list} =
     Level ({parent=parent,
             name=name,
@@ -124,12 +129,15 @@ struct
   fun intExp i = Ex (T.CONST i)
 
   fun strExp str =
-    let
-      val lab = Temp.newlabel ()
-    in
-      frags := (F.STRING (lab, str)) :: !frags;
-      Ex (T.NAME lab)
-    end
+    case StringMap.find (!strs, str) of
+      SOME s => Ex (T.NAME s)
+    | NONE   => let
+                  val lbl = Temp.newlabel ()
+                in
+                  strs := StringMap.insert (!strs, str, lbl);
+                  frags := (F.STRING(lbl, str))::(!frags);
+                  Ex (T.NAME lbl)
+                end
 
   fun lvEqual (Level(_, uref1), Level(_, uref2)) = uref1 = uref2
     | lvEqual (_,_) = false
@@ -354,8 +362,11 @@ struct
       frags := frag'::(!frags)
     end
 
-  fun packExps(exps, mainexp) = Ex(T.ESEQ ((seq (map unNx exps)), (unEx mainexp)))
-  fun resetFrags () = (F.resetFrame (frame outermost); frags := [])
+  fun packExps(exps, mainexp) = Ex (T.ESEQ ((seq (map unNx exps)),
+                                            (unEx mainexp)))
+  fun resetFrags () = (F.resetFrame (frame outermost);
+                       frags := [];
+                       strs := StringMap.empty)
   fun getResult () = !frags
 
   fun errExp () = Ex (T.CONST 0)

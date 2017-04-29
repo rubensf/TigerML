@@ -43,6 +43,12 @@ sig
   val resetRegs : unit -> unit
 
   (* Auxiliar, arch dependent functions *)
+  (* Get the assembly for a string *)
+  val strAssembly : frag -> string
+
+  val getTextHdr : unit -> string
+  val getDataHdr : unit -> string
+
   (* Get's the specific access function. *)
   val expFn        : access -> Tree.exp -> Tree.exp
   (* Calls an external function, such as C heap management. *)
@@ -55,6 +61,5 @@ sig
   val procEntryExit2 : frame * Assem.instr list -> Assem.instr list
   (* Including prologue and epilogue of frames - ie moving around the $sp and
    * house keeping of the sort. *)
-  val procEntryExit3 : frame * Assem.instr list ->
-      {prologue: string, body: Assem.instr list, epilogue: string}
+  val procEntryExit3 : frame * Assem.instr list -> Assem.instr list
 end

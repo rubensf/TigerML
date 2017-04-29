@@ -40,8 +40,8 @@ struct
                          dst=[F.getRegTemp F.rv], jump=NONE}) (* TODO Print error message*)
       and munchExp(T.CONST 0) = F.getRegTemp "$0"
         | munchExp(T.CONST i) =
-            result(fn r => emit(A.OPER {assem="addi    `d0, `s0, " ^ (i2s i) ^ "\n",
-                                        src=[F.getRegTemp "$0"],
+            result(fn r => emit(A.OPER {assem="li      `d0, " ^ (i2s i) ^ "\n",
+                                        src=[],
                                         dst=[r], jump=NONE}))
         | munchExp (T.BINOP(T.PLUS, T.CONST i1, T.CONST i2)) =
             munchExp (T.CONST (Word.toIntX (Word.+(Word.fromInt i1, Word.fromInt i2))))

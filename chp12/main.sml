@@ -62,7 +62,7 @@ struct
                       List.app (fn F.PROC{body, frame} =>
                                     Printtree.printtree(outStream, body)
                                  | F.STRING (lb, str) =>
-                                    print ((Temp.labelToString lb) ^ ": " ^ str))
+                                    print ((Temp.labelToString lb) ^ ": " ^ str ^ "\n"))
                                frags)
                 else ();
                 (frags, !err))
@@ -73,44 +73,45 @@ struct
           val _ = if verbose >= 1
                   then print "Simplifying Intermediate Representation.\n"
                   else ()
-          fun liner (F.PROC{body, frame}, ans) =
-                ans@[(Canon.traceSchedule
-                        (Canon.basicBlocks
-                           (Canon.linearize body)),
-                      frame)]
-            | liner (F.STRING(lab, str), ans) =
-                ans
-          val frags' = List.foldl liner [] frags
+          fun liner (F.PROC{body, frame}, (prs, strs)) =
+                (prs@[(Canon.traceSchedule
+                         (Canon.basicBlocks
+                            (Canon.linearize body)),
+                       frame)],
+                 strs)
+            | liner (s as F.STRING(lab, str), (prs, strs)) =
+                (prs, strs@[s])
+          val (procs, strs) = List.foldl liner ([], []) frags
           val err = ErrorMsg.anyErrors
         in
           if !ErrorMsg.anyErrors
           then (print ("Errors with simplifying IR. " ^
                        "Stopping compilation.\n");
-                       ([], !err))
+                       ([], [], !err))
           else (if verbose >= 2
                 then (print "==========Printing IR==========\n";
-                      List.app (fn (frags'', _) =>
+                      List.app (fn (procs', _) =>
                                   List.app (fn y =>
                                               Printtree.printtree(outStream, y))
-                                           frags'')
-                               frags')
+                                           procs')
+                               procs)
                 else ();
-                (frags', !err))
+                (procs, strs, !err))
         end
 
-      fun codegen fragsframelist =
+      fun codegen procsFrame =
         let
           val _ = if verbose >= 1
                   then print "Generating assembly.\n"
                   else ()
           val instrs =
-            List.foldl (fn ((frags, frame), ans) =>
+            List.foldl (fn ((procs, frame), ans) =>
                           ans@[(F.procEntryExit2(frame,
                                                  List.concat
                                                    (map (CG.codegen frame)
-                                                   frags)),
+                                                   procs)),
                                 frame)])
-                       [] fragsframelist
+                       [] procsFrame
           val format = Assem.format (F.makeString) (* For printing below. *)
           val err = ErrorMsg.anyErrors
         in
@@ -129,17 +130,17 @@ struct
                 (instrs, !err))
         end
 
-      fun makeflowgraph instrframelist =
+      fun makeflowgraph instrsFrameList =
         let
           val _ = if verbose >= 1
                   then print "Making flow graph.\n"
                   else ()
-          val instrflowframelist =
+          val instrsFlowFrameList =
             List.foldl (fn ((instrs, frame), ans) =>
                           ans@[(instrs,
                                 MakeGraph.instrs2graph(instrs),
                                 frame)])
-                       [] instrframelist
+                       [] instrsFrameList
           val format = Assem.format (F.makeString) (* For printing below. *)
           val err = ErrorMsg.anyErrors
         in
@@ -154,9 +155,9 @@ struct
                       List.app Flow.printFlow
                                (map (fn (instr, flow, frame) =>
                                        (flow, format, F.makeString))
-                                    instrflowframelist))
+                                    instrsFlowFrameList))
                 else ();
-                (instrflowframelist, !err))
+                (instrsFlowFrameList, !err))
         end
 
       fun liveness instrflowframelist =
@@ -196,7 +197,7 @@ struct
                 (instrflowigraphframelist, !err))
         end
 
-      fun regalloc instrflowigraphframelist =
+      fun regalloc (instrflowigraphframelist, strs) =
         let
           val _ = if verbose >= 1
                   then print "Coloring registers.\n"
@@ -213,7 +214,7 @@ struct
                 C.color {igraph=igraph,
                          spillCost=(fn x => 1)}
               val didSpill = (List.length spills) <> 0
-              val {prologue, body, epilogue} = F.procEntryExit3(frame, instrs)
+              val body = F.procEntryExit3(frame, instrs)
               val noMove = List.filter
                              (fn x => case x of
                                         Assem.LABEL l   => true
@@ -245,7 +246,10 @@ struct
                 ([], !err))
           else (if verbose > 1
                 then (print "==========Printing Final Assembly==========\n";
-                      List.app printCode colorings)
+                      print (F.getTextHdr ());
+                      List.app printCode colorings;
+                      print (F.getDataHdr ());
+                      List.app (fn x => print (F.strAssembly x)) strs)
                 else ();
                 (colorings, !err))
         end
@@ -263,9 +267,9 @@ struct
         (frags, true) => false
       | (frags, false) =>
       case (linearize frags) of
-        (frags', true) => false
-      | (frags', false) =>
-      case (codegen frags') of
+        (procs, strs, true) => false
+      | (procs, strs, false) =>
+      case (codegen procs) of
         (instrs, true) => false
       | (instrs, false) =>
       case (makeflowgraph instrs) of
@@ -274,7 +278,7 @@ struct
       case (liveness instrflowframelist) of
         (instrflowigraphframelist, true) => false
       | (instrflowigraphframelist, false) =>
-      case (regalloc instrflowigraphframelist) of
+      case (regalloc (instrflowigraphframelist, strs)) of
         (allocation, true)  => false
       | (allocation, false) => true
     end
