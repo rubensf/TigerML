@@ -6,6 +6,7 @@ struct
   structure R = Translate (F)
   structure S = Semant (R)
   structure C = Color (F)
+  structure RA = RegAlloc (F)
 
   fun compileverb file verbose =
     let
@@ -169,13 +170,12 @@ struct
           val instrflowigraphframelist =
             List.foldl (fn ((instrs, flow, frame), ans) =>
                           let
-                            val (igraph, gettemps) =
+                            val igraph =
                               Liveness.interferenceGraph(flow)
                           in
                             ans@[(instrs,
                                   flow,
                                   igraph,
-                                  gettemps,
                                   frame)]
                           end)
                        [] instrflowframelist
@@ -189,7 +189,7 @@ struct
                 then print "For printing the liveness graph, please use verbose 3.\n"
                 else if verbose > 2
                 then (print "==========Printing Interference Graph==========\n";
-                      List.app (fn (_, _, igraph, _, _) =>
+                      List.app (fn (_, _, igraph, _) =>
                                   Liveness.show(outStream,
                                                 igraph,
                                                 F.makeString))
@@ -209,7 +209,7 @@ struct
                   then print "Coloring registers.\n"
                   else ()
 
-          fun f ((instrs, flow, igraph, gettemps, frame), ans) =
+          fun f ((instrs, flow, igraph, frame), ans) =
             let
               val (alloc, spills) =
                 C.color {igraph=igraph,
@@ -227,7 +227,7 @@ struct
             in
               ans @ [{ins=noMove,
                       alloc=alloc,
-                      spill=didSpill}]
+                      frame=frame}]
             end
           val colorings = foldl f [] instrflowigraphframelist
           val err = ErrorMsg.anyErrors
@@ -239,7 +239,18 @@ struct
           else (colorings, !err)
         end
 
-      fun printInstr outStr {ins, alloc, spill} =
+      fun regalloc2 instrsFrameList =
+        List.foldr (fn ((instrs, frame), (ans, worked)) =>
+                      if not worked
+                      then (ans, false)
+                      else
+                        case RA.allocate(instrs, frame, verbose) of
+                          SOME r =>
+                            ((r::ans), true)
+                        | NONE => (ans, false))
+                  ([], true) instrsFrameList
+
+      fun printInstr outStr {ins, alloc, frame} =
         let
           val tmpStr = pickRegister alloc
           val format = Assem.format(tmpStr)
@@ -295,15 +306,9 @@ struct
         (procs, strs, true) => false
       | (procs, strs, false) =>
       case (codegen procs) of
-        (instrs, true) => false
-      | (instrs, false) =>
-      case (makeflowgraph instrs) of
-        (instrflowframelist, true) => false
-      | (instrflowframelist, false) =>
-      case (liveness instrflowframelist) of
-        (instrflowigraphframelist, true) => false
-      | (instrflowigraphframelist, false) =>
-      case (regalloc (instrflowigraphframelist)) of
+        (instrsframelist, true) => false
+      | (instrsframelist, false) =>
+      case (regalloc2 instrsframelist) of
         (allocation, true)  => false
       | (allocation, false) => (printCode fileStream (allocation, strs); true)
     end

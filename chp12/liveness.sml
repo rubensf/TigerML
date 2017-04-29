@@ -6,7 +6,7 @@ sig
   datatype igraph =
     IGRAPH of {graph: T.temp FG.graph,
                moves: (T.temp FG.node * T.temp FG.node) list}
-  val interferenceGraph: Flow.flowgraph -> igraph * (Assem.instr list Flow.FG.node -> T.Set.set)
+  val interferenceGraph: Flow.flowgraph -> igraph
   val show: TextIO.outstream * igraph * (FG.nodeID -> string) -> unit
 end =
 struct
@@ -178,12 +178,8 @@ struct
       val liveIn = #inMap liveSets
       val liveOut = #outMap liveSets
       val ig = createInterferenceGraph(liveOut, def, control)
-      fun mapping node =
-        case NodeMap.find(liveOut, Flow.FG.getNodeID node) of
-          NONE => T.Set.empty (* should not happen *)
-        | SOME set => set
       val igrph = IGRAPH{graph=ig, moves=(!moves)}
     in
-      (igrph, mapping)
+      igrph
     end
 end
