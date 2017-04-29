@@ -181,7 +181,7 @@ struct
              emit(A.OPER {
                   assem="jal     " ^ (Temp.labelToString n) ^ "\n",
                   src=munchArgs(0, args, (List.length F.argsRegs) * F.wordSize),
-                  dst=(F.getRegTemp F.ra)::(F.getRegTemp F.rv)::(List.map F.getRegTemp F.calleeRegs),
+                  dst=(F.getRegTemp F.ra)::(F.getRegTemp F.rv)::(List.map F.getRegTemp F.callerRegs),
                   jump=NONE});
              emit(A.OPER {
                   assem="lw      `d0, 0(`s0)\n",

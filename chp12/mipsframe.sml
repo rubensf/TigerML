@@ -192,8 +192,21 @@ struct
                                      TEMP fpTemp,
                                      CONST (((i + nArgTemps) * wordSize))))))
                  numbRemainingArgsExp
+
+      val calleeMoveRegs =
+        List.foldr (fn (x, ans) => (x, Temp.newtemp())::ans)
+                   [] (List.map getRegTemp calleeRegs)
+      val saveCallees =
+        List.foldr (fn ((x, t), ans) => MOVE(TEMP t, TEMP x)::ans)
+                   [] calleeMoveRegs
+      val loadCallees =
+        List.foldr (fn ((x, t), ans) => MOVE(TEMP x, TEMP t)::ans)
+                   [] calleeMoveRegs
+
+      val prol = seq (stmFirstNArgs @ stmRemainingArgs @ saveCallees)
+      val epil = seq (loadCallees)
     in
-      SEQ(seq (stmFirstNArgs@stmRemainingArgs), treeExp)
+      SEQ(prol, SEQ(treeExp, epil))
     end
 
   fun procEntryExit2 (frame, body) =
