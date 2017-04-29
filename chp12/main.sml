@@ -201,7 +201,7 @@ struct
       fun pickRegister alloc temp =
         case Temp.Map.find (alloc, temp) of
           SOME r => F.regToString r
-        | NONE   => F.makeString temp
+        | NONE   => (ErrorMsg.error 0 "Couldn't alloc registers."; "")
 
       fun regalloc (instrflowigraphframelist) =
         let
