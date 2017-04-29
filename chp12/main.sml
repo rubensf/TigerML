@@ -253,6 +253,20 @@ struct
                 else ();
                 (colorings, !err))
         end
+      fun printSysspim out = 
+        let
+          val read = TextIO.openIn("sysspim.s")
+          val _ = TextIO.output(out, TextIO.inputAll(read))
+        in
+          ()
+        end
+      fun printRuntime out = 
+        let
+          val read = TextIO.openIn("runtime.s")
+          val _ = TextIO.output(out, TextIO.inputAll(read))
+        in
+          ()
+        end
     in
       Temp.reset();
       R.resetFrags();
