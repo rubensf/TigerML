@@ -134,7 +134,7 @@ struct
   fun strAssembly (PROC p) =
         (ErrorMsg.error 0 "Internal error: frame cant make proc string."; "")
     | strAssembly (STRING (l, str)) =
-        (Temp.labelToString l) ^ ": .asciiz " ^ str ^ "\n"
+        (Temp.labelToString l) ^ ": .asciiz \"" ^ str ^ "\"\n"
 
   fun getTextHdr () = ".text\n"
   fun getDataHdr () = ".data\n"

@@ -7,10 +7,11 @@ struct
   structure S = Semant (R)
   structure C = Color (F)
 
-  val outStream = TextIO.stdOut
-
   fun compileverb file verbose =
     let
+      val outStream = TextIO.stdOut
+      val fileStream = TextIO.openOut "tig.s"
+
       fun parsefile file =
         let
           val _ = if verbose >= 1
@@ -197,16 +198,16 @@ struct
                 (instrflowigraphframelist, !err))
         end
 
-      fun regalloc (instrflowigraphframelist, strs) =
+      fun pickRegister alloc temp =
+        case Temp.Map.find (alloc, temp) of
+          SOME r => F.regToString r
+        | NONE   => F.makeString temp
+
+      fun regalloc (instrflowigraphframelist) =
         let
           val _ = if verbose >= 1
                   then print "Coloring registers.\n"
                   else ()
-
-          fun pickRegister alloc temp =
-            case Temp.Map.find (alloc, temp) of
-              SOME r => F.regToString r
-            | NONE   => F.makeString temp
 
           fun f ((instrs, flow, igraph, gettemps, frame), ans) =
             let
@@ -230,43 +231,53 @@ struct
             end
           val colorings = foldl f [] instrflowigraphframelist
           val err = ErrorMsg.anyErrors
-
-          fun printCode {ins, alloc, spill} =
-            let
-              (* should check for spill here *)
-              val tmpStr = pickRegister alloc
-              val format = Assem.format(tmpStr)
-            in
-              List.app (fn x => TextIO.output(outStream, format x)) ins
-            end
         in
           if !ErrorMsg.anyErrors
           then (print ("Errors with making coloring registers. " ^
                        "Stopping compilation.\n");
                 ([], !err))
-          else (if verbose > 1
-                then (print "==========Printing Final Assembly==========\n";
-                      print (F.getTextHdr ());
-                      List.app printCode colorings;
-                      print (F.getDataHdr ());
-                      List.app (fn x => print (F.strAssembly x)) strs)
-                else ();
-                (colorings, !err))
+          else (colorings, !err)
         end
-      fun printSysspim out = 
+
+      fun printInstr outStr {ins, alloc, spill} =
+        let
+          val tmpStr = pickRegister alloc
+          val format = Assem.format(tmpStr)
+        in
+          List.app (fn x => TextIO.output(outStr, format x)) ins
+        end
+
+      fun printSysspim out =
         let
           val read = TextIO.openIn("sysspim.s")
           val _ = TextIO.output(out, TextIO.inputAll(read))
         in
           ()
         end
-      fun printRuntime out = 
+
+      fun printRuntime out =
         let
           val read = TextIO.openIn("runtime.s")
           val _ = TextIO.output(out, TextIO.inputAll(read))
         in
           ()
         end
+
+      fun printCode out (colorRingsList, strs) =
+        let
+          val _ = if verbose >= 1
+                  then print "Printing final assembly.\n"
+                  else ()
+        in
+          printSysspim out;
+          printRuntime out;
+          TextIO.output (out, (F.getTextHdr ()));
+          List.app (printInstr out) colorRingsList;
+          TextIO.output (out, (F.getDataHdr ()));
+          List.app (fn x => TextIO.output (out, F.strAssembly x)) strs;
+          TextIO.flushOut out
+        end
+
     in
       Temp.reset();
       R.resetFrags();
@@ -292,9 +303,9 @@ struct
       case (liveness instrflowframelist) of
         (instrflowigraphframelist, true) => false
       | (instrflowigraphframelist, false) =>
-      case (regalloc (instrflowigraphframelist, strs)) of
+      case (regalloc (instrflowigraphframelist)) of
         (allocation, true)  => false
-      | (allocation, false) => true
+      | (allocation, false) => (printCode fileStream (allocation, strs); true)
     end
 
   fun compile file = compileverb file 0

@@ -18,7 +18,7 @@ struct
                | Cx of Temp.label * Temp.label -> T.stm
   type frag = F.frag
 
-  val outername = Temp.newlabel ()
+  val outername = Temp.namedlabel "tig_main"
   val outermost = Level ({parent=Outermost,
                           name=outername,
                           parameters=[],
