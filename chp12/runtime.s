@@ -193,7 +193,7 @@ tig_concat:
 	addiu	$sp,$sp,48
 	j	$31
 .L58:
-	la	$25,tig_malloc
+	la	$25,malloc
 	addiu	$4,$17,4
 	jalr	$25
 	sw	$5,24($sp)
@@ -240,7 +240,7 @@ tig_allocRecord:
 	addiu	$sp,$sp,-32
 	sw	$31,28($sp)
 	sw	$16,24($sp)
-	la	$25,tig_malloc
+	la	$25,malloc
 	nop
 	jalr	$25
 	move	$16,$4
@@ -265,7 +265,7 @@ tig_initArray:
 	addiu	$sp,$sp,-40
 	sw	$31,36($sp)
 	sw	$16,32($sp)
-	la	$25,tig_malloc
+	la	$25,malloc
 	sw	$5,24($sp)
 	move	$16,$4
 	jalr	$25
@@ -300,7 +300,7 @@ tig_substring:
 	li	$2,1			# 0x1
 	beq	$6,$2,.L86
 	nop
-	la	$25,tig_malloc
+	la	$25,malloc
 	addiu	$4,$6,4
 	sw	$5,24($sp)
 	jalr	$25

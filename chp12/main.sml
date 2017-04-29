@@ -254,6 +254,8 @@ struct
         let
           val tmpStr = pickRegister alloc
           val format = Assem.format(tmpStr)
+          val _ = "================PRINTING ALLOCATION MAPPING================\n"
+          val _ = Temp.Map.appi (fn (t,r) => print((F.makeString t) ^ "-" ^ (pickRegister alloc t) ^ "\n")) alloc
         in
           List.app (fn x => TextIO.output(outStr, format x)) ins
         end
