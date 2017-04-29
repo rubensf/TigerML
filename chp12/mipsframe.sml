@@ -189,7 +189,7 @@ struct
         List.map (fn (f, i) =>
                     MOVE(f (TEMP fpTemp),
                          MEM (BINOP (PLUS,
-                                     TEMP spTemp,
+                                     TEMP fpTemp,
                                      CONST (((i + nArgTemps) * wordSize))))))
                  numbRemainingArgsExp
     in
@@ -221,7 +221,10 @@ struct
                                src=getRegTemp "$fp",
                                dst=getRegTemp "$sp"}]
 
-      val stackOffset = (!localsOffset) + ((!maxArgsCall) * wordSize)
+      val _ = print ("max " ^ Int.toString (!maxArgsCall) ^ "\n")
+      val _ = print ("off " ^ Int.toString (!localsOffset) ^ "\n")
+      val stackOffset = Int.~(!localsOffset) + ((!maxArgsCall) * wordSize)
+      val _ = print ("tot " ^ Int.toString (stackOffset) ^ "\n")
       val pushStack = [Assem.OPER {assem="addiu   `d0, `s0, -" ^
                                          (Int.toString stackOffset) ^ "\n",
                                    src=[getRegTemp "$sp"],
