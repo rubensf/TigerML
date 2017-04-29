@@ -145,6 +145,19 @@ struct
   fun externCallFn (s, args) =
     CALL (NAME (Temp.namedlabel s), args)
 
+  fun storeLocal (InFrame adr) tmp =
+        Assem.OPER {assem="sw      `s0, " ^ (Int.toString adr) ^ " (`s1)\n",
+                    src=[tmp, getRegTemp sp], dst=[], jump=NONE}
+    | storeLocal (InReg reg) tmp =
+        (ErrorMsg.error 0 "Not a frame value.";
+         Assem.LABEL {assem="", lab=Temp.newlabel ()})
+
+  fun loadLocal (InFrame adr) tmp =
+        Assem.OPER {assem="lw      `d0, " ^ (Int.toString adr) ^ " (`s0)\n",
+                    src=[getRegTemp sp], dst=[tmp], jump=NONE}
+    | loadLocal (InReg reg) tmp =
+        (ErrorMsg.error 0 "Not a frame value.";
+         Assem.LABEL {assem="", lab=Temp.newlabel ()})
 
   fun seq (l: stm list) =
     case List.length l of

@@ -201,6 +201,7 @@ struct
       fun simplify () =
         let val nodeID = List.hd (!simplifyWL)
         in
+          print ("simplifying - " ^ Temp.makeString nodeID ^ "\n");
           simplifyWL := List.tl (!simplifyWL);
           selectStack := nodeID::(!selectStack);
           TS.app decrementoutDegreeEffects (adjacents nodeID)
@@ -232,6 +233,7 @@ struct
       fun freeze () =
         let val nodeID = List.hd (!freezeWL)
         in
+          print ("freeze - " ^ Temp.makeString nodeID ^ "\n");
           freezeWL := List.tl (!freezeWL);
           simplifyWL := nodeID::(!simplifyWL);
           freezeMoves nodeID
@@ -240,6 +242,7 @@ struct
       fun pickSpill () =
         let val nodeID = List.hd (!spillWL)
         in
+          print ("spill - " ^ Temp.makeString nodeID ^ "\n");
           spillWL := List.tl (!spillWL);
           simplifyWL := nodeID::(!simplifyWL);
           freezeMoves nodeID
@@ -247,6 +250,7 @@ struct
 
       fun combine (u, v) =
         let
+          val _ = print "combining yay\n"
           val mvU = Option.valOf (TM.find ((!movesMap), u))
           val mvV = Option.valOf (TM.find ((!movesMap), v))
 
@@ -254,12 +258,17 @@ struct
           val nV = gNode v
 
           val adjsV = TS.listItems (adjacents v)
-          fun matchU x = x <> u
-          fun matchV x = x <> v
+          fun matchU x = x = u
+          fun filtrU x = x <> u
+          fun matchV x = x = v
+          fun filtrV x = x <> v
         in
           if List.exists matchV (!freezeWL)
-          then freezeWL := List.filter matchV (!freezeWL)
-          else simplifyWL := List.filter matchV (!simplifyWL);
+          then freezeWL := List.filter filtrV (!freezeWL)
+          else if List.exists matchV (!simplifyWL)
+          then simplifyWL := List.filter filtrV (!simplifyWL)
+          else ErrorMsg.error 0 "combined node wasn't on lists.";
+
           coalescedNodes := TS.add((!coalescedNodes), v);
           alias := TM.insert ((!alias), v, u);
           movesMap := TM.insert ((!movesMap), u, TS.union(mvU, mvV));
@@ -267,7 +276,8 @@ struct
           graph := FG.mergeNodes (!graph) (nU, nV);
           List.app decrementoutDegreeEffects adjsV;
 
-          if (FG.outDegree nU) >= nColors andalso
+          if not (isPrecolored u) andalso
+             (FG.outDegree nU) >= nColors andalso
              (List.exists matchU (!freezeWL))
           then (freezeWL := List.filter matchU (!freezeWL);
                 spillWL := u::(!spillWL))
@@ -306,6 +316,8 @@ struct
           val x = getNodeAlias u
           val y = getNodeAlias v
 
+          val _ = print ("coalescing : " ^ Temp.makeString x ^ "-" ^ Temp.makeString y ^ "\n");
+          val _ = print ("coalescing (orig): " ^ Temp.makeString u ^ "-" ^ Temp.makeString v ^ "\n");
           val (u, v) = if (isPrecolored y)
                        then (y, x)
                        else (x, y)
@@ -364,6 +376,7 @@ struct
         )
 
       fun bodyLoop () =
+        (printWLs ();
         if (List.null (!simplifyWL) andalso
             List.null (!freezeWL) andalso
             List.null (!spillWL) andalso
@@ -378,6 +391,7 @@ struct
         else if not (List.null (!spillWL))
         then (pickSpill (); bodyLoop ())
         else ()
+        )
     in
       List.app makeWLs (FG.nodes (!graph));
       bodyLoop ();
