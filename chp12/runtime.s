@@ -10,8 +10,8 @@ tig_stringEqual:
 	beq	$8,$2,.L9
 	nop
 .L3:
-	j	$31
 	move	$2,$0
+	j	$31
 .L9:
 	blez	$8,.L2
 	nop
@@ -35,8 +35,8 @@ tig_stringEqual:
 	bne	$3,$0,.L5
 	addu	$6,$5,$2
 .L2:
-	j	$31
 	li	$2,1			# 0x1
+	j	$31
 	.align	4
 	.globl	tig_strcmp
 tig_strcmp:
@@ -63,8 +63,8 @@ tig_strcmp:
 	beq	$2,$0,.L25
 	nop
 	xori	$6,$6,0x4
-	j	$31
 	sltu	$2,$6,1
+	j	$31
 .L24:
 	lw	$9,0($4)
 	lw	$2,0($5)
@@ -72,12 +72,12 @@ tig_strcmp:
 	beq	$9,$2,.L26
 	nop
 .L11:
-	j	$31
 	move	$2,$0
+	j	$31
 .L25:
 	xori	$6,$6,0x2
-	j	$31
 	sltu	$2,$6,1
+	j	$31
 .L26:
 	blez	$9,.L13
 	nop
@@ -95,15 +95,15 @@ tig_strcmp:
 	bne	$8,$0,.L28
 	addu	$7,$4,$2
 .L13:
-	j	$31
 	xori	$2,$6,0x1
+	j	$31
 .L27:
 	lbu	$6,4($4)
 	lbu	$2,4($5)
 	nop
 	xor	$2,$6,$2
-	j	$31
 	sltu	$2,$0,$2
+	j	$31
 	.align	4
 	.globl	main
 main:
@@ -116,9 +116,7 @@ main:
 	addiu	$2,$2,1
 	sw	$5,0($3)
 	bne	$2,$4,.L30
-	addiu	$3,$3,8
-	j	$31
-	move	$2,$0
+	j	tig_main
 	.align	4
 	.globl	tig_ord
 tig_ord:
@@ -127,35 +125,35 @@ tig_ord:
 	beq	$2,$0,.L37
 	nop
 	lbu	$2,4($4)
-	j	$31
 	nop
-.L37:
 	j	$31
+.L37:
 	li	$2,-1			# 0xffffffffffffffff
+	j	$31
 	.align	4
 	.globl	tig_chr
 tig_chr:
 	la	$2,consts
 	sll	$4,$4,3
-	j	$31
 	addu	$2,$2,$4
+	j	$31
 	.align	4
 	.globl	tig_size
 tig_size:
 	lw	$2,0($4)
-	j	$31
 	nop
+	j	$31
 	.align	4
 	.globl	tig_not
 tig_not:
-	j	$31
 	sltu	$2,$4,1
+	j	$31
 	.align	4
 	.globl	tig_getchar
 tig_getchar:
 	addiu	$sp,$sp,-32
 	sw	$31,28($sp)
-	lw	$25,getchar
+	la	$25,getchar
 	nop
 	jalr	$25
 	nop
@@ -164,13 +162,13 @@ tig_getchar:
 	la	$3,consts
 	lw	$31,28($sp)
 	addu	$2,$3,$2
-	j	$31
 	addiu	$sp,$sp,32
+	j	$31
 .L48:
 	lw	$31,28($sp)
 	la $2, empty
-	j	$31
 	addiu	$sp,$sp,32
+	j	$31
 	.align	4
 	.globl	tig_concat
 tig_concat:
@@ -192,10 +190,10 @@ tig_concat:
 	move	$2,$5
 	lw	$17,40($sp)
 	lw	$16,36($sp)
-	j	$31
 	addiu	$sp,$sp,48
+	j	$31
 .L58:
-	lw	$25,tig_malloc
+	la	$25,tig_malloc
 	addiu	$4,$17,4
 	jalr	$25
 	sw	$5,24($sp)
@@ -234,15 +232,15 @@ tig_concat:
 	move	$2,$5
 	lw	$17,40($sp)
 	lw	$16,36($sp)
-	j	$31
 	addiu	$sp,$sp,48
+	j	$31
 	.align	4
 	.globl	tig_allocRecord
 tig_allocRecord:
 	addiu	$sp,$sp,-32
 	sw	$31,28($sp)
 	sw	$16,24($sp)
-	lw	$25,tig_malloc
+	la	$25,tig_malloc
 	nop
 	jalr	$25
 	move	$16,$4
@@ -259,15 +257,15 @@ tig_allocRecord:
 .L60:
 	lw	$31,28($sp)
 	lw	$16,24($sp)
-	j	$31
 	addiu	$sp,$sp,32
+	j	$31
 	.align	4
 	.globl	tig_initArray
 tig_initArray:
 	addiu	$sp,$sp,-40
 	sw	$31,36($sp)
 	sw	$16,32($sp)
-	lw	$25,tig_malloc
+	la	$25,tig_malloc
 	sw	$5,24($sp)
 	move	$16,$4
 	jalr	$25
@@ -285,8 +283,8 @@ tig_initArray:
 .L65:
 	lw	$31,36($sp)
 	lw	$16,32($sp)
-	j	$31
 	addiu	$sp,$sp,40
+	j	$31
 	.align	4
 	.globl	tig_substring
 tig_substring:
@@ -302,7 +300,7 @@ tig_substring:
 	li	$2,1			# 0x1
 	beq	$6,$2,.L86
 	nop
-	lw	$25,tig_malloc
+	la	$25,tig_malloc
 	addiu	$4,$6,4
 	sw	$5,24($sp)
 	jalr	$25
@@ -357,8 +355,8 @@ tig_substring:
 .L73:
 	lw	$31,36($sp)
 	lw	$16,32($sp)
-	j	$31
 	addiu	$sp,$sp,40
+	j	$31
 .L86:
 	addu	$5,$4,$5
 	lbu	$2,4($5)
@@ -367,8 +365,8 @@ tig_substring:
 	sll	$2,$2,3
 	addu	$2,$3,$2
 	lw	$16,32($sp)
-	j	$31
 	addiu	$sp,$sp,40
+	j	$31
 .L87:
 	sltu	$3,$3,$9
 	bne	$3,$0,.L88
@@ -386,17 +384,17 @@ tig_substring:
 	addiu	$5,$5,1
 	lw	$31,36($sp)
 	lw	$16,32($sp)
-	j	$31
 	addiu	$sp,$sp,40
+	j	$31
 .L70:
-	lw	$25,exit
+	la	$25,exit
 	nop
 	jalr	$25
 	li	$4,1			# 0x1
 	.align	4
 	.globl	tig_flush
 tig_flush:
-	lw	$25,fflush
+	la	$25,fflush
 	nop
 	jr	$25
 	nop
@@ -415,7 +413,7 @@ tig_print:
 	addiu	$17,$4,4
 	move	$16,$0
 .L93:
-	lw	$25,putchar
+	la	$25,putchar
 	lbu	$4,0($17)
 	jalr	$25
 	addiu	$16,$16,1
@@ -428,8 +426,8 @@ tig_print:
 	lw	$18,32($sp)
 	lw	$17,28($sp)
 	lw	$16,24($sp)
-	j	$31
 	addiu	$sp,$sp,40
+	j	$31
 	.globl	consts
 	.data
 	.align 4
