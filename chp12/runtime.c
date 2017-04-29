@@ -1,24 +1,24 @@
-#include <stdio.h>
+#include "system.h"
 #include <stdlib.h>
 
-int *tig_initArray(int size, int init) {
+extern int *tig_initArray(int size, int init) {
   int i;
-  int *a = (int *)malloc(size*sizeof(int));
+  int *a = (int *)tig_malloc(size*sizeof(int));
   for(i=0;i<size;i++) a[i]=init;
   return a;
 }
 
-int *tig_allocRecord(int size) {
+extern int *tig_allocRecord(int size) {
   int i;
   int *p, *a;
-  p = a = (int *)malloc(size);
+  p = a = (int *)tig_malloc(size);
   for(i=0;i<size;i+=sizeof(int)) *p++ = 0;
   return a;
 }
 
 struct string {int length; unsigned char chars[1];};
 
-int tig_stringEqual(struct string *s, struct string *t) {
+extern int tig_stringEqual(struct string *s, struct string *t) {
   int i;
   if (s==t) return 1;
   if (s->length!=t->length) return 0;
@@ -26,7 +26,7 @@ int tig_stringEqual(struct string *s, struct string *t) {
   return 1;
 }
 
-int tig_strcmp(struct string *s1, struct string* s2, int flag) {
+extern int tig_strcmp(struct string *s1, struct string* s2, int flag) {
   int i;
   if (flag < 0 || flag > 5) return 0; // TODO error
   if (flag == 0 || flag == 1) {
@@ -55,15 +55,15 @@ int tig_strcmp(struct string *s1, struct string* s2, int flag) {
   }
 }
 
-void tig_print(struct string *s) {
+extern void tig_print(struct string *s) {
   int i;
   unsigned char *p=s->chars;
   for (i=0; i < s->length; i++,p++)
     putchar(*p);
 }
 
-void tig_flush() {
-  fflush(stdout);
+extern void tig_flush() {
+  fflush();
 }
 
 struct string consts[256];
@@ -78,32 +78,32 @@ int main() {
   return (0 /* static link!? */);
 }
 
-int tig_ord(struct string *s) {
+extern int tig_ord(struct string *s) {
   if (s->length==0)
     return -1;
   else
     return s->chars[0];
 }
 
-struct string *tig_chr(int i) {
-  if (i < 0 || i >= 256) {
-    printf("chr(%d) out of range\n",i); exit(1);}
+extern struct string *tig_chr(int i) {
+//  if (i < 0 || i >= 256) {
+//    printf("chr(%d) out of range\n",i); exit(1);}
   return consts+i;
 }
 
-int tig_size(struct string *s) {
+extern int tig_size(struct string *s) {
   return s->length;
 }
 
-struct string *tig_substring(struct string *s, int first, int n) {
+extern struct string *tig_substring(struct string *s, int first, int n) {
   if (first<0 || first+n>s->length) {
-    printf("substring([%d],%d,%d) out of range\n",s->length,first,n);
+//    printf("substring([%d],%d,%d) out of range\n",s->length,first,n);
     exit(1);
   }
   if (n==1)
     return consts+s->chars[first];
   {
-    struct string *t = (struct string *)malloc(sizeof(int)+n);
+    struct string *t = (struct string *)tig_malloc(sizeof(int)+n);
     int i;
     t->length=n;
     for(i=0;i<n;i++) t->chars[i]=s->chars[first+i];
@@ -111,12 +111,12 @@ struct string *tig_substring(struct string *s, int first, int n) {
   }
 }
 
-struct string *tig_concat(struct string *a, struct string *b) {
+extern struct string *tig_concat(struct string *a, struct string *b) {
   if (a->length==0) return b;
   else if (b->length==0) return a;
   else {
     int i, n=a->length+b->length;
-    struct string *t = (struct string *)malloc(sizeof(int)+n);
+    struct string *t = (struct string *)tig_malloc(sizeof(int)+n);
     t->length=n;
     for (i=0;i<a->length;i++)
       t->chars[i]=a->chars[i];
@@ -126,13 +126,13 @@ struct string *tig_concat(struct string *a, struct string *b) {
   }
 }
 
-int tig_not(int x) {
+extern int tig_not(int x) {
   return !x;
 }
 
-struct string *tig_getchar() {
-  int i=getc(stdin);
-  if (i==EOF)
+extern struct string *tig_getchar() {
+  int i=getc();
+  if (i==0)
     return &empty;
   else
     return consts+i;
