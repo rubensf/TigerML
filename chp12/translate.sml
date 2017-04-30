@@ -172,7 +172,7 @@ struct
       val argsSize = List.length args
 
       val r = Temp.newtemp ()
-      val alloc = T.MOVE (T.TEMP r, F.externCallFn ("tig_allocRecord", [T.CONST argsSize]))
+      val alloc = T.MOVE (T.TEMP r, F.externCallFn ("tig_allocRecord", [T.CONST (argsSize*F.wordSize)]))
 
       val posArgs = foldr (fn (arg, ans) => ans @ [(arg, length ans)]) [] args
       fun pushArg ((arg, off), res) =
