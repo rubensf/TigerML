@@ -34,8 +34,8 @@ struct
   fun newLevel {parent: level, name: Temp.label, parameters: bool list} =
     Level ({parent=parent,
             name=name,
-            parameters=parameters,
-            frame=F.newFrame {name=name, parameters=parameters}},
+            parameters=true::parameters, (* Account for static link *)
+            frame=F.newFrame {name=name, parameters=true::parameters}},
            ref ())
 
   fun parameters (lev: level) =
