@@ -240,10 +240,18 @@ struct
         end
 
       fun pickSpill () =
-        let val nodeID = List.hd (!spillWL)
+        let
+          fun minInterf (x, v) =
+            if (FG.outDegree (gNode x) < FG.outDegree (gNode v))
+            then x
+            else v
+
+          val nodeID = List.foldl minInterf (List.hd (!spillWL))
+                                            (List.tl (!spillWL))
+          fun fID x = x <> nodeID
         in
           print ("spill - " ^ Temp.makeString nodeID ^ "\n");
-          spillWL := List.tl (!spillWL);
+          spillWL := List.filter fID (!spillWL);
           simplifyWL := nodeID::(!simplifyWL);
           freezeMoves nodeID
         end
@@ -347,6 +355,9 @@ struct
                     List.mapPartial (fn x => TM.find((!colors), x))
                                     actualAdjs);
                 val avalColors = TS.difference(allColors, unavColors)
+                val _ = print ("Getting " ^ Temp.makeString nID ^ "\nunav\n")
+                val _ = TS.app (fn x => print (Temp.makeString x ^ "-")) unavColors
+                val _ = print "\n"
               in
                 selectStack := List.rev (List.tl (List.rev (!selectStack)));
                 if TS.isEmpty avalColors
