@@ -158,8 +158,8 @@ struct
   fun arrCreation (size, init) =
     let
       val size' = case (unEx size) of
-                    T.CONST x => T.CONST (x + 1)
-                  | e         => T.BINOP(T.PLUS, e, T.CONST 1)
+                    T.CONST x => T.CONST ((x + 1)*F.wordSize)
+                  | e         => T.BINOP(T.MUL, T.BINOP(T.PLUS, e, T.CONST 1), T.CONST(F.wordSize))
       val arr = F.externCallFn ("tig_initArray", [size']@[(unEx init)])
       val tmp = T.TEMP (Temp.newtemp ())
       val save = T.MOVE (tmp, arr)
