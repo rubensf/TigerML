@@ -240,15 +240,15 @@ struct
         end
 
       fun regalloc2 instrsFrameList =
-        List.foldr (fn ((instrs, frame), (ans, worked)) =>
-                      if not worked
-                      then (ans, false)
+        List.foldr (fn ((instrs, frame), (ans, failed)) =>
+                      if failed
+                      then (print "what\n"; (ans, true))
                       else
                         case RA.allocate(instrs, frame, verbose) of
                           SOME r =>
-                            ((r::ans), true)
-                        | NONE => (ans, false))
-                  ([], true) instrsFrameList
+                            ((r::ans), false)
+                        | NONE => (print "didn't work\n";(ans, true)))
+                  ([], false) instrsFrameList
 
       fun printInstr outStr {ins, alloc, frame} =
         let
