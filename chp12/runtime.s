@@ -116,6 +116,7 @@ main:
 	addiu	$2,$2,1
 	sw	$5,0($3)
 	bne	$2,$4,.L30
+	li  $4,0
 	j	tig_main
 	.align	4
 	.globl	tig_ord

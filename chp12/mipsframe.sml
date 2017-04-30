@@ -17,7 +17,7 @@ struct
 
   fun newFrame {name, parameters} =
     let
-      val emptyAddr = ref ~4
+      val emptyAddr = ref ~8 (* Accounting for frame pointer *)
       fun buildFrame (addr, nil) = (emptyAddr := addr; nil)
         | buildFrame (addr, f::l) =
             case f of
@@ -145,15 +145,18 @@ struct
   fun externCallFn (s, args) =
     CALL (NAME (Temp.namedlabel s), args)
 
+  fun i2s i =
+    if i < 0 then "-" ^ Int.toString (~i) else Int.toString i
+
   fun storeLocal (InFrame adr) tmp =
-        Assem.OPER {assem="sw      `s0, " ^ (Int.toString adr) ^ " (`s1)\n",
+        Assem.OPER {assem="sw      `s0, " ^ (i2s adr) ^ "(`s1)\n",
                     src=[tmp, getRegTemp sp], dst=[], jump=NONE}
     | storeLocal (InReg reg) tmp =
         (ErrorMsg.error 0 "Not a frame value.";
          Assem.LABEL {assem="", lab=Temp.newlabel ()})
 
   fun loadLocal (InFrame adr) tmp =
-        Assem.OPER {assem="lw      `d0, " ^ (Int.toString adr) ^ " (`s0)\n",
+        Assem.OPER {assem="lw      `d0, " ^ (i2s adr) ^ "(`s0)\n",
                     src=[getRegTemp sp], dst=[tmp], jump=NONE}
     | loadLocal (InReg reg) tmp =
         (ErrorMsg.error 0 "Not a frame value.";
@@ -235,20 +238,19 @@ struct
       val label = [Assem.LABEL {assem=Symbol.name name ^ ":\n", lab=name}]
 
       (* An extra wordsize for the frame pointer *)
-      val stackOffset = Int.~(!localsOffset) + ((!maxArgsCall) * wordSize) +
-                        wordSize
+      val stackOffset = Int.~(!localsOffset) + ((!maxArgsCall) * wordSize)
 
       val pushStack = [Assem.OPER {assem="addiu   `d0, `s0, -" ^
-                                         (Int.toString stackOffset) ^ "\n",
+                                         (i2s stackOffset) ^ "\n",
                                    src=[getRegTemp sp],
                                    dst=[getRegTemp sp], jump=NONE}]
       val popStack = [Assem.OPER {assem="addiu   `d0, `s0, " ^
-                                        (Int.toString stackOffset) ^ "\n",
+                                        (i2s stackOffset) ^ "\n",
                                   src=[getRegTemp sp],
                                   dst=[getRegTemp sp], jump=NONE}]
 
       val fpOffset = stackOffset - wordSize
-      val fpOffset' = Int.toString fpOffset
+      val fpOffset' = i2s fpOffset
       val fpToStack = [Assem.OPER {assem="sw      `s0, " ^ fpOffset' ^ "(`s1)\n",
                                    src=[getRegTemp fp, getRegTemp sp],
                                    dst=[], jump=NONE}]
@@ -256,8 +258,9 @@ struct
                                      src=[getRegTemp sp],
                                      dst=[getRegTemp fp], jump=NONE}]
 
-      val raOffset = fpOffset - wordSize
-      val raOffset' = Int.toString raOffset
+      (* 2 Wordsizes to skip static link *)
+      val raOffset = fpOffset - 2*wordSize
+      val raOffset' = i2s raOffset
       val raToStack = if (!maxArgsCall) > 0
                       then [Assem.OPER {
                               assem="sw      `s0, " ^ raOffset' ^ "(`s1)\n",
@@ -272,7 +275,7 @@ struct
                         else []
 
       val newFp = [Assem.OPER {assem="addiu   `d0, `s0, " ^
-                                     Int.toString stackOffset ^ "\n",
+                                     i2s stackOffset ^ "\n",
                                src=[getRegTemp sp],
                                dst=[getRegTemp fp], jump=NONE}]
 

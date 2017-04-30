@@ -35,8 +35,8 @@ struct
         end
 
       fun munchError() =
-            emit(A.OPER {assem="addi    `d0, `s0, 10\nsyscall\n",
-                         src=[F.getRegTemp "$0"],
+            emit(A.OPER {assem="li      `d0, 10\nsyscall\n",
+                         src=[],
                          dst=[F.getRegTemp F.rv], jump=NONE}) (* TODO Print error message*)
       and munchExp(T.CONST 0) = F.getRegTemp "$0"
         | munchExp(T.CONST i) =
@@ -208,8 +208,8 @@ struct
                          src=[munchExp e2, munchExp e1],
                          dst=[], jump=NONE})
         | munchStm (T.MOVE(T.TEMP t, T.CONST i)) =
-            emit(A.OPER {assem="addi    `d0, `s0, " ^ i2s i ^ "\n",
-                         src=[F.getRegTemp "$0"],
+            emit(A.OPER {assem="li      `d0, " ^ i2s i ^ "\n",
+                         src=[],
                          dst=[t], jump=NONE})
         | munchStm (T.MOVE(T.TEMP t, T.NAME l)) =
             emit(A.OPER {assem="la      `d0, " ^ (Temp.labelToString l) ^ "\n",
