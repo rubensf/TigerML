@@ -1,5 +1,13 @@
-if a then
-if b then
-if c then d else e 
-else f
-else g
+/* correct declarations */
+let 
+
+type arrtype1 = array of int
+
+var arr1 := arrtype1 [10] of 0
+
+in
+
+arr1[0] := 1; 
+arr1[9] := 3
+
+end
