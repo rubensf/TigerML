@@ -179,7 +179,8 @@ struct
                   src=munchArgs(0, args, (List.length F.argsRegs) * F.wordSize),
                   dst=(F.getRegTemp F.ra)::
                       (F.getRegTemp F.rv)::
-                      (List.map F.getRegTemp F.callerRegs),
+                      ((List.map F.getRegTemp F.argsRegs) @
+                       (List.map F.getRegTemp F.callerRegs)),
                   jump=NONE});
              F.newCall (!frame, (List.length args) + 1); (* Account for $ra *)
              F.getRegTemp F.rv)

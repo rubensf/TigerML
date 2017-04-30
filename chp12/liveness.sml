@@ -96,6 +96,15 @@ struct
               val useSet = T.Set.addList(T.Set.empty, uselist)
               val liveBefore = T.Set.union(useSet, T.Set.difference(live, defSet))
 
+              val _ = print ("instr: " ^ (Assem.format MipsFrame.makeString instr))
+              val _ = print ("Uses: ")
+              val _ = T.Set.app (fn x => print (Temp.makeString x ^ "-")) useSet
+              val _ = print ("\nDefs: ")
+              val _ = T.Set.app (fn x => print (Temp.makeString x ^ "-")) defSet
+              val _ = print ("\nLiveBefore: ")
+              val _ = T.Set.app (fn x => print (Temp.makeString x ^ "-")) liveBefore
+              val _ = print "\n"
+
               fun newNode (x, ans) =
                 if List.exists (fn y => x = y)
                    (List.map FG.getNodeID (FG.nodes ans))

@@ -271,12 +271,10 @@ struct
                                 dst=[getRegTemp ra], jump=NONE}]
                         else []
 
-      val newFp = [Assem.MOVE {assem="move    `d0, `s0\n",
-                               src=getRegTemp sp,
-                               dst=getRegTemp fp}]
-      val oldFp = [Assem.MOVE {assem="move    `d0, `s0\n",
-                               src=getRegTemp fp,
-                               dst=getRegTemp sp}]
+      val newFp = [Assem.OPER {assem="addiu   `d0, `s0, " ^
+                                     Int.toString stackOffset ^ "\n",
+                               src=[getRegTemp sp],
+                               dst=[getRegTemp fp], jump=NONE}]
 
       val return = [Assem.OPER {assem="jr      `s0\n",
                                 src=[getRegTemp ra],
@@ -288,7 +286,6 @@ struct
       raToStack@
       newFp@
       body@
-      oldFp@
       raFromStack@
       fpFromStack@
       popStack@

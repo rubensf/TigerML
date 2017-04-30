@@ -7,6 +7,16 @@ struct
     let
       val format = Assem.format (F.makeString)
 
+      fun pickRegister alloc temp =
+        case Temp.Map.find (alloc, temp) of
+          SOME r => F.regToString r
+        | NONE   => (ErrorMsg.error 0 "Couldn't alloc registers."; "")
+
+      val _ = print "reg allocing!!!\n\n"
+      (*val _ =List.app*)
+               (*(fn y => print (format y))*)
+               (*instrs*)
+
       fun makeflowgraph inst =
         let
           val _ = if verbose >= 1
@@ -69,10 +79,6 @@ struct
       | ((alloc, spills), false) =>
       if List.null spills
       then let
-             fun pickRegister alloc temp =
-               case Temp.Map.find (alloc, temp) of
-                 SOME r => F.regToString r
-               | NONE   => (ErrorMsg.error 0 "Couldn't alloc registers."; "")
              val body = F.procEntryExit3(frame, instrs)
              val noMove = List.filter
                             (fn x => case x of
@@ -110,8 +116,8 @@ struct
                   [a] @
                   (List.foldr addStore [] (filt [dst])) @
                   (addStoreFetch rest)
-               | addStoreFetch ((Assem.LABEL {assem, lab})::rest) =
-                  addStoreFetch rest
+               | addStoreFetch ((a as Assem.LABEL {assem, lab})::rest) =
+                  a::(addStoreFetch rest)
                | addStoreFetch [] = []
            in
              allocate (addStoreFetch instrs, frame, verbose)
