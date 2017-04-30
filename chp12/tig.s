@@ -504,53 +504,78 @@ empty:
 	.space	3
 .text
 tig_main:
-addiu   $sp, $sp, -20
-sw      $fp, 16($sp)
-sw      $ra, 8($sp)
-addiu   $fp, $sp, 20
-L6:
-move    $a0, $fp
+addiu   $sp, $sp, -16
+sw      $fp, 12($sp)
+sw      $ra, 4($sp)
+addiu   $fp, $sp, 16
+L14:
+li      $a0, 44
 li      $a1, 0
-la      $a2, L4
-jal     L1
-j       L5
+jal     tig_initArray
+li      $a0, 10
+sw      $a0, 0($v0)
+move    $a3, $v0
+li      $a0, 1
+bltz    $0, L3
+j       L4
+L4:
+li      $a0, 0
+L3:
+li      $a1, 1
+lw      $a0, 0($a3)
+sub     $a0, $0, $a0
+bgez    $a0, L5
+j       L6
+L6:
+li      $a1, 0
 L5:
-lw      $ra, 8($sp)
-lw      $fp, 16($sp)
-addiu   $sp, $sp, 20
-jr      $ra
+or      $a0, $a0, $a1
+sub     $a0, $0, $a0
+bnez    $a0, L1
+j       L2
 L2:
-addiu   $sp, $sp, -28
-sw      $fp, 24($sp)
-sw      $ra, 16($sp)
-addiu   $fp, $sp, 28
-L8:
-sw      $a0, -8($fp)
-lw      $a0, -12($fp)
-la      $a2, L3
-jal     L1
-j       L7
-L7:
-lw      $ra, 16($sp)
-lw      $fp, 24($sp)
-addiu   $sp, $sp, 28
-jr      $ra
-L1:
-addiu   $sp, $sp, -24
-sw      $fp, 20($sp)
-sw      $ra, 12($sp)
-addiu   $fp, $sp, 24
+li      $a1, 1
+li      $a0, 4
+add     $a0, $a3, $a0
+sw      $a1, 0($a0)
+li      $a1, 1
+li      $a0, 9
+bltz    $a0, L9
+j       L10
 L10:
-sw      $a0, -8($fp)
-lw      $a0, -12($fp)
-addi    $a1, $a1, 1
-jal     L2
-j       L9
+li      $a1, 0
 L9:
-lw      $ra, 12($sp)
-lw      $fp, 20($sp)
-addiu   $sp, $sp, 24
+li      $a1, 1
+li      $a2, 9
+lw      $a0, 0($a3)
+sub     $a0, $a2, $a0
+bgez    $a0, L11
+j       L12
+L12:
+li      $a1, 0
+L11:
+or      $a0, $a1, $a1
+sub     $a0, $0, $a0
+bnez    $a0, L7
+j       L8
+L8:
+li      $a1, 3
+li      $a0, 40
+add     $a0, $a3, $a0
+sw      $a1, 0($a0)
+li      $v0, 0
+j       L13
+L1:
+li      $v0, 10
+syscall
+j       L2
+L7:
+li      $v0, 10
+syscall
+j       L8
+L13:
+lw      $ra, 4($sp)
+lw      $fp, 12($sp)
+addiu   $sp, $sp, 16
 jr      $ra
 .data
-L4: .asciiz "str2"
-L3: .asciiz "str"
