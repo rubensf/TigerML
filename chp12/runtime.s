@@ -395,9 +395,7 @@ tig_substring:
 	.align	4
 	.globl	tig_flush
 tig_flush:
-	la	$25,fflush
-	nop
-	jr	$25
+	jr	$31
 	nop
 	.align	4
 	.globl	tig_print

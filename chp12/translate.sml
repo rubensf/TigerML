@@ -41,7 +41,7 @@ struct
   fun parameters (lev: level) =
     case lev of
       Level l   => foldl (fn (formal, ans) => (Access (lev, formal))::ans)
-                     [] (F.parameters (#frame (#1 l)))
+                     [] (List.tl (F.parameters (#frame (#1 l))))
     | Outermost => (error 0 "Internal Failure: cannot get formals of outermost level."; [])
 
   fun frame (lev: level) =
@@ -145,9 +145,8 @@ struct
   fun staticLinking (Level deflevel, Level curlevel) =
     if lvEqual (Level deflevel, Level curlevel)
     then T.TEMP (F.getRegTemp F.fp)
-    else T.MEM (T.BINOP (T.PLUS,
-                         T.CONST (F.getOffset (#frame (#1 curlevel))),
-                         staticLinking (Level deflevel, (#parent (#1 curlevel)))))
+    else F.expFn (List.hd (F.parameters (#frame (#1 curlevel))))
+           (staticLinking (Level deflevel, (#parent (#1 curlevel))))
     | staticLinking (_,_) = T.CONST 0
 
   fun allocLocal (lev: level) esc =
