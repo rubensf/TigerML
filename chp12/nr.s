@@ -210,7 +210,7 @@ addiu   $sp,$sp,-40
 sw      $ra,36($sp)
 sw      $s0,32($sp)
 sw      $a1,24($sp)
-move    $s0,$a0
+srl     $s0,$a0,2
 jal     sys_tig_malloc
 sll     $a0,$a0,2
 lw      $a1,24($sp)
