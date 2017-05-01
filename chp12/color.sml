@@ -245,7 +245,6 @@ struct
             if (FG.outDegree (gNode x) < FG.outDegree (gNode v))
             then x
             else v
-
           val nodeID = List.foldl minInterf (List.hd (!spillWL))
                                             (List.tl (!spillWL))
           fun fID x = x <> nodeID
@@ -273,9 +272,7 @@ struct
         in
           if List.exists matchV (!freezeWL)
           then freezeWL := List.filter filtrV (!freezeWL)
-          else if List.exists matchV (!simplifyWL)
-          then simplifyWL := List.filter filtrV (!simplifyWL)
-          else ();
+          else spillWL := List.filter filtrV (!spillWL);
 
           coalescedNodes := TS.add((!coalescedNodes), v);
           alias := TM.insert ((!alias), v, u);
