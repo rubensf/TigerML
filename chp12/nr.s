@@ -359,8 +359,8 @@ addiu   $sp,$sp,-32
 sw      $ra,28($sp)
 sw      $s0,24($sp)
 sltu    $v0,$a0,256
-bne     $v0,$0,.L86
 move    $s0,$a0
+bne     $v0,$0,.L86
 la      $a0,.LC1
 jal     sys_tig_printf
 move    $a1,$s0
