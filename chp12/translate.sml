@@ -273,7 +273,7 @@ struct
                                   T.LABEL flabel,
                                   unNx else',
                                   T.LABEL done])
-      | (_, _)       => Ex (T.CONST 0) (*should never get here*)
+      | (_, _)       => (error 0 "IF-THEN-ELSE Expression then and else differ";Ex (T.CONST 0)) 
     end
   fun ifThenExp(test, then') =
     let
