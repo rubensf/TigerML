@@ -211,8 +211,8 @@ sw      $ra,36($sp)
 sw      $s0,32($sp)
 sw      $a1,24($sp)
 move    $s0,$a0
-jal     sys_tig_malloc
 sll     $a0,$a0,2
+jal     sys_tig_malloc
 lw      $a1,24($sp)
 blez    $s0,.L59
 move    $a0,$v0
