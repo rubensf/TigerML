@@ -118,12 +118,15 @@ struct
     | intOpExp (oper as A.GeOp, l, r) =
         Cx (fn (t, f) => T.CJUMP((convertAopTrelop oper), unEx l, unEx r, t, f))
 
-  fun strOpExp (A.EqOp,  l, r) = Ex (F.externCallFn("tig_strcmp", [unEx l] @ [unEx r] @ [T.CONST 0]))
-    | strOpExp (A.NeqOp, l, r) = Ex (F.externCallFn("tig_strcmp", [unEx l] @ [unEx r] @ [T.CONST 1]))
-    | strOpExp (A.LtOp,  l, r) = Ex (F.externCallFn("tig_strcmp", [unEx l] @ [unEx r] @ [T.CONST 2]))
-    | strOpExp (A.LeOp,  l, r) = Ex (F.externCallFn("tig_strcmp", [unEx l] @ [unEx r] @ [T.CONST 3]))
-    | strOpExp (A.GtOp,  l, r) = Ex (F.externCallFn("tig_strcmp", [unEx l] @ [unEx r] @ [T.CONST 4]))
-    | strOpExp (A.GeOp,  l, r) = Ex (F.externCallFn("tig_strcmp", [unEx l] @ [unEx r] @ [T.CONST 5]))
+  fun strOpInternal (l, r, flag) =
+    Ex (F.externCallFn("tig_strcmp", (unEx l)::(unEx r)::[T.CONST flag]))
+
+  fun strOpExp (A.EqOp,  l, r) = strOpInternal(l, r, 0)
+    | strOpExp (A.NeqOp, l, r) = strOpInternal(l, r, 1)
+    | strOpExp (A.LtOp,  l, r) = strOpInternal(l, r, 2)
+    | strOpExp (A.LeOp,  l, r) = strOpInternal(l, r, 3)
+    | strOpExp (A.GtOp,  l, r) = strOpInternal(l, r, 4)
+    | strOpExp (A.GeOp,  l, r) = strOpInternal(l, r, 5)
     | strOpExp _               = (error 0 "Internal Failure: strOpExp."; Ex (T.CONST 0))
 
   fun intExp i = Ex (T.CONST i)
@@ -293,13 +296,12 @@ struct
                             T.LABEL done])
     end
 
+  fun baseCallExp(deflevel as Level ({parent=parent,...}, uniqref), curlevel, label, exps) =
+      Ex (T.CALL (T.NAME label, (map unEx exps)))
+    | baseCallExp _ = (error 0 "Top Level Exception"; Ex (T.CONST 0))
+
   fun callExp(deflevel as Level ({parent=parent,...}, uniqref), curlevel, label, exps) =
-    let
-      val link = staticLinking (parent, curlevel)
-      val expCalls = map unEx exps
-    in
-      Ex (T.CALL (T.NAME label, link::expCalls))
-    end
+      Ex (T.CALL (T.NAME label, (staticLinking (parent, curlevel))::(map unEx exps)))
     | callExp _ = (error 0 "Top Level Exception"; Ex (T.CONST 0))
 
   fun simpleVarAccess (Access ac, Level l) = Ex (F.expFn (#2 ac) (staticLinking ((#1 ac), Level l)))

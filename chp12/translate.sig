@@ -33,6 +33,7 @@ sig
   val seqExp          : exp list -> exp
   val assignExp       : exp * exp -> exp
   val callExp         : level * level * Tree.label * exp list -> exp
+  val baseCallExp     : level * level * Tree.label * exp list -> exp
 
   val packExps        : exp list * exp -> exp
 

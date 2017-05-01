@@ -131,10 +131,17 @@ struct
       SOME(s) => s
     | NONE    => Temp.makeString t
 
+  fun i2s i =
+    if i < 0 then "-" ^ Int.toString (~i) else Int.toString i
+
   fun strAssembly (PROC p) =
         (ErrorMsg.error 0 "Internal error: frame cant make proc string."; "")
     | strAssembly (STRING (l, str)) =
-        (Temp.labelToString l) ^ ": .asciiz \"" ^ str ^ "\"\n"
+        (Temp.labelToString l) ^ ":\n" ^
+        " .align 4\n" ^
+        " .word  " ^ i2s (String.size str) ^ "\n" ^
+        " .align 4\n" ^
+        " .ascii \"" ^ str ^ "\"\n"
 
   fun getTextHdr () = ".text\n"
   fun getDataHdr () = ".data\n"
@@ -144,9 +151,6 @@ struct
 
   fun externCallFn (s, args) =
     CALL (NAME (Temp.namedlabel s), args)
-
-  fun i2s i =
-    if i < 0 then "-" ^ Int.toString (~i) else Int.toString i
 
   fun storeLocal (InFrame adr) tmp =
         Assem.OPER {assem="sw      `s0, " ^ (i2s adr) ^ "(`s1)\n",

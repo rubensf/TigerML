@@ -41,3 +41,15 @@ For instance, we match specifically MOVE(MEM(BINOP(oper, e1, CONST i)), e2) to c
 
 ## Basic Blocks during Control Flow
 We construct our flow graph using basic blocks rather than instruction by instruction for increased efficiency running control flow algorithms.
+
+## Support for String Comparison
+Including =, <>, >=, >, <=, <. We made our own strcmp for that.
+
+## Optimized runtime
+We compiled our own runtime with -O3, making sure all calls were external
+so that calling convetions would be obeyed. We also removed the "clutter" of
+directives not recognized by spim - that reduced our runtime to about 440 lines
+of instructions, favoring instruction cache.
+Note: Debugging stuff with -O3 somehow put a lot of instructions out of order,
+ie jump before updating the counter. Not sure why this happened, but it was a
+lot of trouble debugging the mips :( plz rewards us

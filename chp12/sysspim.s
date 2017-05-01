@@ -1,6 +1,6 @@
 	.globl malloc
 	.text
-malloc:
+sys_tig_malloc:
 	# round up the requested amount to a multiple of 4
 	add $a0, $a0, 3
 	srl $a0, $a0, 2
@@ -14,12 +14,12 @@ malloc:
 
 	.data
 	.align 4
-getchar_buf: .byte 0x0
+sys_tig_getchar_buf: .byte 0x0
 
 	.text
-getchar:
+sys_tig_getchar:
 	# read the character
-	la $a0, getchar_buf
+	la $a0, sys_tig_getchar_buf
 	li $a1, 2
 	li $v0, 8
 	syscall
@@ -30,16 +30,16 @@ getchar:
 
 	.data
 	.align 4
-putchar_buf: .byte 0x0
+sys_tig_putchar_buf: .byte 0x0
 
 	.text
-putchar:
+sys_tig_putchar:
 	# save the character so that it is NUL-terminated
-	la $t0, putchar_buf
+	la $t0, sys_tig_putchar_buf
 	sb $a0, ($t0)
 
 	# print it out
-	la $a0, putchar_buf
+	la $a0, sys_tig_putchar_buf
 	li $v0, 4
 	syscall
 
@@ -47,13 +47,13 @@ putchar:
 
 	.text
 # just prints the format string, not the arguments
-printf:
+sys_tig_printf:
 	li $v0, 4
 	syscall
 	j $ra
 
 	.text
-exit:
+sys_tig_exit:
 	li $v0, 10
 	syscall
 

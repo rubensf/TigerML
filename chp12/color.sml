@@ -201,7 +201,7 @@ struct
       fun simplify () =
         let val nodeID = List.hd (!simplifyWL)
         in
-          print ("simplifying - " ^ Temp.makeString nodeID ^ "\n");
+          (*print ("simplifying - " ^ Temp.makeString nodeID ^ "\n");*)
           simplifyWL := List.tl (!simplifyWL);
           selectStack := nodeID::(!selectStack);
           TS.app decrementoutDegreeEffects (adjacents nodeID)
@@ -233,7 +233,7 @@ struct
       fun freeze () =
         let val nodeID = List.hd (!freezeWL)
         in
-          print ("freeze - " ^ Temp.makeString nodeID ^ "\n");
+          (*print ("freeze - " ^ Temp.makeString nodeID ^ "\n");*)
           freezeWL := List.tl (!freezeWL);
           simplifyWL := nodeID::(!simplifyWL);
           freezeMoves nodeID
@@ -250,7 +250,7 @@ struct
                                             (List.tl (!spillWL))
           fun fID x = x <> nodeID
         in
-          print ("spill - " ^ Temp.makeString nodeID ^ "\n");
+          (*print ("spill - " ^ Temp.makeString nodeID ^ "\n");*)
           spillWL := List.filter fID (!spillWL);
           simplifyWL := nodeID::(!simplifyWL);
           freezeMoves nodeID
@@ -258,7 +258,7 @@ struct
 
       fun combine (u, v) =
         let
-          val _ = print "combining yay\n"
+          (*val _ = print "combining yay\n"*)
           val mvU = Option.valOf (TM.find ((!movesMap), u))
           val mvV = Option.valOf (TM.find ((!movesMap), v))
 
@@ -319,8 +319,8 @@ struct
           val x = getNodeAlias u
           val y = getNodeAlias v
 
-          val _ = print ("coalescing : " ^ Temp.makeString x ^ "-" ^ Temp.makeString y ^ "\n");
-          val _ = print ("coalescing (orig): " ^ Temp.makeString u ^ "-" ^ Temp.makeString v ^ "\n");
+          (*val _ = print ("coalescing : " ^ Temp.makeString x ^ "-" ^ Temp.makeString y ^ "\n");*)
+          (*val _ = print ("coalescing (orig): " ^ Temp.makeString u ^ "-" ^ Temp.makeString v ^ "\n");*)
           val (u, v) = if (isPrecolored y)
                        then (y, x)
                        else (x, y)
@@ -355,9 +355,9 @@ struct
                     List.mapPartial (fn x => TM.find((!colors), x))
                                     actualAdjs);
                 val avalColors = TS.difference(allColors, unavColors)
-                val _ = print ("Getting " ^ Temp.makeString nID ^ "\nunav\n")
-                val _ = TS.app (fn x => print (Temp.makeString x ^ "-")) unavColors
-                val _ = print "\n"
+                (*val _ = print ("Getting " ^ Temp.makeString nID ^ "\nunav\n")*)
+                (*val _ = TS.app (fn x => print (Temp.makeString x ^ "-")) unavColors*)
+                (*val _ = print "\n"*)
               in
                 selectStack := List.rev (List.tl (List.rev (!selectStack)));
                 if TS.isEmpty avalColors
@@ -382,7 +382,7 @@ struct
         )
 
       fun bodyLoop () =
-        (printWLs ();
+        ((*printWLs ();*)
         if (List.null (!simplifyWL) andalso
             List.null (!freezeWL) andalso
             List.null (!spillWL) andalso
