@@ -220,8 +220,8 @@ move    $v1,$0
 .L60:
 addiu   $v1,$v1,1
 sw      $a1,0($a0)
-bne     $v1,$s0,.L60
 addiu   $a0,$a0,4
+bne     $v1,$s0,.L60
 .L59:
 lw      $ra,36($sp)
 lw      $s0,32($sp)
