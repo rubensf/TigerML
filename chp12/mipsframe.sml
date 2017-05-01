@@ -152,17 +152,21 @@ struct
   fun externCallFn (s, args) =
     CALL (NAME (Temp.namedlabel s), args)
 
-  fun storeLocal (InFrame adr) tmp =
-        Assem.OPER {assem="sw      `s0, " ^ (i2s adr) ^ "(`s1)\n",
-                    src=[tmp, getRegTemp sp], dst=[], jump=NONE}
-    | storeLocal (InReg reg) tmp =
+  fun storeLocal (f: frame) (InFrame adr) tmp =
+        Assem.OPER {assem="sw      `s0, " ^
+                          (i2s (adr - wordSize * (!(#maxArgsCall f)))) ^
+                          "(`s1)\n",
+                    src=[tmp, getRegTemp fp], dst=[], jump=NONE}
+    | storeLocal (f: frame) (InReg reg) tmp =
         (ErrorMsg.error 0 "Not a frame value.";
          Assem.LABEL {assem="", lab=Temp.newlabel ()})
 
-  fun loadLocal (InFrame adr) tmp =
-        Assem.OPER {assem="lw      `d0, " ^ (i2s adr) ^ "(`s0)\n",
-                    src=[getRegTemp sp], dst=[tmp], jump=NONE}
-    | loadLocal (InReg reg) tmp =
+  fun loadLocal (f: frame) (InFrame adr) tmp =
+        Assem.OPER {assem="lw      `d0, " ^
+                          (i2s (adr - wordSize * (!(#maxArgsCall f)))) ^
+                          "(`s0)\n",
+                    src=[getRegTemp fp], dst=[tmp], jump=NONE}
+    | loadLocal (f: frame) (InReg reg) tmp =
         (ErrorMsg.error 0 "Not a frame value.";
          Assem.LABEL {assem="", lab=Temp.newlabel ()})
 

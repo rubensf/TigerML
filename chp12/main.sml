@@ -280,7 +280,7 @@ struct
 
       fun printRuntime out =
         let
-          val read = TextIO.openIn("nr.s")
+          val read = TextIO.openIn("runtime.s")
           val _ = TextIO.output(out, TextIO.inputAll(read))
         in
           ()

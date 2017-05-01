@@ -3,6 +3,7 @@ let
 	type  rectype = {name:string, age:int}
 	var rec1:rectype := rectype {name="Nobody", age=1000}
 in
+	print(rec1.name);
 	rec1.name := "Somebody";
-	rec1
+	print(rec1.name)
 end

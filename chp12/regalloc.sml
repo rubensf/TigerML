@@ -92,14 +92,12 @@ struct
              SOME {ins=noMove, alloc=alloc, frame=frame}
            end
       else let
-        (*val _ = print ("doing again? " ^ Int.toString (List.length spills) ^ "!!\n")*)
-        (*val _ = print ("spilled " ^ Temp.makeString (List.hd spills) ^ "!!\n")*)
              val regStacks =
                List.foldr (fn (x, ans) => (x, F.allocLocal frame true)::ans)
                           [] spills
 
-             fun addFetch ((t, ac), ans) = (F.loadLocal ac t)::ans
-             fun addStore ((t, ac), ans) = (F.storeLocal ac t)::ans
+             fun addFetch ((t, ac), ans) = (F.loadLocal frame ac t)::ans
+             fun addStore ((t, ac), ans) = (F.storeLocal frame ac t)::ans
 
              fun filt l = List.filter
                             (fn (x, ac) => (List.exists (fn y => y = x) l))

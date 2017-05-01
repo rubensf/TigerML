@@ -278,13 +278,7 @@ struct
           alias := TM.insert ((!alias), v, u);
           movesMap := TM.insert ((!movesMap), u, TS.union(mvU, mvV));
           enableMoves (adjacents v);
-          print ("merging and printing (" ^ (F.makeString (FG.getNodeID nU)) ^ "," ^ (F.makeString (FG.getNodeID nV)) ^ ")\n");
-          FG.printGraph (fn (t,x) => F.makeString t) (!graph);
-          List.app (fn x => print ((F.makeString (FG.getNodeID x))^",")) (FG.nodes (!graph));
-          print "\n";
           graph := FG.mergeNodes (!graph) (nU, nV);
-          print "AFTER\n";
-          FG.printGraph (fn (t,x) => F.makeString t) (!graph);
           List.app decrementoutDegreeEffects adjsV;
 
           if not (isPrecolored u) andalso
@@ -352,17 +346,11 @@ struct
                 val nID = List.last (!selectStack)
                 val actualAdjs = List.map getNodeAlias
                                           (FG.adj (gNode nID))
-                val _ = print "===================PRINTING ACTUAL ADJS===================\n"
-                val _ = print ("Node: "^(F.makeString nID)^"\n")
-                val _ = List.app (fn x => (print ((F.makeString x)^", "))) actualAdjs
-                val _ = print "\n"
                 val unavColors =
                   TS.addList(
                     TS.empty,
                     List.mapPartial (fn x => TM.find((!colors), x))
                                     actualAdjs);
-                val _ = TS.app (fn x => (print ((F.makeString x)^", "))) unavColors
-                val _ = print "\n"
                 val avalColors = TS.difference(allColors, unavColors)
                 (*val _ = print ("Getting " ^ Temp.makeString nID ^ "\nunav\n")*)
                 (*val _ = TS.app (fn x => print (Temp.makeString x ^ "-")) unavColors*)
