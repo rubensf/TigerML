@@ -151,8 +151,8 @@ struct
                                         | NONE   => false
                          in
                            if inBase
-                           then (print ("base call: " ^ Temp.labelToString func ^ "-" ^Temp.labelToString label  ^ "\n"); {exp=R.baseCallExp(declevel, level, label, map #exp (map trexp args)), ty=result})
-                           else (print ("norm call: " ^ Temp.labelToString func ^ "-" ^Temp.labelToString label  ^ "\n"); {exp=R.callExp(declevel, level, label, map #exp (map trexp args)), ty=result})
+                           then {exp=R.baseCallExp(declevel, level, label, map #exp (map trexp args)), ty=result}
+                           else {exp=R.callExp(declevel, level, label, map #exp (map trexp args)), ty=result}
                          end)
                    else (error pos "Function args length differ from defined.";
                          {exp=R.errExp(), ty=result})
@@ -211,7 +211,6 @@ struct
         | trexp (A.AssignExp{var, exp, pos}) =
             let
               val var' = transVar(venv, tenv, level, var, break)
-              val _ = print "at assign exp\n"
               val exp' = trexp exp
             in
               checkTypeMatch(#ty var', #ty exp', tenv, pos, "Assignment");
@@ -454,7 +453,6 @@ struct
                     val escList = foldl (fn (x, ans) => !(#escape x)::ans) [] params
                     val trLevelName = Temp.newlabel ()
                     (* Accounting for static link *)
-                    val _ = print("Dec func " ^ Temp.labelToString name ^ "-" ^ Temp.labelToString trLevelName ^ "\n")
                     val trNewLevel = R.newLevel {parent=level, name=trLevelName, parameters=escList}
                   in
                     S.enter(venv, name, E.FunEntry{level=trNewLevel, label=trLevelName, parameters=params', result=result_ty})
@@ -493,7 +491,6 @@ struct
                                                          ty=ty})
                       val venv'' = foldl enterparam venv' params'
 
-                    val _ = print("At func " ^ Temp.labelToString name ^ "\n")
                       val funcExp = transExp(venv'', tenv, funcTrLevel, body, break)
                       val retTypeFound = (#ty funcExp)
                     in
