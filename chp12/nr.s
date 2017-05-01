@@ -387,8 +387,9 @@ main:
 	sw	$5,0($3)
 	addiu	$3,$3,8
 	bne	$2,$4,.L89
-	jal	tig_main
 	move	$4,$0
+	jal	tig_main
+	jr	$ra
 	.align	4
 	.globl	tig_flush
 tig_flush:
