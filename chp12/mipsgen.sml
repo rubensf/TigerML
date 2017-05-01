@@ -199,10 +199,6 @@ struct
             emit(A.OPER {assem="sw      `s0, " ^ (i2s (~i)) ^ "(`s1)\n",
                          src=[munchExp e2, munchExp e1],
                          dst=[], jump=NONE}) (* Minus isn't associativy, so no inverse. *)
-        | munchStm (T.MOVE(T.MEM(e1), T.MEM(e2))) =
-            emit(A.OPER {assem="sw      `s0, 0(`s1)\n",
-                         src=[munchExp e2, munchExp e1],
-                         dst=[], jump=NONE})
         | munchStm (T.MOVE(T.MEM(e1), e2)) =
             emit(A.OPER {assem="sw      `s0, 0(`s1)\n",
                          src=[munchExp e2, munchExp e1],
