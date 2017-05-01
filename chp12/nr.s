@@ -1,5 +1,5 @@
 	.text
-	.align	4
+	.align	2
 	.globl	tig_stringEqual
 tig_stringEqual:
 	beq	$4,$5,.L2
@@ -29,7 +29,7 @@ tig_stringEqual:
 .L2:
 	li	$2,1			# 0x1
 	j	$31
-	.align	4
+	.align	2
 	.globl	tig_strcmp
 tig_strcmp:
 	sltu	$2,$6,6
@@ -84,7 +84,7 @@ tig_strcmp:
 	xor	$2,$6,$2
 	sltu	$2,$0,$2
 	j	$31
-	.align	4
+	.align	2
 	.globl	tig_ord
 tig_ord:
 	lw	$2,0($4)
@@ -94,17 +94,17 @@ tig_ord:
 .L33:
 	li	$2,-1			# 0xffffffffffffffff
 	j	$31
-	.align	4
+	.align	2
 	.globl	tig_size
 tig_size:
 	lw	$2,0($4)
 	j	$31
-	.align	4
+	.align	2
 	.globl	tig_not
 tig_not:
 	sltu	$2,$4,1
 	j	$31
-	.align	4
+	.align	2
 	.globl	tig_getchar
 tig_getchar:
 	addiu	$sp,$sp,-32
@@ -122,7 +122,7 @@ tig_getchar:
 	la	$2,empty
 	addiu	$sp,$sp,32
 	j	$31
-	.align	4
+	.align	2
 	.globl	tig_concat
 tig_concat:
 	addiu	$sp,$sp,-48
@@ -181,7 +181,7 @@ tig_concat:
 	lw	$16,36($sp)
 	addiu	$sp,$sp,48
 	j	$31
-	.align	4
+	.align	2
 	.globl	tig_allocRecord
 tig_allocRecord:
 	addiu	$sp,$sp,-32
@@ -203,7 +203,7 @@ tig_allocRecord:
 	lw	$16,24($sp)
 	addiu	$sp,$sp,32
 	j	$31
-	.align	4
+	.align	2
 	.globl	tig_initArray
 tig_initArray:
 	addiu	$sp,$sp,-40
@@ -229,10 +229,10 @@ tig_initArray:
 	j	$31
 .LC0:
 	.data
-	.align	4
+	.align	2
 	.ascii	"substring([%d],%d,%d) out of range\012\000"
 	.text
-	.align	4
+	.align	2
 	.globl	tig_substring
 tig_substring:
 	addiu	$sp,$sp,-40
@@ -349,10 +349,10 @@ tig_substring:
 	j	$31
 .LC1:
 	.data
-	.align	4
+	.align	2
 	.ascii	"chr(%d) out of range\012\000"
 	.text
-	.align	4
+	.align	2
 	.globl	tig_chr
 tig_chr:
 	addiu	$sp,$sp,-32
@@ -374,7 +374,7 @@ tig_chr:
 	lw	$16,24($sp)
 	addiu	$sp,$sp,32
 	j	$31
-	.align	4
+	.align	2
 	.globl	main
 main:
 	la	$3,consts
@@ -389,11 +389,11 @@ main:
 	bne	$2,$4,.L89
 	move	$4,$0
 	j	tig_main
-	.align	4
+	.align	2
 	.globl	tig_flush
 tig_flush:
 	jr	$31
-	.align	4
+	.align	2
 	.globl	tig_print
 tig_print:
 	addiu	$sp,$sp,-40
@@ -430,7 +430,7 @@ consts:
 	.space	3
 	.space	2040
 	.globl	empty
-	.align	4
+	.align	2
 empty:
 	.word	0
 	.byte	0x0

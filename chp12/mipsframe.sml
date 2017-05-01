@@ -138,9 +138,9 @@ struct
         (ErrorMsg.error 0 "Internal error: frame cant make proc string."; "")
     | strAssembly (STRING (l, str)) =
         (Temp.labelToString l) ^ ":\n" ^
-        " .align 4\n" ^
+        " .align 2\n" ^
         " .word  " ^ i2s (String.size str) ^ "\n" ^
-        " .align 4\n" ^
+        " .align 2\n" ^
         " .ascii \"" ^ str ^ "\"\n"
 
   fun getTextHdr () = ".text\n"
