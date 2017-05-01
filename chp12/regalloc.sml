@@ -12,7 +12,7 @@ struct
           SOME r => F.regToString r
         | NONE   => (ErrorMsg.error 0 "Couldn't alloc registers."; "")
 
-      val _ = print "reg allocing!!!\n\n"
+      (*val _ = print "reg allocing!!!\n\n"*)
       (*val _ =List.app*)
                (*(fn y => print (format y))*)
                (*instrs*)
@@ -92,8 +92,8 @@ struct
              SOME {ins=noMove, alloc=alloc, frame=frame}
            end
       else let
-        val _ = print ("doing again? " ^ Int.toString (List.length spills) ^ "!!\n")
-        val _ = print ("spilled " ^ Temp.makeString (List.hd spills) ^ "!!\n")
+        (*val _ = print ("doing again? " ^ Int.toString (List.length spills) ^ "!!\n")*)
+        (*val _ = print ("spilled " ^ Temp.makeString (List.hd spills) ^ "!!\n")*)
              val regStacks =
                List.foldr (fn (x, ans) => (x, F.allocLocal frame true)::ans)
                           [] spills
