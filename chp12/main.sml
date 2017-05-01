@@ -125,7 +125,7 @@ struct
                 then (print "==========Printing Pre-Register Allocation Assembly==========\n";
                       List.app (fn (instrs', _) =>
                                   List.app
-                                    (fn y => TextIO.output(outStream, format y))
+                                    (fn y => print (format y))
                                     instrs')
                                instrs)
                 else ();
@@ -236,7 +236,19 @@ struct
           then (print ("Errors with making coloring registers. " ^
                        "Stopping compilation.\n");
                 ([], !err))
-          else (colorings, !err)
+          else (if verbose > 1
+                then (print "==========Printing Allocation==========\n";
+                      List.app
+                        (fn {ins=ins, alloc=alloc, frame=frame} =>
+                           (print "Print alloc for new frame:\n";
+                            Temp.Map.appi
+                              (fn (t,r) =>
+                                 print ((F.makeString t) ^ "-" ^
+                                        (pickRegister alloc t) ^ "\n"))
+                              alloc))
+                        colorings)
+                else ();
+                (colorings, !err))
         end
 
       fun regalloc2 instrsFrameList =
@@ -254,8 +266,6 @@ struct
         let
           val tmpStr = pickRegister alloc
           val format = Assem.format(tmpStr)
-          val _ = print "================PRINTING ALLOCATION================\n"
-          val _ = Temp.Map.appi (fn (t,r) => print ((F.makeString t) ^ "-" ^ (tmpStr t) ^ "\n")) alloc
         in
           List.app (fn x => TextIO.output(outStr, format x)) ins
         end

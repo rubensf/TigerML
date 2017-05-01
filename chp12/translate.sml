@@ -248,7 +248,6 @@ struct
         end
   fun ifThenElseExp(test, then', else') =
     let
-      val _ = print "tr doing ifelse exp\n"
       val tlabel = Temp.newlabel()
       val flabel = Temp.newlabel()
       val done   = Temp.newlabel()
