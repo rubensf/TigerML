@@ -187,8 +187,8 @@ tig_allocRecord:
 addiu   $sp,$sp,-32
 sw      $ra,28($sp)
 sw      $s0,24($sp)
-jal     sys_tig_malloc
 move    $s0,$a0
+jal     sys_tig_malloc
 blez    $s0,.L54
 move    $a0,$v0
 move    $v1,$0
@@ -251,8 +251,8 @@ bne     $v0,$0,.L65
 li      $v0,1		# 0x1
 beq     $s0,$v0,.L82
 .L67:
-jal     sys_tig_malloc
 addiu   $a0,$s0,4
+jal     sys_tig_malloc
 move    $a0,$v0
 blez    $s0,.L68
 sw      $s0,0($v0)
@@ -310,8 +310,8 @@ la      $a0,.LC0
 move    $a2,$s1
 jal     sys_tig_printf
 move    $a3,$s0
-jal     sys_tig_exit
 li      $a0,1		# 0x1
+jal     sys_tig_exit
 li      $v0,1		# 0x1
 bne     $s0,$v0,.L67
 .L82:
